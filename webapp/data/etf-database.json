@@ -1,0 +1,516 @@
+{
+  "metadata": {
+    "name": "小資現金流地圖 ETF 官方資料庫",
+    "snapshotDate": "2026-06-09",
+    "officialPerformanceDate": "2026-06-08",
+    "buildMode": "official_snapshot_with_quality_flags",
+    "sources": [
+      {
+        "id": "sitca-etf-basic",
+        "name": "投信投顧公會 ETF 基本資料",
+        "url": "https://www.sitca.org.tw/ROC/SITCA_ETF/etf-info.html",
+        "usage": "ETF 主檔欄位口徑：經理公司、基金名稱、成立日、分類、追蹤指數、是否配息、證券代號、證券簡稱"
+      },
+      {
+        "id": "twse-etfortune",
+        "name": "臺灣證券交易所 ETF e添富",
+        "url": "https://www.twse.com.tw/zh/ETFortune/",
+        "usage": "ETF 商品頁、近期配息、績效資料日期、資產規模、受益人次"
+      },
+      {
+        "id": "twse-distribution-disclosure",
+        "name": "TWSE ETF 收益分配揭露新聞稿",
+        "url": "https://www.twse.com.tw/staticFiles/news/news/tsecnews/ff8080818b7e232e018b7fe01dca0016.pdf",
+        "usage": "收益分配組成揭露口徑與合規提醒"
+      },
+      {
+        "id": "mops",
+        "name": "公開資訊觀測站",
+        "url": "https://mops.twse.com.tw/mops/web/index",
+        "usage": "收益分配組成與公告查核入口"
+      },
+      {
+        "id": "twse-openapi-stock-day-all",
+        "name": "TWSE OpenAPI 上市個股日成交資訊",
+        "url": "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL",
+        "usage": "ETF 每日開高低收、成交量與成交金額"
+      },
+      {
+        "id": "twse-stock-day",
+        "name": "TWSE STOCK_DAY 各日成交資訊",
+        "url": "https://www.twse.com.tw/exchangeReport/STOCK_DAY",
+        "usage": "ETF 月內價格折線、開高低收、成交量與成交金額"
+      }
+    ],
+    "limitations": [
+      "本快照只收錄目前 App 範例使用的 0056、00878、006208。",
+      "TWSE 官方月內價格折線已接上；成分股權重、逐日 NAV 與折溢價尚未取得官方可機器讀取來源，已以 qualityFlags 標示為缺資料。",
+      "ETF 資料可能有時間差，正式上線前應建立每日更新流程與人工抽查。"
+    ]
+  },
+  "etfs": [
+    {
+      "ticker": "0056",
+      "shortName": "元大高股息",
+      "fundName": "元大台灣高股息證券投資信託基金",
+      "category": "台股ETF",
+      "issuer": "元大證券投資信託股份有限公司",
+      "manager": "陳威志",
+      "indexName": "臺灣高股息指數",
+      "themes": [
+        "高股息"
+      ],
+      "aumBillionTwd": 6695.02,
+      "beneficiariesTenThousand": 154.63,
+      "performance": {
+        "oneDay": -4.54,
+        "oneWeek": -4.72,
+        "oneMonth": 10.26,
+        "threeMonths": 31.09,
+        "sixMonths": 41.49,
+        "oneYear": 59.81,
+        "threeYears": 122.25,
+        "fiveYears": 124.67,
+        "date": "2026-06-08",
+        "source": "twse-etfortune"
+      },
+      "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/0056",
+      "qualityFlags": [
+        "official_master_loaded",
+        "recent_distributions_loaded",
+        "holdings_missing",
+        "nav_series_missing",
+        "monthly_price_loaded"
+      ]
+    },
+    {
+      "ticker": "00878",
+      "shortName": "國泰永續高股息",
+      "fundName": "國泰台灣高股息傘型證券投資信託基金之台灣ESG永續高股息ETF證券投資信託基金",
+      "category": "台股ETF",
+      "issuer": "國泰證券投資信託股份有限公司",
+      "manager": "江宇騰",
+      "indexName": "MSCI臺灣ESG永續高股息精選30指數",
+      "themes": [
+        "公司治理及ESG",
+        "高股息"
+      ],
+      "aumBillionTwd": 5805.6,
+      "beneficiariesTenThousand": 158.45,
+      "performance": {
+        "oneDay": -3.74,
+        "oneWeek": -2.75,
+        "oneMonth": 14.55,
+        "threeMonths": 42.33,
+        "sixMonths": 52.56,
+        "oneYear": 64.54,
+        "threeYears": 117.4,
+        "fiveYears": 147.1,
+        "date": "2026-06-08",
+        "source": "twse-etfortune"
+      },
+      "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00878",
+      "qualityFlags": [
+        "official_master_loaded",
+        "recent_distributions_loaded",
+        "holdings_missing",
+        "nav_series_missing",
+        "monthly_price_loaded"
+      ]
+    },
+    {
+      "ticker": "006208",
+      "shortName": "富邦台50",
+      "fundName": "富邦台灣釆吉50證券投資信託基金",
+      "category": "台股ETF",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "manager": "洪珮甄",
+      "indexName": "富時臺灣證券交易所臺灣50指數",
+      "themes": [
+        "大型權值"
+      ],
+      "aumBillionTwd": 4278.48,
+      "beneficiariesTenThousand": 68.62,
+      "performance": {
+        "oneDay": -2.99,
+        "oneWeek": -4.12,
+        "oneMonth": 4.26,
+        "threeMonths": 31.23,
+        "sixMonths": 60.5,
+        "oneYear": 125.58,
+        "threeYears": 246.86,
+        "fiveYears": 239.5,
+        "date": "2026-06-08",
+        "source": "twse-etfortune"
+      },
+      "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/006208",
+      "qualityFlags": [
+        "official_master_loaded",
+        "recent_distributions_loaded",
+        "holdings_missing",
+        "nav_series_missing",
+        "monthly_price_loaded"
+      ]
+    }
+  ],
+  "distributions": [
+    {
+      "ticker": "0056",
+      "payDate": "2026-05-14",
+      "amountPerUnit": 1,
+      "source": "twse-etfortune"
+    },
+    {
+      "ticker": "0056",
+      "payDate": "2026-02-11",
+      "amountPerUnit": 0.866,
+      "source": "twse-etfortune"
+    },
+    {
+      "ticker": "0056",
+      "payDate": "2025-11-14",
+      "amountPerUnit": 0.866,
+      "source": "twse-etfortune"
+    },
+    {
+      "ticker": "0056",
+      "payDate": "2025-08-08",
+      "amountPerUnit": 0.866,
+      "source": "twse-etfortune"
+    },
+    {
+      "ticker": "00878",
+      "payDate": "2026-06-12",
+      "amountPerUnit": 0.66,
+      "source": "twse-etfortune"
+    },
+    {
+      "ticker": "00878",
+      "payDate": "2026-03-23",
+      "amountPerUnit": 0.42,
+      "source": "twse-etfortune"
+    },
+    {
+      "ticker": "00878",
+      "payDate": "2025-12-12",
+      "amountPerUnit": 0.4,
+      "source": "twse-etfortune"
+    },
+    {
+      "ticker": "00878",
+      "payDate": "2025-09-11",
+      "amountPerUnit": 0.4,
+      "source": "twse-etfortune"
+    },
+    {
+      "ticker": "006208",
+      "payDate": "2025-12-11",
+      "amountPerUnit": 3.448,
+      "source": "twse-etfortune"
+    },
+    {
+      "ticker": "006208",
+      "payDate": "2025-08-08",
+      "amountPerUnit": 0.989,
+      "source": "twse-etfortune"
+    },
+    {
+      "ticker": "006208",
+      "payDate": "2024-12-12",
+      "amountPerUnit": 0.9,
+      "source": "twse-etfortune"
+    },
+    {
+      "ticker": "006208",
+      "payDate": "2024-08-09",
+      "amountPerUnit": 0.783,
+      "source": "twse-etfortune"
+    }
+  ],
+  "holdings": {
+    "status": "missing_official_machine_readable_source",
+    "requiredFor": [
+      "ETF 重疊度",
+      "產業曝險",
+      "前十大持股"
+    ],
+    "recommendedNextSource": "各投信 ETF 官網或正式資料供應商",
+    "items": []
+  },
+  "priceSeries": {
+    "status": "official_monthly_price_loaded",
+    "requiredFor": [
+      "價格折線",
+      "歷史報酬",
+      "波動度"
+    ],
+    "recommendedNextSource": "TWSE ETF e添富圖表 API、證交所資料服務或正式資料供應商",
+    "items": [
+      {
+        "ticker": "0056",
+        "date": "2026-06-01",
+        "tradeVolume": 58919831,
+        "tradeValue": 3033987774,
+        "open": 50.5,
+        "high": 51.9,
+        "low": 50.5,
+        "close": 51.9,
+        "change": 1.7,
+        "transaction": 33203,
+        "source": "twse-stock-day",
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260609&stockNo=0056"
+      },
+      {
+        "ticker": "0056",
+        "date": "2026-06-02",
+        "tradeVolume": 69462828,
+        "tradeValue": 3624312776,
+        "open": 52.2,
+        "high": 52.8,
+        "low": 51.45,
+        "close": 52.8,
+        "change": 0.9,
+        "transaction": 35090,
+        "source": "twse-stock-day",
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260609&stockNo=0056"
+      },
+      {
+        "ticker": "0056",
+        "date": "2026-06-03",
+        "tradeVolume": 48338648,
+        "tradeValue": 2583508612,
+        "open": 53.4,
+        "high": 53.8,
+        "low": 52.75,
+        "close": 53.8,
+        "change": 1,
+        "transaction": 28518,
+        "source": "twse-stock-day",
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260609&stockNo=0056"
+      },
+      {
+        "ticker": "0056",
+        "date": "2026-06-04",
+        "tradeVolume": 66916789,
+        "tradeValue": 3533597260,
+        "open": 53.3,
+        "high": 53.3,
+        "low": 52.5,
+        "close": 52.65,
+        "change": -1.15,
+        "transaction": 53136,
+        "source": "twse-stock-day",
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260609&stockNo=0056"
+      },
+      {
+        "ticker": "0056",
+        "date": "2026-06-05",
+        "tradeVolume": 71486910,
+        "tradeValue": 3690435062,
+        "open": 52,
+        "high": 52.2,
+        "low": 50.7,
+        "close": 51.8,
+        "change": -0.85,
+        "transaction": 55432,
+        "source": "twse-stock-day",
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260609&stockNo=0056"
+      },
+      {
+        "ticker": "0056",
+        "date": "2026-06-08",
+        "tradeVolume": 126733268,
+        "tradeValue": 6198509757,
+        "open": 47.67,
+        "high": 49.45,
+        "low": 47.64,
+        "close": 49.45,
+        "change": -2.35,
+        "transaction": 106806,
+        "source": "twse-stock-day",
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260609&stockNo=0056"
+      },
+      {
+        "ticker": "00878",
+        "date": "2026-06-01",
+        "tradeVolume": 103435481,
+        "tradeValue": 3289744226,
+        "open": 31.3,
+        "high": 32.05,
+        "low": 31.3,
+        "close": 31.99,
+        "change": 1.23,
+        "transaction": 38345,
+        "source": "twse-stock-day",
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260609&stockNo=00878"
+      },
+      {
+        "ticker": "00878",
+        "date": "2026-06-02",
+        "tradeVolume": 111980868,
+        "tradeValue": 3608061889,
+        "open": 32.1,
+        "high": 32.5,
+        "low": 31.81,
+        "close": 32.49,
+        "change": 0.5,
+        "transaction": 33206,
+        "source": "twse-stock-day",
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260609&stockNo=00878"
+      },
+      {
+        "ticker": "00878",
+        "date": "2026-06-03",
+        "tradeVolume": 103127309,
+        "tradeValue": 3417681437,
+        "open": 32.68,
+        "high": 33.4,
+        "low": 32.55,
+        "close": 33.3,
+        "change": 0.81,
+        "transaction": 33199,
+        "source": "twse-stock-day",
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260609&stockNo=00878"
+      },
+      {
+        "ticker": "00878",
+        "date": "2026-06-04",
+        "tradeVolume": 78525133,
+        "tradeValue": 2572016405,
+        "open": 32.95,
+        "high": 32.96,
+        "low": 32.54,
+        "close": 32.68,
+        "change": -0.62,
+        "transaction": 44311,
+        "source": "twse-stock-day",
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260609&stockNo=00878"
+      },
+      {
+        "ticker": "00878",
+        "date": "2026-06-05",
+        "tradeVolume": 129424685,
+        "tradeValue": 4150969669,
+        "open": 32.35,
+        "high": 32.44,
+        "low": 31.63,
+        "close": 32.32,
+        "change": -0.36,
+        "transaction": 45282,
+        "source": "twse-stock-day",
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260609&stockNo=00878"
+      },
+      {
+        "ticker": "00878",
+        "date": "2026-06-08",
+        "tradeVolume": 142765587,
+        "tradeValue": 4400040906,
+        "open": 30.02,
+        "high": 31.17,
+        "low": 30.02,
+        "close": 31.11,
+        "change": -1.21,
+        "transaction": 70992,
+        "source": "twse-stock-day",
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260609&stockNo=00878"
+      },
+      {
+        "ticker": "006208",
+        "date": "2026-06-01",
+        "tradeVolume": 5023840,
+        "tradeValue": 1226106712,
+        "open": 241.5,
+        "high": 247,
+        "low": 241.5,
+        "close": 243.9,
+        "change": 2.65,
+        "transaction": 13575,
+        "source": "twse-stock-day",
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260609&stockNo=006208"
+      },
+      {
+        "ticker": "006208",
+        "date": "2026-06-02",
+        "tradeVolume": 3254566,
+        "tradeValue": 793556509,
+        "open": 244.8,
+        "high": 245.65,
+        "low": 241.45,
+        "close": 244.55,
+        "change": 0.65,
+        "transaction": 12757,
+        "source": "twse-stock-day",
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260609&stockNo=006208"
+      },
+      {
+        "ticker": "006208",
+        "date": "2026-06-03",
+        "tradeVolume": 3182602,
+        "tradeValue": 791864475,
+        "open": 248.5,
+        "high": 249.85,
+        "low": 248.05,
+        "close": 248.8,
+        "change": 4.25,
+        "transaction": 9527,
+        "source": "twse-stock-day",
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260609&stockNo=006208"
+      },
+      {
+        "ticker": "006208",
+        "date": "2026-06-04",
+        "tradeVolume": 4444624,
+        "tradeValue": 1096768372,
+        "open": 247.15,
+        "high": 248,
+        "low": 245.8,
+        "close": 245.95,
+        "change": -2.85,
+        "transaction": 16268,
+        "source": "twse-stock-day",
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260609&stockNo=006208"
+      },
+      {
+        "ticker": "006208",
+        "date": "2026-06-05",
+        "tradeVolume": 5354136,
+        "tradeValue": 1292855112,
+        "open": 243.4,
+        "high": 243.5,
+        "low": 238.1,
+        "close": 241.05,
+        "change": -4.9,
+        "transaction": 29215,
+        "source": "twse-stock-day",
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260609&stockNo=006208"
+      },
+      {
+        "ticker": "006208",
+        "date": "2026-06-08",
+        "tradeVolume": 10547287,
+        "tradeValue": 2446967930,
+        "open": 228.5,
+        "high": 234.75,
+        "low": 227.35,
+        "close": 233.85,
+        "change": -7.2,
+        "transaction": 43067,
+        "source": "twse-stock-day",
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260609&stockNo=006208"
+      }
+    ],
+    "queryDate": "20260609",
+    "updatedAt": "2026-06-08T17:08:10.059Z",
+    "source": "twse-stock-day"
+  },
+  "navSeries": {
+    "status": "missing_official_machine_readable_source",
+    "requiredFor": [
+      "NAV 折線",
+      "折溢價",
+      "折溢價風險提醒"
+    ],
+    "recommendedNextSource": "投信 ETF 即時淨值 JSON、TWSE ETF 申贖資訊及即時淨值揭露專區或正式資料供應商",
+    "items": []
+  }
+}

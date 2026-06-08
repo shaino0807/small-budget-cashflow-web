@@ -1,0 +1,17 @@
+{
+  "name": "小資現金流地圖",
+  "short_name": "現金流地圖",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f6f8f7",
+  "theme_color": "#0f766e",
+  "description": "可在桌機與手機使用的財務健檢與現金流報告工具。",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

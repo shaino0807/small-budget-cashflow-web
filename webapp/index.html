@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0f766e" />
+    <title>小資現金流地圖</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">現</span>
+        <div>
+          <h1>小資現金流地圖</h1>
+          <p id="headerStatus">免費健檢</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-button" id="sampleBtn" type="button" title="套用範例資料" aria-label="套用範例資料">↺</button>
+        <button class="icon-button" id="saveBtn" type="button" title="儲存目前資料" aria-label="儲存目前資料">💾</button>
+      </div>
+    </header>
+
+    <nav class="tabbar" aria-label="主要功能">
+      <button class="tab is-active" data-view="inputView" type="button">輸入</button>
+      <button class="tab" data-view="databaseView" type="button">資料庫</button>
+      <button class="tab" data-view="freeReportView" type="button">免費報告</button>
+      <button class="tab" data-view="upgradeView" type="button">升級</button>
+      <button class="tab paid-tab" data-view="paidReportView" type="button">完整報告</button>
+      <button class="tab paid-tab" data-view="simulationView" type="button">10年模擬</button>
+      <button class="tab paid-tab" data-view="calendarView" type="button">月曆</button>
+    </nav>
+
+    <main>
+      <section id="inputView" class="view is-active" aria-labelledby="inputTitle">
+        <div class="section-title">
+          <div>
+            <h2 id="inputTitle">財務資料</h2>
+            <p>所有計算都在本機瀏覽器完成。</p>
+          </div>
+          <button class="primary-button" id="generateBtn" type="button">產生報告</button>
+        </div>
+
+        <div class="input-grid">
+          <form class="panel" id="profileForm">
+            <h3>每月狀態</h3>
+            <div class="field-grid">
+              <label>月收入<input id="monthlyIncome" type="number" min="0" step="1000" /></label>
+              <label>固定支出<input id="fixedExpense" type="number" min="0" step="1000" /></label>
+              <label>保險支出<input id="insuranceExpense" type="number" min="0" step="500" /></label>
+              <label>貸款支出<input id="loanExpense" type="number" min="0" step="1000" /></label>
+              <label>現金存款<input id="cashSavings" type="number" min="0" step="10000" /></label>
+              <label>每月投資<input id="monthlyInvestment" type="number" min="0" step="1000" /></label>
+              <label>年齡<input id="age" type="number" min="18" max="80" step="1" /></label>
+              <label>退休月花費<input id="retirementMonthlyNeed" type="number" min="0" step="1000" /></label>
+            </div>
+          </form>
+
+          <section class="panel">
+            <div class="panel-head">
+              <h3>ETF 持股</h3>
+              <button class="secondary-button" id="addHoldingBtn" type="button">新增</button>
+            </div>
+            <div class="holding-editor" id="holdingEditor"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="databaseView" class="view" aria-labelledby="databaseTitle">
+        <div class="section-title">
+          <div>
+            <h2 id="databaseTitle">ETF 資料庫</h2>
+            <p id="databaseSummary">載入官方資料快照中。</p>
+          </div>
+          <button class="secondary-button" id="reloadDataBtn" type="button">重新讀取</button>
+        </div>
+        <div id="dataQuality" class="report-layout"></div>
+        <section class="panel">
+          <h3>官方價格折線</h3>
+          <canvas id="officialPriceChart" height="240" aria-label="官方 ETF 月內價格折線"></canvas>
+        </section>
+        <div id="priceSeriesTable" class="table-panel"></div>
+        <div id="etfDatabaseTable" class="table-panel"></div>
+      </section>
+
+      <section id="freeReportView" class="view" aria-labelledby="freeTitle">
+        <div class="section-title">
+          <div>
+            <h2 id="freeTitle">免費財務健檢</h2>
+            <p>免費版指出問題位置，完整處理步驟保留在升級後。</p>
+          </div>
+          <button class="primary-button" data-goto="upgradeView" type="button">查看方案</button>
+        </div>
+        <div id="freeReport" class="report-layout"></div>
+      </section>
+
+      <section id="upgradeView" class="view" aria-labelledby="upgradeTitle">
+        <div class="section-title">
+          <div>
+            <h2 id="upgradeTitle">升級方案</h2>
+            <p>目前為本地 mock purchase，不串真實金流。</p>
+          </div>
+        </div>
+        <div class="plans" id="plans"></div>
+      </section>
+
+      <section id="paidReportView" class="view" aria-labelledby="paidTitle">
+        <div class="section-title">
+          <div>
+            <h2 id="paidTitle">完整付費報告</h2>
+            <p>ETF、配息、壓力測試、配置建議與行動項目。</p>
+          </div>
+          <div class="button-row">
+            <button class="secondary-button" id="markdownBtn" type="button">下載 Markdown</button>
+            <button class="primary-button" id="printBtn" type="button">匯出 PDF</button>
+          </div>
+        </div>
+        <div id="paidReport" class="report-layout"></div>
+      </section>
+
+      <section id="simulationView" class="view" aria-labelledby="simulationTitle">
+        <div class="section-title">
+          <div>
+            <h2 id="simulationTitle">10 年資產模擬</h2>
+            <p>以目前投入、ETF 配息與保守年化假設估算。</p>
+          </div>
+        </div>
+        <section class="panel">
+          <canvas id="simulationChart" height="280" aria-label="10 年資產模擬折線圖"></canvas>
+        </section>
+        <div id="simulationTable" class="table-panel"></div>
+      </section>
+
+      <section id="calendarView" class="view" aria-labelledby="calendarTitle">
+        <div class="section-title">
+          <div>
+            <h2 id="calendarTitle">12 個月現金流月曆</h2>
+            <p>追蹤收入、支出、ETF 配息與可投資金額。</p>
+          </div>
+        </div>
+        <div id="cashflowCalendar" class="calendar-grid"></div>
+      </section>
+    </main>
+
+    <footer class="disclaimer">
+      本 App 僅供教育與財務規劃參考，不構成任何投資建議、買賣建議或保證報酬。所有投資皆有風險，使用者應自行判斷並承擔投資結果。
+    </footer>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

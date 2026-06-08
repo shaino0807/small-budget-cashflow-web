@@ -7,6 +7,8 @@
 相關資料來源或工作脈絡：
 
 - `C:\Users\shaino\Documents\理財產品組合包\obsidian_sync`
+- 本專案不得直接修改上述來源資料夾；需要使用其內容時，先複製到本專案工作目錄內再繼續。
+- 目前本地副本：`C:\Users\shaino\Documents\小資現金流APP或網頁\reference\obsidian_sync`
 
 ## 主要工作目錄
 

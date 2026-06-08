@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="72" fill="#0f766e"/>
+  <path d="M96 344h320" stroke="#ffffff" stroke-width="28" stroke-linecap="round"/>
+  <path d="M120 320c46-74 89-96 129-65 43 34 81 13 133-89" fill="none" stroke="#facc15" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="128" cy="320" r="18" fill="#ffffff"/>
+  <circle cx="256" cy="256" r="18" fill="#ffffff"/>
+  <circle cx="384" cy="166" r="18" fill="#ffffff"/>
+  <text x="256" y="430" text-anchor="middle" font-family="Arial, sans-serif" font-size="86" font-weight="800" fill="#ffffff">現</text>
+</svg>
