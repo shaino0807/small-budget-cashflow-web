@@ -25,3 +25,4 @@ dist/
 build/
 .cache/
 webapp/screenshots/
+webapp/reports/

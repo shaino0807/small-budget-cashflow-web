@@ -326,7 +326,10 @@ async function main() {
     db.metadata.sources.push(source);
   }
 
-  db.metadata.limitations = db.metadata.limitations.filter((item) => !item.includes("成分股權重、逐日 NAV"));
+  db.metadata.limitations = db.metadata.limitations.filter((item) =>
+    !item.includes("成分股權重、逐日 NAV")
+    && !item.includes("投信官方頁已接上可解析來源")
+  );
   db.metadata.limitations.push("投信官方頁已接上可解析來源：0056 與 006208 持股/NAV 可由官方頁解析，00878 NAV 可見但持股權重表格仍是動態頁，需取得正式 API 或下載檔。");
 
   fs.writeFileSync(dbPath, `${JSON.stringify(db, null, 2)}\n`, "utf8");
