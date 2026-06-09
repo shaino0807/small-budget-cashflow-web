@@ -111,6 +111,7 @@ function validateEtfDatabase(db) {
       if (ageDays > 3) warnings.push(`${etf.ticker} 績效資料日期 ${etf.performance.date} 距今 ${ageDays} 天，需確認是否最新`);
     }
     if (etf.qualityFlags?.includes("holdings_missing")) warnings.push(`${etf.ticker} 成分股權重尚未接上官方資料`);
+    if (etf.qualityFlags?.includes("holdings_partial")) warnings.push(`${etf.ticker} 成分股權重只接上官方可見列，尚非完整成分股資料`);
     if (etf.qualityFlags?.includes("price_series_missing")) warnings.push(`${etf.ticker} 價格折線尚未接上官方資料`);
     if (etf.qualityFlags?.includes("nav_series_missing")) warnings.push(`${etf.ticker} NAV/折溢價尚未接上官方資料`);
   }
@@ -721,6 +722,43 @@ function renderDatabaseView() {
       </tbody>
     </table>
   ` : `<section class="panel"><p>尚未載入官方價格折線。</p></section>`;
+
+  q("#holdingsTable").innerHTML = db?.holdings?.items?.length ? `
+    <table>
+      <thead><tr><th>資料日</th><th>ETF</th><th>成分股</th><th>名稱</th><th>權重</th><th>股數</th><th>來源</th></tr></thead>
+      <tbody>
+        ${db.holdings.items.slice(0, 80).map((row) => `
+          <tr>
+            <td>${row.asOfDate || "未揭露"}</td>
+            <td>${row.ticker}</td>
+            <td>${row.holdingTicker}</td>
+            <td>${row.holdingName}</td>
+            <td>${pct(row.weight)}</td>
+            <td>${row.shares === null ? "-" : number.format(row.shares || 0)}</td>
+            <td><a href="${row.sourceUrl}" target="_blank" rel="noreferrer">官方</a></td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  ` : `<section class="panel"><p>尚未載入官方成分股權重。</p></section>`;
+
+  q("#navSeriesTable").innerHTML = db?.navSeries?.items?.length ? `
+    <table>
+      <thead><tr><th>日期</th><th>ETF</th><th>收盤價</th><th>NAV</th><th>折溢價</th><th>來源</th></tr></thead>
+      <tbody>
+        ${db.navSeries.items.map((row) => `
+          <tr>
+            <td>${row.date}</td>
+            <td>${row.ticker}</td>
+            <td>${row.close === null ? "-" : row.close}</td>
+            <td>${row.nav}</td>
+            <td>${row.premiumDiscountPercent === null ? "-" : pct(row.premiumDiscountPercent, 2)}</td>
+            <td><a href="${row.sourceUrl}" target="_blank" rel="noreferrer">官方</a></td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  ` : `<section class="panel"><p>尚未載入官方 NAV/折溢價。</p></section>`;
 
   requestAnimationFrame(drawOfficialPriceChart);
 }

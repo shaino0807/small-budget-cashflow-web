@@ -24,3 +24,4 @@ package-lock.json
 dist/
 build/
 .cache/
+webapp/screenshots/

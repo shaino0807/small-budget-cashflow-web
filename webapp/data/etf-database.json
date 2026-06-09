@@ -40,12 +40,44 @@
         "name": "TWSE STOCK_DAY 各日成交資訊",
         "url": "https://www.twse.com.tw/exchangeReport/STOCK_DAY",
         "usage": "ETF 月內價格折線、開高低收、成交量與成交金額"
+      },
+      {
+        "id": "yuanta-holdings-ratio",
+        "name": "元大投信 ETF 持股比重",
+        "url": "https://www.yuantaetfs.com/product/detail/0056/ratio",
+        "usage": "0056 官方持股比重頁，可解析公開 HTML 可見列"
+      },
+      {
+        "id": "yuanta-pcf-nav",
+        "name": "元大投信 ETF 申購買回清單",
+        "url": "https://www.yuantaetfs.com/tradeInfo/pcf/0056",
+        "usage": "0056 官方 NAV/PCF 欄位"
+      },
+      {
+        "id": "cathay-fund-detail-nav",
+        "name": "國泰投信基金詳情淨值和市價",
+        "url": "https://www.cathaysite.com.tw/fund-details/ECN?tab=net_worth",
+        "usage": "00878 官方收盤價、淨值與日期"
+      },
+      {
+        "id": "cathay-etf-detail-holdings",
+        "name": "國泰投信 ETF 詳情持股權重",
+        "url": "https://www.cathaysite.com.tw/ETF/detail/ECN?lang=en_US",
+        "usage": "00878 官方持股權重頁；目前公開 HTML 未穩定吐出表格列"
+      },
+      {
+        "id": "fubon-fund-assets",
+        "name": "富邦投信 ETF 基金資產",
+        "url": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "usage": "006208 官方基金資產、完整可見持股列與 NAV"
       }
     ],
     "limitations": [
       "本快照只收錄目前 App 範例使用的 0056、00878、006208。",
-      "TWSE 官方月內價格折線已接上；成分股權重、逐日 NAV 與折溢價尚未取得官方可機器讀取來源，已以 qualityFlags 標示為缺資料。",
-      "ETF 資料可能有時間差，正式上線前應建立每日更新流程與人工抽查。"
+      "ETF 資料可能有時間差，正式上線前應建立每日更新流程與人工抽查。",
+      "投信官方頁已接上可解析來源：006208 持股與 NAV 完整可見，0056 持股為公開 HTML 可見列，00878 NAV 可見但持股權重表格仍是動態頁，需取得正式 API 或下載檔。",
+      "投信官方頁已接上可解析來源：006208 持股與 NAV 完整可見，0056 持股為公開 HTML 可見列，00878 NAV 可見但持股權重表格仍是動態頁，需取得正式 API 或下載檔。",
+      "投信官方頁已接上可解析來源：006208 持股與 NAV 完整可見，0056 持股為公開 HTML 可見列，00878 NAV 可見但持股權重表格仍是動態頁，需取得正式 API 或下載檔。"
     ]
   },
   "etfs": [
@@ -78,9 +110,9 @@
       "qualityFlags": [
         "official_master_loaded",
         "recent_distributions_loaded",
-        "holdings_missing",
-        "nav_series_missing",
-        "monthly_price_loaded"
+        "monthly_price_loaded",
+        "holdings_partial",
+        "nav_series_missing"
       ]
     },
     {
@@ -113,9 +145,9 @@
       "qualityFlags": [
         "official_master_loaded",
         "recent_distributions_loaded",
+        "monthly_price_loaded",
         "holdings_missing",
-        "nav_series_missing",
-        "monthly_price_loaded"
+        "nav_series_missing"
       ]
     },
     {
@@ -147,9 +179,9 @@
       "qualityFlags": [
         "official_master_loaded",
         "recent_distributions_loaded",
-        "holdings_missing",
-        "nav_series_missing",
-        "monthly_price_loaded"
+        "monthly_price_loaded",
+        "holdings_loaded",
+        "nav_series_loaded"
       ]
     }
   ],
@@ -228,14 +260,698 @@
     }
   ],
   "holdings": {
-    "status": "missing_official_machine_readable_source",
+    "status": "official_issuer_pages_loaded_with_gaps",
     "requiredFor": [
       "ETF 重疊度",
       "產業曝險",
       "前十大持股"
     ],
     "recommendedNextSource": "各投信 ETF 官網或正式資料供應商",
-    "items": []
+    "items": [
+      {
+        "ticker": "0056",
+        "asOfDate": null,
+        "holdingTicker": "2454",
+        "holdingName": "聯發科",
+        "weight": 8.8,
+        "shares": 14472317,
+        "sector": "",
+        "sourceUrl": "https://www.yuantaetfs.com/product/detail/0056/ratio",
+        "source": "yuanta-holdings-ratio",
+        "coverage": "partial_visible_rows"
+      },
+      {
+        "ticker": "0056",
+        "asOfDate": null,
+        "holdingTicker": "2303",
+        "holdingName": "聯電",
+        "weight": 7.4,
+        "shares": 409477479,
+        "sector": "",
+        "sourceUrl": "https://www.yuantaetfs.com/product/detail/0056/ratio",
+        "source": "yuanta-holdings-ratio",
+        "coverage": "partial_visible_rows"
+      },
+      {
+        "ticker": "0056",
+        "asOfDate": null,
+        "holdingTicker": "3711",
+        "holdingName": "日月光投控",
+        "weight": 5.07,
+        "shares": 62792838,
+        "sector": "",
+        "sourceUrl": "https://www.yuantaetfs.com/product/detail/0056/ratio",
+        "source": "yuanta-holdings-ratio",
+        "coverage": "partial_visible_rows"
+      },
+      {
+        "ticker": "0056",
+        "asOfDate": null,
+        "holdingTicker": "2891",
+        "holdingName": "中信金",
+        "weight": 4.35,
+        "shares": 444785987,
+        "sector": "",
+        "sourceUrl": "https://www.yuantaetfs.com/product/detail/0056/ratio",
+        "source": "yuanta-holdings-ratio",
+        "coverage": "partial_visible_rows"
+      },
+      {
+        "ticker": "0056",
+        "asOfDate": null,
+        "holdingTicker": "2357",
+        "holdingName": "華碩",
+        "weight": 4.31,
+        "shares": 34203744,
+        "sector": "",
+        "sourceUrl": "https://www.yuantaetfs.com/product/detail/0056/ratio",
+        "source": "yuanta-holdings-ratio",
+        "coverage": "partial_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "2330",
+        "holdingName": "台積電",
+        "weight": 58.3953,
+        "shares": 108864064,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "2454",
+        "holdingName": "聯發科",
+        "weight": 6.2394,
+        "shares": 6559042,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "2308",
+        "holdingName": "台達電",
+        "weight": 4.5419,
+        "shares": 8617581,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "2317",
+        "holdingName": "鴻海",
+        "weight": 3.421,
+        "shares": 54310679,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "3711",
+        "holdingName": "日月光投控",
+        "weight": 1.8437,
+        "shares": 14608577,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "2303",
+        "holdingName": "聯電",
+        "weight": 1.4678,
+        "shares": 51900891,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "2383",
+        "holdingName": "台光電",
+        "weight": 1.4237,
+        "shares": 1277000,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "3037",
+        "holdingName": "欣興",
+        "weight": 1.2649,
+        "shares": 5941000,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "2345",
+        "holdingName": "智邦",
+        "weight": 1.2488,
+        "shares": 2208000,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "2327",
+        "holdingName": "國巨*",
+        "weight": 1.2135,
+        "shares": 6913728,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "2891",
+        "holdingName": "中信金",
+        "weight": 1.2018,
+        "shares": 78626506,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "2382",
+        "holdingName": "廣達",
+        "weight": 1.034,
+        "shares": 11751301,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "2881",
+        "holdingName": "富邦金",
+        "weight": 1.0074,
+        "shares": 37158543,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "2360",
+        "holdingName": "致茂",
+        "weight": 0.9408,
+        "shares": 1643000,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "2882",
+        "holdingName": "國泰金",
+        "weight": 0.9257,
+        "shares": 41694200,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "3017",
+        "holdingName": "奇鋐",
+        "weight": 0.8673,
+        "shares": 1444000,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "2885",
+        "holdingName": "元大金",
+        "weight": 0.7031,
+        "shares": 48522456,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "2887",
+        "holdingName": "台新新光金",
+        "weight": 0.664,
+        "shares": 102385500,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "2357",
+        "holdingName": "華碩",
+        "weight": 0.6,
+        "shares": 3041657,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "6669",
+        "holdingName": "緯穎",
+        "weight": 0.5683,
+        "shares": 461000,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "2412",
+        "holdingName": "中華電",
+        "weight": 0.5501,
+        "shares": 16994072,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "2884",
+        "holdingName": "玉山金",
+        "weight": 0.5255,
+        "shares": 68345867,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "3231",
+        "holdingName": "緯創",
+        "weight": 0.5205,
+        "shares": 13623000,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "2886",
+        "holdingName": "兆豐金",
+        "weight": 0.5064,
+        "shares": 52595130,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "2344",
+        "holdingName": "華邦電",
+        "weight": 0.5001,
+        "shares": 13896000,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "1303",
+        "holdingName": "南亞",
+        "weight": 0.5,
+        "shares": 21941502,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "2368",
+        "holdingName": "金像電",
+        "weight": 0.4872,
+        "shares": 1533000,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "2301",
+        "holdingName": "光寶科",
+        "weight": 0.4417,
+        "shares": 8650000,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "2883",
+        "holdingName": "凱基金",
+        "weight": 0.439,
+        "shares": 70228545,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "2890",
+        "holdingName": "永豐金",
+        "weight": 0.4209,
+        "shares": 56453373,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "7769",
+        "holdingName": "鴻勁",
+        "weight": 0.4176,
+        "shares": 254000,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "2408",
+        "holdingName": "南亞科",
+        "weight": 0.3969,
+        "shares": 5002000,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "1216",
+        "holdingName": "統一",
+        "weight": 0.3736,
+        "shares": 21927765,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "2059",
+        "holdingName": "川湖",
+        "weight": 0.3654,
+        "shares": 253000,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "3008",
+        "holdingName": "大立光",
+        "weight": 0.354,
+        "shares": 428468,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "3661",
+        "holdingName": "世芯-KY",
+        "weight": 0.345,
+        "shares": 354000,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "3653",
+        "holdingName": "健策",
+        "weight": 0.3357,
+        "shares": 376000,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "2892",
+        "holdingName": "第一金",
+        "weight": 0.3286,
+        "shares": 48321640,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "2449",
+        "holdingName": "京元電子",
+        "weight": 0.3266,
+        "shares": 4844000,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "2880",
+        "holdingName": "華南金",
+        "weight": 0.3243,
+        "shares": 41428046,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "2603",
+        "holdingName": "長榮",
+        "weight": 0.2533,
+        "shares": 4839000,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "5880",
+        "holdingName": "合庫金",
+        "weight": 0.251,
+        "shares": 46599109,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "2395",
+        "holdingName": "研華",
+        "weight": 0.2251,
+        "shares": 2045538,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "2002",
+        "holdingName": "中鋼",
+        "weight": 0.2169,
+        "shares": 49774307,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "1301",
+        "holdingName": "台塑",
+        "weight": 0.2002,
+        "shares": 18683117,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "4904",
+        "holdingName": "遠傳",
+        "weight": 0.1864,
+        "shares": 7899506,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "3045",
+        "holdingName": "台灣大",
+        "weight": 0.1691,
+        "shares": 6294368,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "2207",
+        "holdingName": "和泰車",
+        "weight": 0.1378,
+        "shares": 1247044,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "6919",
+        "holdingName": "康霈*",
+        "weight": 0.0943,
+        "shares": 4410000,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      },
+      {
+        "ticker": "006208",
+        "asOfDate": "2026-06-08",
+        "holdingTicker": "6505",
+        "holdingName": "台塑化",
+        "weight": 0.0651,
+        "shares": 5302203,
+        "sector": "",
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets",
+        "coverage": "full_visible_rows"
+      }
+    ],
+    "sourceAttempts": [
+      {
+        "ticker": "0056",
+        "kind": "holdings",
+        "status": "loaded",
+        "rows": 5,
+        "url": "https://www.yuantaetfs.com/product/detail/0056/ratio"
+      },
+      {
+        "ticker": "00878",
+        "kind": "holdings",
+        "status": "no_visible_rows",
+        "rows": 0,
+        "url": "https://www.cathaysite.com.tw/ETF/detail/ECN?lang=en_US"
+      },
+      {
+        "ticker": "006208",
+        "kind": "holdings",
+        "status": "loaded",
+        "rows": 50,
+        "url": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208"
+      }
+    ]
   },
   "priceSeries": {
     "status": "official_monthly_price_loaded",
@@ -504,13 +1220,46 @@
     "source": "twse-stock-day"
   },
   "navSeries": {
-    "status": "missing_official_machine_readable_source",
+    "status": "official_issuer_pages_loaded",
     "requiredFor": [
       "NAV 折線",
       "折溢價",
       "折溢價風險提醒"
     ],
     "recommendedNextSource": "投信 ETF 即時淨值 JSON、TWSE ETF 申贖資訊及即時淨值揭露專區或正式資料供應商",
-    "items": []
+    "items": [
+      {
+        "ticker": "006208",
+        "date": "2026-06-08",
+        "close": 233.85,
+        "nav": 233.92,
+        "premiumDiscountPercent": -0.0299,
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets-nav"
+      }
+    ],
+    "sourceAttempts": [
+      {
+        "ticker": "0056",
+        "kind": "nav",
+        "status": "no_visible_nav",
+        "rows": 0,
+        "url": "https://www.yuantaetfs.com/tradeInfo/pcf/0056"
+      },
+      {
+        "ticker": "00878",
+        "kind": "nav",
+        "status": "no_visible_nav",
+        "rows": 0,
+        "url": "https://www.cathaysite.com.tw/fund-details/ECN?tab=net_worth"
+      },
+      {
+        "ticker": "006208",
+        "kind": "nav",
+        "status": "loaded",
+        "rows": 1,
+        "url": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208"
+      }
+    ]
   }
 }

@@ -56,6 +56,11 @@ button {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.brand > div {
   min-width: 0;
 }
 
@@ -81,6 +86,9 @@ p {
 h1 {
   font-size: 20px;
   letter-spacing: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 h2 {
@@ -543,7 +551,24 @@ td:first-child {
 
 @media (max-width: 640px) {
   .app-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: flex-start;
+    gap: 10px;
+    padding-inline: 12px;
+    padding-right: 104px;
+  }
+
+  .header-actions {
+    position: fixed;
+    top: 14px;
+    right: 12px;
+    z-index: 21;
+  }
+
+  .icon-button {
+    width: 38px;
+    min-height: 38px;
   }
 
   .brand-mark {

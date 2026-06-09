@@ -32,6 +32,7 @@ for (const etf of db.etfs) {
   const ageDays = Math.round((today - perfDate) / 86400000);
   warn(ageDays <= 3, `${etf.ticker} 績效資料日期 ${etf.performance?.date} 距今 ${ageDays} 天，需確認是否最新`);
   warn(!etf.qualityFlags?.includes("holdings_missing"), `${etf.ticker} 成分股權重尚未接上官方資料`);
+  warn(!etf.qualityFlags?.includes("holdings_partial"), `${etf.ticker} 成分股權重只接上官方可見列，尚非完整成分股資料`);
   warn(!etf.qualityFlags?.includes("price_series_missing"), `${etf.ticker} 價格折線尚未接上官方資料`);
   warn(!etf.qualityFlags?.includes("nav_series_missing"), `${etf.ticker} NAV/折溢價尚未接上官方資料`);
 }
