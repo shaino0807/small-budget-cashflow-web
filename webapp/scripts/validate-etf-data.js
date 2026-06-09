@@ -17,6 +17,9 @@ function warn(condition, message) {
 
 assert(Array.isArray(db.etfs) && db.etfs.length > 0, "ETF 主檔不可為空");
 assert(Array.isArray(db.distributions), "配息資料必須是陣列");
+assert(Array.isArray(db.holdings?.items), "ETF 成分股資料必須是陣列");
+assert(Array.isArray(db.navSeries?.items), "NAV/折溢價資料必須是陣列");
+assert(Array.isArray(db.priceSeries?.items), "價格資料必須是陣列");
 
 const tickers = new Set();
 for (const etf of db.etfs) {
@@ -37,10 +40,32 @@ for (const etf of db.etfs) {
   warn(!etf.qualityFlags?.includes("nav_series_missing"), `${etf.ticker} NAV/折溢價尚未接上官方資料`);
 }
 
+const stockTickers = new Set();
+if (db.stocks) {
+  assert(Array.isArray(db.stocks.items), "股票主檔必須是陣列");
+  for (const stock of db.stocks.items || []) {
+    assert(stock.ticker, "股票主檔缺 ticker");
+    assert(!stockTickers.has(stock.ticker), `股票 ticker 重複：${stock.ticker}`);
+    stockTickers.add(stock.ticker);
+    assert(stock.name || stock.shortName, `${stock.ticker} 缺股票名稱`);
+    warn(!stock.qualityFlags?.includes("derived_from_etf_holdings"), `${stock.ticker} 股票主檔為 ETF 成分推導，尚未接上官方股票主檔`);
+  }
+} else {
+  warn(false, "股票主檔尚未建立，無法支援直接股票與 ETF 底層股票重疊度");
+}
+
 for (const row of db.distributions) {
   assert(tickers.has(row.ticker), `配息資料 ticker 不在主檔：${row.ticker}`);
   assert(row.payDate, `${row.ticker} 配息資料缺發放日`);
   assert(Number(row.amountPerUnit) >= 0, `${row.ticker} 配息金額不可小於 0`);
+}
+
+for (const row of db.holdings.items || []) {
+  assert(tickers.has(row.ticker), `成分股 ETF ticker 不在主檔：${row.ticker}`);
+  assert(row.holdingTicker, `${row.ticker} 成分股缺股票代號`);
+  assert(row.holdingName, `${row.ticker}/${row.holdingTicker} 成分股缺名稱`);
+  assert(Number(row.weight) >= 0, `${row.ticker}/${row.holdingTicker} 權重不可小於 0`);
+  warn(!db.stocks || stockTickers.has(row.holdingTicker), `${row.ticker}/${row.holdingTicker} 未對應股票主檔`);
 }
 
 const result = {
@@ -51,6 +76,7 @@ const result = {
     etfs: db.etfs.length,
     distributions: db.distributions.length,
     holdings: db.holdings.items.length,
+    stocks: db.stocks?.items?.length || 0,
     priceSeries: db.priceSeries.items.length,
     navSeries: db.navSeries.items.length
   }

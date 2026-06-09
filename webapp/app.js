@@ -23,14 +23,14 @@ const sampleState = {
 
 let state = loadState();
 let activeView = "inputView";
-let latestReport = buildReport();
 let etfDatabase = null;
 let etfDataQuality = {
   status: "loading",
   errors: [],
   warnings: ["ETF 官方資料庫尚未載入"],
-  counts: { etfs: 0, distributions: 0, holdings: 0, priceSeries: 0, navSeries: 0 }
+  counts: { etfs: 0, distributions: 0, holdings: 0, stocks: 0, priceSeries: 0, navSeries: 0 }
 };
+let latestReport = buildReport();
 
 const profileFields = [
   "monthlyIncome",
@@ -80,8 +80,28 @@ async function loadEtfDatabase() {
       status: "failed",
       errors: [`ETF 資料庫載入失敗：${error.message}`],
       warnings: ["目前會退回本機範例資料，正式對外使用前必須修正。"],
-      counts: { etfs: 0, distributions: 0, holdings: 0, priceSeries: 0, navSeries: 0 }
+      counts: { etfs: 0, distributions: 0, holdings: 0, stocks: 0, priceSeries: 0, navSeries: 0 }
     };
+  }
+}
+
+async function refreshDatabaseFromServer(reason = "open") {
+  try {
+    const status = await fetch("./api/database-status", { cache: "no-store" });
+    if (!status.ok) return false;
+    if (reason === "manual") showToast("正在更新官方資料庫");
+    const response = await fetch(`./api/update-database?reason=${encodeURIComponent(reason)}`, { cache: "no-store" });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const result = await response.json();
+    if (!result.ok) throw new Error(result.error || "更新失敗");
+    await loadEtfDatabase();
+    renderHoldings();
+    refreshReports();
+    showToast("官方資料庫已更新");
+    return true;
+  } catch (error) {
+    if (reason === "manual") showToast(`更新失敗，沿用最後快照：${error.message}`);
+    return false;
   }
 }
 
@@ -122,6 +142,15 @@ function validateEtfDatabase(db) {
     if (Number(row.amountPerUnit) < 0) errors.push(`${row.ticker} 配息金額不可小於 0`);
   }
 
+  if (db?.stocks && !Array.isArray(db.stocks.items)) {
+    errors.push("股票主檔必須是陣列");
+  }
+  for (const stock of db?.stocks?.items || []) {
+    if (!stock.ticker) errors.push("股票主檔缺 ticker");
+    if (!stock.name && !stock.shortName) warnings.push(`${stock.ticker} 缺股票名稱`);
+    if (stock.qualityFlags?.includes("derived_from_etf_holdings")) warnings.push(`${stock.ticker} 股票主檔由 ETF 成分推導，尚未接上官方主檔`);
+  }
+
   return {
     status: errors.length ? "failed" : warnings.length ? "passed_with_warnings" : "passed",
     errors,
@@ -130,6 +159,7 @@ function validateEtfDatabase(db) {
       etfs: db?.etfs?.length || 0,
       distributions: db?.distributions?.length || 0,
       holdings: db?.holdings?.items?.length || 0,
+      stocks: db?.stocks?.items?.length || 0,
       priceSeries: db?.priceSeries?.items?.length || 0,
       navSeries: db?.navSeries?.items?.length || 0
     }
@@ -140,10 +170,25 @@ function findEtf(ticker) {
   return etfDatabase?.etfs?.find((item) => item.ticker === String(ticker || "").trim());
 }
 
+function findStock(ticker) {
+  return etfDatabase?.stocks?.items?.find((item) => item.ticker === String(ticker || "").trim());
+}
+
 function enrichHoldingsFromDatabase() {
   state.holdings = state.holdings.map((holding) => {
     const etf = findEtf(holding.ticker);
-    if (!etf) return holding;
+    const stock = findStock(holding.ticker);
+    if (!etf && !stock) return holding;
+    if (stock && !etf) {
+      return {
+        ...holding,
+        name: stock.shortName || stock.name,
+        type: "個股",
+        sector: stock.industry || holding.sector,
+        dataSource: stock.source || "stock_master",
+        dataDate: stock.latestPrice?.date || holding.dataDate
+      };
+    }
     return {
       ...holding,
       name: etf.shortName,
@@ -236,18 +281,111 @@ function highDividendDependency(holdings) {
   return highDividend / total * 100;
 }
 
+function buildStockExposure(holdings) {
+  const total = totalInvested(holdings);
+  const rowsByTicker = new Map();
+  const unresolved = [];
+  let coveredAmount = 0;
+
+  function addExposure(ticker, name, sector, amount, sourceTicker, sourceName) {
+    if (!ticker || amount <= 0) return;
+    const stock = findStock(ticker);
+    const key = String(ticker).trim();
+    const current = rowsByTicker.get(key) || {
+      ticker: key,
+      name: stock?.shortName || stock?.name || name || key,
+      sector: stock?.industry || sector || "未分類",
+      amount: 0,
+      share: 0,
+      sources: []
+    };
+    current.amount += amount;
+    current.sources.push({ ticker: sourceTicker, name: sourceName, amount });
+    rowsByTicker.set(key, current);
+  }
+
+  holdings.forEach((holding) => {
+    const amount = Number(holding.amount || 0);
+    if (!amount) return;
+    const ticker = String(holding.ticker || "").trim();
+    const etf = findEtf(ticker);
+    const stock = findStock(ticker);
+
+    if (etf) {
+      const constituents = (etfDatabase?.holdings?.items || []).filter((row) => row.ticker === ticker && Number(row.weight) > 0);
+      const weightSum = constituents.reduce((sum, row) => sum + Number(row.weight || 0), 0);
+      constituents.forEach((row) => {
+        const exposureAmount = amount * Number(row.weight || 0) / 100;
+        coveredAmount += exposureAmount;
+        addExposure(row.holdingTicker, row.holdingName, row.sector, exposureAmount, ticker, etf.shortName);
+      });
+      if (weightSum < 99) {
+        unresolved.push({
+          ticker,
+          name: etf.shortName,
+          reason: constituents.length ? `ETF 成分股只覆蓋 ${pct(weightSum)}` : "ETF 成分股尚未接上官方資料",
+          amount: amount * Math.max(0, 100 - weightSum) / 100
+        });
+      }
+      return;
+    }
+
+    coveredAmount += amount;
+    addExposure(ticker, stock?.shortName || stock?.name || holding.name, stock?.industry || holding.sector, amount, ticker, holding.name);
+    if (!stock) {
+      unresolved.push({
+        ticker,
+        name: holding.name || ticker,
+        reason: "直接股票尚未對應官方股票主檔",
+        amount
+      });
+    }
+  });
+
+  const rows = [...rowsByTicker.values()]
+    .map((row) => ({ ...row, share: total ? row.amount / total * 100 : 0 }))
+    .sort((a, b) => b.amount - a.amount);
+
+  const bySector = rows.reduce((acc, row) => {
+    acc[row.sector] = (acc[row.sector] || 0) + row.amount;
+    return acc;
+  }, {});
+
+  return {
+    rows,
+    bySector,
+    topStock: rows[0] || { ticker: "無", name: "無", sector: "無", amount: 0, share: 0, sources: [] },
+    repeatedStocks: rows.filter((row) => new Set(row.sources.map((source) => source.ticker)).size > 1),
+    unresolved,
+    coverageRate: total ? clamp(coveredAmount / total * 100, 0, 100) : 0
+  };
+}
+
 function overlapReport(holdings) {
   const total = totalInvested(holdings);
   const byType = groupAmount(holdings, "type");
-  const bySector = groupAmount(holdings, "sector");
+  const stockExposure = buildStockExposure(holdings);
+  const bySector = Object.keys(stockExposure.bySector).length ? stockExposure.bySector : groupAmount(holdings, "sector");
   const topType = topShare(byType, total);
   const topSector = topShare(bySector, total);
-  const score = clamp(Math.max(topType.share, topSector.share) + Math.max(0, holdings.length - new Set(holdings.map((x) => x.type)).size) * 8, 0, 100);
+  const topStock = {
+    name: stockExposure.topStock.name,
+    ticker: stockExposure.topStock.ticker,
+    amount: stockExposure.topStock.amount,
+    share: stockExposure.topStock.share
+  };
+  const repeatedPenalty = Math.min(18, stockExposure.repeatedStocks.length * 4);
+  const coveragePenalty = Math.max(0, 100 - stockExposure.coverageRate) * 0.18;
+  const score = clamp(Math.max(topStock.share, topSector.share, topType.share) + repeatedPenalty + coveragePenalty, 0, 100);
   return {
     score,
     topType,
     topSector,
-    message: score >= 70 ? "持股集中度偏高，容易買到不同代號但相似邏輯的 ETF。" : "目前分散度尚可，但仍需定期檢查成分與產業曝險。"
+    topStock,
+    stockExposure,
+    message: score >= 70
+      ? "底層股票或產業集中度偏高，可能同時透過 ETF 與直接股票買到相同曝險。"
+      : "目前底層股票分散度尚可，但仍需補齊 ETF 成分股資料並定期檢查。"
   };
 }
 
@@ -349,7 +487,7 @@ function buildRisks(profile, holdings, breakdown) {
     risks.push({ level: "medium", title: "高股息依賴偏高", body: `高股息 ETF 占比約 ${pct(highRatio)}，配息下修時現金流容易受影響。` });
   }
   if (overlap.score > 65) {
-    risks.push({ level: "medium", title: "ETF 曝險重疊", body: `${overlap.topType.name} 或 ${overlap.topSector.name} 集中度偏高。` });
+    risks.push({ level: "medium", title: "底層股票曝險重疊", body: `${overlap.topStock.name} 或 ${overlap.topSector.name} 集中度偏高，可能同時來自 ETF 與直接股票。` });
   }
   if (breakdown.retirement < 55) {
     risks.push({ level: "medium", title: "退休準備不足", body: "目前投入速度與退休月花費目標之間仍有落差。" });
@@ -393,7 +531,7 @@ function personalizedActions(report) {
   const actions = [];
   if (report.breakdown.emergency < 80) actions.push("把第一優先放在補足 6 個月緊急預備金。");
   if (report.highDividendRatio > 55) actions.push("未來 3 個月新增資金先避開高股息 ETF，降低配息依賴。");
-  if (report.overlap.score > 65) actions.push("檢查 ETF 成分與產業，刪掉功能相近但費用較高的部位。");
+  if (report.overlap.score > 65) actions.push("檢查直接股票與 ETF 底層成分，優先處理重複買到的前幾大股票曝險。");
   if (report.stress.cut50 < 0) actions.push("用 50% 配息下修情境重排月支出，不要把配息視為固定薪水。");
   if (actions.length < 3) actions.push("每月固定重算一次現金流月曆，確認投資額沒有壓縮生活安全墊。");
   return actions.slice(0, 4);
@@ -446,20 +584,25 @@ function renderHoldings() {
   root.innerHTML = "";
   state.holdings.forEach((holding, index) => {
     const officialEtf = findEtf(holding.ticker);
+    const officialStock = findStock(holding.ticker);
     const row = document.createElement("div");
     row.className = "holding-row";
     row.innerHTML = `
       <label>代號<input data-field="ticker" value="${escapeHtml(holding.ticker)}" /></label>
-      <label>名稱<input data-field="name" value="${escapeHtml(officialEtf?.shortName || holding.name)}" /></label>
+      <label>名稱<input data-field="name" value="${escapeHtml(officialEtf?.shortName || officialStock?.shortName || holding.name)}" /></label>
       <label>類型
         <select data-field="type">
-          ${["市值型", "高股息", "債券", "海外", "主題"].map((type) => `<option ${holding.type === type ? "selected" : ""}>${type}</option>`).join("")}
+          ${["市值型", "高股息", "個股", "債券", "海外", "主題"].map((type) => `<option ${holding.type === type ? "selected" : ""}>${type}</option>`).join("")}
         </select>
       </label>
       <label>金額<input data-field="amount" type="number" min="0" step="1000" value="${holding.amount}" /></label>
       <label>殖利率<input data-field="dividendYield" type="number" min="0" step="0.1" value="${holding.dividendYield}" /></label>
       <button class="icon-button" data-remove="${index}" type="button" title="刪除" aria-label="刪除">×</button>
-      ${officialEtf ? `<small class="data-note">${officialEtf.issuer} · 資料日 ${officialEtf.performance.date}</small>` : `<small class="data-note warning">尚未對應官方 ETF 主檔</small>`}
+      ${officialEtf
+        ? `<small class="data-note">ETF：${officialEtf.issuer} · 資料日 ${officialEtf.performance.date}</small>`
+        : officialStock
+          ? `<small class="data-note">股票：${officialStock.market} · ${officialStock.industry || "產業未揭露"} · ${officialStock.latestPrice?.date || "無行情日"}</small>`
+          : `<small class="data-note warning">尚未對應官方 ETF 或股票主檔</small>`}
     `;
     root.append(row);
   });
@@ -490,6 +633,7 @@ function defaultSector(type) {
   return {
     "市值型": "半導體",
     "高股息": "金融",
+    "個股": "未分類",
     "債券": "固定收益",
     "海外": "全球",
     "主題": "科技"
@@ -529,7 +673,7 @@ function scoreHtml(report) {
       </div>
       <div class="metrics">
         <div class="metric"><span>每月可用現金流</span><strong>${formatMoney(investableCashflow(report.profile))}</strong></div>
-        <div class="metric"><span>ETF 年配息估算</span><strong>${formatMoney(annualDividend(report.holdings))}</strong></div>
+        <div class="metric"><span>投資年配息估算</span><strong>${formatMoney(annualDividend(report.holdings))}</strong></div>
         <div class="metric"><span>高股息依賴</span><strong>${pct(report.highDividendRatio)}</strong></div>
         <div class="metric"><span>退休缺口</span><strong>${formatMoney(report.gap.gap)}</strong></div>
       </div>
@@ -584,12 +728,60 @@ function dataSourceHtml() {
     <section class="panel">
       <h3>資料來源狀態</h3>
       <div class="metrics">
-        <div class="metric"><span>主檔</span><strong>${quality.counts.etfs ? "已接" : "未接"}</strong></div>
+        <div class="metric"><span>ETF 主檔</span><strong>${quality.counts.etfs ? "已接" : "未接"}</strong></div>
+        <div class="metric"><span>股票主檔</span><strong>${quality.counts.stocks ? "已接" : "未接"}</strong></div>
         <div class="metric"><span>配息</span><strong>${quality.counts.distributions ? "已接" : "未接"}</strong></div>
         <div class="metric"><span>資料日</span><strong>${db?.metadata?.officialPerformanceDate || "無"}</strong></div>
         <div class="metric"><span>狀態</span><strong>${quality.status === "failed" ? "錯誤" : quality.warnings.length ? "有警示" : "通過"}</strong></div>
       </div>
       ${missing.length ? `<ul class="feature-list">${missing.map((item) => `<li>${item}</li>`).join("")}</ul>` : `<p>目前 ETF 主檔與配息快照已可使用。</p>`}
+    </section>
+  `;
+}
+
+function stockExposureHtml(report) {
+  const exposure = report.overlap.stockExposure;
+  return `
+    <section class="panel">
+      <h3>整體股票重疊度</h3>
+      <div class="metrics">
+        <div class="metric"><span>重疊風險</span><strong>${Math.round(report.overlap.score)}</strong></div>
+        <div class="metric"><span>最大股票曝險</span><strong>${report.overlap.topStock.ticker}</strong></div>
+        <div class="metric"><span>最大占比</span><strong>${pct(report.overlap.topStock.share)}</strong></div>
+        <div class="metric"><span>穿透覆蓋率</span><strong>${pct(exposure.coverageRate)}</strong></div>
+      </div>
+      <p>${report.overlap.message}</p>
+      <div class="inline-table">
+        <div class="table-title">
+          <h3>前十大底層股票</h3>
+          <span>${exposure.rows.length} 檔</span>
+        </div>
+        <table>
+          <thead><tr><th>股票</th><th>名稱</th><th>產業</th><th>金額</th><th>占比</th><th>來源數</th></tr></thead>
+          <tbody>
+            ${exposure.rows.slice(0, 10).map((row) => `
+              <tr>
+                <td>${row.ticker}</td>
+                <td>${row.name}</td>
+                <td>${row.sector}</td>
+                <td>${formatMoney(row.amount)}</td>
+                <td>${pct(row.share)}</td>
+                <td>${new Set(row.sources.map((source) => source.ticker)).size}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+      ${exposure.unresolved.length ? `
+        <div class="risk-list">
+          ${exposure.unresolved.slice(0, 4).map((item) => `
+            <article class="risk-card">
+              <h4>${item.ticker} ${item.name}</h4>
+              <p>${item.reason}，未穿透金額約 ${formatMoney(item.amount)}。</p>
+            </article>
+          `).join("")}
+        </div>
+      ` : ""}
     </section>
   `;
 }
@@ -617,7 +809,7 @@ function renderFreeReport() {
 function renderUpgrade() {
   const plans = [
     { name: "免費版", price: "NT$0", action: "保留免費版", key: "free", features: ["財務體質分數", "分數拆解摘要", "3 大風險提示"] },
-    { name: "完整報告版", price: "NT$299", action: state.paidUnlocked ? "已解鎖" : "Mock 解鎖", key: "paid", highlight: true, features: ["ETF 重疊度分析", "高股息依賴與壓力測試", "10 年模擬與 12 個月月曆", "PDF/列印匯出"] },
+    { name: "完整報告版", price: "NT$299", action: state.paidUnlocked ? "已解鎖" : "Mock 解鎖", key: "paid", highlight: true, features: ["整體股票重疊度分析", "高股息依賴與壓力測試", "10 年模擬與 12 個月月曆", "PDF/列印匯出"] },
     { name: "一對一健檢版", price: "NT$2,980", action: state.consultingUnlocked ? "已登記" : "Mock 登記", key: "consulting", features: ["完整報告版內容", "預約諮詢 CTA", "個人化調整建議整理"] }
   ];
   q("#plans").innerHTML = plans.map((plan) => `
@@ -670,6 +862,7 @@ function renderDatabaseView() {
       <span class="badge">${statusText}</span>
       <div class="metrics">
         <div class="metric"><span>ETF 主檔</span><strong>${quality.counts.etfs}</strong></div>
+        <div class="metric"><span>股票主檔</span><strong>${quality.counts.stocks}</strong></div>
         <div class="metric"><span>配息資料</span><strong>${quality.counts.distributions}</strong></div>
         <div class="metric"><span>成分股</span><strong>${quality.counts.holdings}</strong></div>
         <div class="metric"><span>NAV/價格</span><strong>${quality.counts.navSeries + quality.counts.priceSeries}</strong></div>
@@ -686,6 +879,10 @@ function renderDatabaseView() {
   `;
 
   q("#etfDatabaseTable").innerHTML = db ? `
+    <div class="table-title">
+      <h3>ETF 主檔</h3>
+      <span>${db.etfs.length} 檔</span>
+    </div>
     <table>
       <thead><tr><th>代號</th><th>名稱</th><th>發行公司</th><th>追蹤指數</th><th>資產規模</th><th>資料日</th><th>來源</th></tr></thead>
       <tbody>
@@ -705,6 +902,10 @@ function renderDatabaseView() {
   ` : `<p>ETF 資料庫尚未載入。</p>`;
 
   q("#priceSeriesTable").innerHTML = db?.priceSeries?.items?.length ? `
+    <div class="table-title">
+      <h3>官方價格明細</h3>
+      <span>${db.priceSeries.items.length} 筆</span>
+    </div>
     <table>
       <thead><tr><th>日期</th><th>代號</th><th>開盤</th><th>最高</th><th>最低</th><th>收盤</th><th>成交股數</th></tr></thead>
       <tbody>
@@ -724,6 +925,10 @@ function renderDatabaseView() {
   ` : `<section class="panel"><p>尚未載入官方價格折線。</p></section>`;
 
   q("#holdingsTable").innerHTML = db?.holdings?.items?.length ? `
+    <div class="table-title">
+      <h3>官方成分股</h3>
+      <span>${db.holdings.items.length} 筆</span>
+    </div>
     <table>
       <thead><tr><th>資料日</th><th>ETF</th><th>成分股</th><th>名稱</th><th>權重</th><th>股數</th><th>來源</th></tr></thead>
       <tbody>
@@ -743,6 +948,10 @@ function renderDatabaseView() {
   ` : `<section class="panel"><p>尚未載入官方成分股權重。</p></section>`;
 
   q("#navSeriesTable").innerHTML = db?.navSeries?.items?.length ? `
+    <div class="table-title">
+      <h3>NAV/折溢價</h3>
+      <span>${db.navSeries.items.length} 筆</span>
+    </div>
     <table>
       <thead><tr><th>日期</th><th>ETF</th><th>收盤價</th><th>NAV</th><th>折溢價</th><th>來源</th></tr></thead>
       <tbody>
@@ -843,16 +1052,7 @@ function renderPaidReport() {
       ${breakdownHtml(report)}
       ${risksHtml(report, true)}
       ${dataSourceHtml()}
-      <section class="panel">
-        <h3>ETF 重疊度分析</h3>
-        <div class="metrics">
-          <div class="metric"><span>重疊風險</span><strong>${Math.round(report.overlap.score)}</strong></div>
-          <div class="metric"><span>主要類型</span><strong>${report.overlap.topType.name}</strong></div>
-          <div class="metric"><span>主要產業</span><strong>${report.overlap.topSector.name}</strong></div>
-          <div class="metric"><span>高股息占比</span><strong>${pct(report.highDividendRatio)}</strong></div>
-        </div>
-        <p>${report.overlap.message}</p>
-      </section>
+      ${stockExposureHtml(report)}
       <section class="panel">
         <h3>配息壓力測試</h3>
         <div class="metrics">
@@ -1007,17 +1207,19 @@ function reportMarkdown() {
     `- 財務體質分數：${report.score}`,
     `- 狀態：${report.status}`,
     `- 每月可用現金流：${formatMoney(investableCashflow(report.profile))}`,
-    `- ETF 年配息估算：${formatMoney(annualDividend(report.holdings))}`,
+    `- 投資年配息估算：${formatMoney(annualDividend(report.holdings))}`,
     `- 高股息依賴：${pct(report.highDividendRatio)}`,
     `- 退休缺口：${formatMoney(report.gap.gap)}`,
     "",
     "## 3 大風險",
     ...report.risks.map((risk) => `- ${risk.title}：${risk.body}`),
     "",
-    "## ETF 重疊度分析",
+    "## 整體股票重疊度分析",
     `- 重疊風險：${Math.round(report.overlap.score)}`,
-    `- 主要類型：${report.overlap.topType.name}`,
+    `- 最大股票曝險：${report.overlap.topStock.ticker} ${report.overlap.topStock.name || ""}`,
+    `- 最大股票占比：${pct(report.overlap.topStock.share)}`,
     `- 主要產業：${report.overlap.topSector.name}`,
+    `- 穿透覆蓋率：${pct(report.overlap.stockExposure.coverageRate)}`,
     `- 說明：${report.overlap.message}`,
     "",
     "## 配息壓力測試",
@@ -1064,15 +1266,18 @@ function bindEvents() {
     showToast("已套用範例資料");
   });
   q("#addHoldingBtn").addEventListener("click", () => {
-    state.holdings.push({ ticker: "", name: "新 ETF", type: "市值型", amount: 0, dividendYield: 3, expenseRatio: 0.2, sector: "半導體" });
+    state.holdings.push({ ticker: "", name: "新標的", type: "個股", amount: 0, dividendYield: 3, expenseRatio: 0.2, sector: "未分類" });
     renderHoldings();
     refreshReports();
   });
   q("#reloadDataBtn").addEventListener("click", async () => {
-    await loadEtfDatabase();
-    renderHoldings();
-    refreshReports();
-    showToast("ETF 資料庫已重新讀取");
+    const updated = await refreshDatabaseFromServer("manual");
+    if (!updated) {
+      await loadEtfDatabase();
+      renderHoldings();
+      refreshReports();
+      showToast("ETF 資料庫已重新讀取");
+    }
   });
   q("#printBtn").addEventListener("click", () => {
     if (!state.paidUnlocked) return goTo("upgradeView");
@@ -1101,6 +1306,7 @@ async function init() {
   bindEvents();
   refreshReports();
   registerServiceWorker();
+  refreshDatabaseFromServer("open");
 }
 
 init();

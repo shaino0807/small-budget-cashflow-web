@@ -463,6 +463,34 @@ a {
   overflow-x: auto;
 }
 
+.table-title {
+  position: sticky;
+  left: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  margin-bottom: 12px;
+}
+
+.table-title h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.table-title span {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.inline-table {
+  margin-top: 14px;
+  overflow-x: auto;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
