@@ -5,6 +5,7 @@ const path = require("path");
 const dbPath = path.join(__dirname, "..", "data", "etf-database.json");
 const twseCompanyUrl = "https://openapi.twse.com.tw/v1/opendata/t187ap03_L";
 const twseDailyUrl = "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL";
+const tpexDailyUrl = "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes";
 
 function getJson(url) {
   return new Promise((resolve, reject) => {
@@ -46,6 +47,16 @@ function toNumber(value) {
 
 function normalizeTicker(value) {
   return String(value || "").trim();
+}
+
+function rocCompactToIso(value) {
+  const match = String(value || "").trim().match(/^(\d{3})(\d{2})(\d{2})$/);
+  if (!match) return null;
+  return `${Number(match[1]) + 1911}-${match[2]}-${match[3]}`;
+}
+
+function isFourDigitStock(ticker) {
+  return /^\d{4}$/.test(ticker);
 }
 
 function stockFromHolding(row) {
@@ -123,6 +134,46 @@ async function main() {
     sourceAttempts.push({ source: "twse-stock-day-all", status: "failed", error: error.message, url: twseDailyUrl });
   }
 
+  try {
+    const rows = await getJson(tpexDailyUrl);
+    if (!Array.isArray(rows)) throw new Error("TPEx daily response is not an array");
+    let stockRows = 0;
+    rows.forEach((row) => {
+      const ticker = normalizeTicker(getField(row, ["SecuritiesCompanyCode", "Code", "代號"]));
+      if (!isFourDigitStock(ticker)) return;
+      stockRows += 1;
+      const date = rocCompactToIso(getField(row, ["Date", "資料日期"])) || db.metadata?.snapshotDate || new Date().toISOString().slice(0, 10);
+      const existing = byTicker.get(ticker);
+      byTicker.set(ticker, {
+        ticker,
+        name: String(getField(row, ["CompanyName", "Name", "名稱"]) || existing?.name || ticker).trim(),
+        shortName: String(getField(row, ["CompanyName", "Name", "名稱"]) || existing?.shortName || ticker).trim(),
+        market: "TPEx",
+        industry: existing?.industry || "",
+        listingDate: existing?.listingDate || null,
+        latestPrice: {
+          date,
+          open: toNumber(getField(row, ["Open", "開盤"])),
+          high: toNumber(getField(row, ["High", "最高"])),
+          low: toNumber(getField(row, ["Low", "最低"])),
+          close: toNumber(getField(row, ["Close", "收盤"])),
+          tradeVolume: toNumber(getField(row, ["TradingShares", "成交股數"])),
+          tradeValue: toNumber(getField(row, ["TransactionAmount", "成交金額"])),
+          transaction: toNumber(getField(row, ["TransactionNumber", "成交筆數"])),
+          source: "tpex-mainboard-daily-close-quotes",
+          sourceUrl: tpexDailyUrl
+        },
+        issuedShares: toNumber(getField(row, ["Capitals", "發行股數"])),
+        source: "tpex-mainboard-daily-close-quotes",
+        sourceUrl: tpexDailyUrl,
+        qualityFlags: ["official_tpex_quote_loaded", "daily_price_loaded", "master_from_daily_quote"]
+      });
+    });
+    sourceAttempts.push({ source: "tpex-mainboard-daily-close-quotes", status: "loaded", rows: rows.length, stockRows, url: tpexDailyUrl });
+  } catch (error) {
+    sourceAttempts.push({ source: "tpex-mainboard-daily-close-quotes", status: "failed", error: error.message, url: tpexDailyUrl });
+  }
+
   const items = [...byTicker.values()].sort((a, b) => a.ticker.localeCompare(b.ticker));
   const derivedCount = items.filter((item) => item.source === "derived-from-etf-holdings").length;
 
@@ -135,12 +186,13 @@ async function main() {
     sourceAttempts,
     limitations: [
       "TWSE OpenAPI 可補上市股票主檔與每日行情。",
-      "若使用者輸入上櫃或未上市標的，需再接 TPEx 或其他正式來源；目前會標示為未知標的，不做假資料補值。",
+      "TPEx OpenAPI 可補上櫃股票每日行情，並以代號與名稱建立上櫃股票主檔；產業別與掛牌日若來源未提供會保留空值，不做假資料補值。",
+      "若使用者輸入興櫃或未上市標的，需再接 TPEx 興櫃或其他正式來源；目前會標示為未知標的，不做假資料補值。",
       "ETF 成分股只有在投信官方成分資料完整時，才能完整穿透到個股曝險。"
     ]
   };
 
-  db.metadata.sources = (db.metadata.sources || []).filter((source) => !["twse-company-basic", "twse-stock-day-all"].includes(source.id));
+  db.metadata.sources = (db.metadata.sources || []).filter((source) => !["twse-company-basic", "twse-stock-day-all", "tpex-mainboard-daily-close-quotes"].includes(source.id));
   db.metadata.sources.push({
     id: "twse-company-basic",
     name: "TWSE OpenAPI 上市公司基本資料",
@@ -152,6 +204,12 @@ async function main() {
     name: "TWSE OpenAPI 上市個股日成交資訊",
     url: twseDailyUrl,
     usage: "股票每日開高低收、成交量與最新價格"
+  });
+  db.metadata.sources.push({
+    id: "tpex-mainboard-daily-close-quotes",
+    name: "TPEx OpenAPI 上櫃股票行情",
+    url: tpexDailyUrl,
+    usage: "上櫃股票代號、名稱、每日開高低收、成交量、成交金額與發行股數"
   });
 
   fs.writeFileSync(dbPath, `${JSON.stringify(db, null, 2)}\n`, "utf8");

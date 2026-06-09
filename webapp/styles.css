@@ -215,6 +215,13 @@ main {
   gap: 16px;
 }
 
+.input-grid > *,
+.report-layout > *,
+.plans > *,
+.calendar-grid > * {
+  min-width: 0;
+}
+
 .panel,
 .score-panel,
 .table-panel,
