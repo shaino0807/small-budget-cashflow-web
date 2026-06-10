@@ -57,3 +57,34 @@
 ## Firebase
 
 - 狀態：未使用
+
+## Project-local Skill Portability
+
+project-skills/ is the portable source of truth for project-local skills.
+
+Do not delete, overwrite, or regenerate an existing SKILL.md without first reporting:
+
+- the existing path
+- what would change
+- whether the change is required
+
+When restoring this project on a new machine, run:
+
+```powershell
+.\scripts\restore-skills.ps1
+```
+
+The restore script copies missing project skills into:
+
+```text
+C:\Users\<user>\.codex\skills
+```
+
+Existing global skills are not overwritten.
+
+If project initialization is requested later:
+
+- first report existing/missing files
+- only add missing items
+- do not overwrite AGENTS.md, README.md, .gitignore, project-skills/, generated-skills/, .codex/, or .agents/
+- preserve existing project rules and only make small additive improvements

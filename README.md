@@ -52,3 +52,19 @@ node webapp\scripts\validate-etf-data.js
 ## 安全原則
 
 不提交 API key、token、密碼、`.env`、`.codex/`、`.claude/` 或其他本機私密設定。
+
+## Portable project skills
+
+Portable project-local skills live in:
+
+```text
+project-skills/
+```
+
+To restore skills on a new computer:
+
+```powershell
+.\scripts\restore-skills.ps1
+```
+
+The restore script copies missing skills into the user's global Codex skills folder and does not overwrite existing global skills.

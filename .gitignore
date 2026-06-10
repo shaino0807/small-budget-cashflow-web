@@ -26,3 +26,11 @@ build/
 .cache/
 webapp/screenshots/
 webapp/reports/
+
+# Portable project-local skills
+!project-skills/
+!project-skills/**
+!generated-skills/
+!generated-skills/**
+!skills/
+!skills/**
