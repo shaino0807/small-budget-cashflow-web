@@ -86,6 +86,7 @@ async function loadEtfDatabase() {
 }
 
 async function refreshDatabaseFromServer(reason = "open") {
+  if (location.hostname.endsWith("github.io")) return false;
   try {
     const status = await fetch("./api/database-status", { cache: "no-store" });
     if (!status.ok) return false;
