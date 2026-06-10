@@ -1844,7 +1844,7 @@
       }
     ],
     "queryDate": "20260610",
-    "updatedAt": "2026-06-10T09:53:50.703Z",
+    "updatedAt": "2026-06-10T10:18:19.616Z",
     "source": "twse-stock-day"
   },
   "navSeries": {
@@ -31365,9 +31365,9 @@
           "high": 161.5,
           "low": 151.5,
           "close": 152.5,
-          "tradeVolume": 24614516,
-          "tradeValue": 3827402048,
-          "transaction": 16397,
+          "tradeVolume": 24971516,
+          "tradeValue": 3882424208,
+          "transaction": 16399,
           "source": "tpex-mainboard-daily-close-quotes",
           "sourceUrl": "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes"
         },
