@@ -1,5 +1,8 @@
 const storageKey = "cashflow-map-web-state";
 const disclaimer = "本 App 僅供教育與財務規劃參考，不構成任何投資建議、買賣建議或保證報酬。所有投資皆有風險，使用者應自行判斷並承擔投資結果。";
+const monthLabels = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
+const monthFields = ["monthlyIncome", "fixedExpense", "insuranceExpense", "loanExpense", "monthlyInvestment"];
+const simulationYearOptions = [10, 15, 20, 25, 30];
 
 const sampleState = {
   profile: {
@@ -13,10 +16,12 @@ const sampleState = {
     retirementMonthlyNeed: 36000
   },
   holdings: [
-    { ticker: "0056", name: "高股息 ETF", type: "高股息", amount: 180000, dividendYield: 6.1, expenseRatio: 0.43, sector: "金融" },
-    { ticker: "00878", name: "ESG 高股息", type: "高股息", amount: 160000, dividendYield: 5.7, expenseRatio: 0.38, sector: "電子" },
-    { ticker: "006208", name: "台股市值型", type: "市值型", amount: 90000, dividendYield: 2.3, expenseRatio: 0.15, sector: "半導體" }
+    { ticker: "0056", name: "高股息 ETF", type: "高股息", amount: 180000, lots: [{ price: 36, amount: 100000 }, { price: 38, amount: 80000 }], dividendYield: 6.1, expenseRatio: 0.43, sector: "金融" },
+    { ticker: "00878", name: "ESG 高股息", type: "高股息", amount: 160000, lots: [{ price: 21, amount: 90000 }, { price: 23, amount: 70000 }], dividendYield: 5.7, expenseRatio: 0.38, sector: "電子" },
+    { ticker: "006208", name: "台股市值型", type: "市值型", amount: 90000, lots: [{ price: 115, amount: 90000 }], dividendYield: 2.3, expenseRatio: 0.15, sector: "半導體" }
   ],
+  monthlyCashflows: {},
+  simulationYears: 10,
   paidUnlocked: false,
   consultingUnlocked: false
 };
@@ -55,12 +60,59 @@ const number = new Intl.NumberFormat("zh-TW", {
 
 function loadState() {
   const saved = localStorage.getItem(storageKey);
-  if (!saved) return structuredClone(sampleState);
+  if (!saved) return normalizeState(structuredClone(sampleState));
   try {
-    return { ...structuredClone(sampleState), ...JSON.parse(saved) };
+    return normalizeState({ ...structuredClone(sampleState), ...JSON.parse(saved) });
   } catch {
-    return structuredClone(sampleState);
+    return normalizeState(structuredClone(sampleState));
   }
+}
+
+function normalizeState(next) {
+  next.profile = { ...structuredClone(sampleState.profile), ...(next.profile || {}) };
+  next.holdings = Array.isArray(next.holdings) ? next.holdings.map(normalizeHolding) : structuredClone(sampleState.holdings);
+  next.monthlyCashflows = normalizeMonthlyCashflows(next.monthlyCashflows, next.profile);
+  next.simulationYears = simulationYearOptions.includes(Number(next.simulationYears)) ? Number(next.simulationYears) : 10;
+  next.paidUnlocked = Boolean(next.paidUnlocked);
+  next.consultingUnlocked = Boolean(next.consultingUnlocked);
+  return next;
+}
+
+function normalizeHolding(holding) {
+  const amount = Number(holding.amount || 0);
+  const lots = Array.isArray(holding.lots) && holding.lots.length
+    ? holding.lots.map((lot) => ({
+      price: Number(lot.price || 0),
+      amount: Number(lot.amount || 0)
+    }))
+    : [{ price: Number(holding.buyPrice || 0), amount }];
+  return {
+    ...holding,
+    ticker: String(holding.ticker || "").trim(),
+    amount,
+    lots,
+    dividendYield: Number(holding.dividendYield || 0)
+  };
+}
+
+function normalizeMonthlyCashflows(saved, profile) {
+  const rows = {};
+  for (let month = 1; month <= 12; month++) {
+    const source = saved?.[month] || saved?.[String(month)] || {};
+    rows[month] = {};
+    monthFields.forEach((field) => {
+      rows[month][field] = source[field] === "" || source[field] === undefined || source[field] === null
+        ? ""
+        : Number(source[field]);
+    });
+  }
+  const currentMonth = new Date().getMonth() + 1;
+  if (!hasMonthlyInput(rows[currentMonth])) {
+    monthFields.forEach((field) => {
+      rows[currentMonth][field] = Number(profile[field] || 0);
+    });
+  }
+  return rows;
 }
 
 function persist() {
@@ -195,6 +247,8 @@ function enrichHoldingsFromDatabase() {
       name: etf.shortName,
       type: etf.themes?.includes("高股息") ? "高股息" : etf.themes?.includes("大型權值") ? "市值型" : holding.type,
       sector: etf.themes?.[0] || holding.sector,
+      dividendYield: estimatedDividendYield(etf.ticker, holding.dividendYield),
+      yieldSource: "official_distributions",
       dataSource: "official_snapshot",
       dataDate: etf.performance?.date
     };
@@ -235,12 +289,58 @@ function investableCashflow(profile) {
   return Number(profile.monthlyIncome) - monthlyTotalExpense(profile) - Number(profile.monthlyInvestment);
 }
 
+function holdingAmount(holding) {
+  if (Array.isArray(holding.lots) && holding.lots.length) {
+    return holding.lots.reduce((sum, lot) => sum + Number(lot.amount || 0), 0);
+  }
+  return Number(holding.amount || 0);
+}
+
 function totalInvested(holdings) {
-  return holdings.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  return holdings.reduce((sum, item) => sum + holdingAmount(item), 0);
 }
 
 function annualDividend(holdings) {
-  return holdings.reduce((sum, item) => sum + Number(item.amount || 0) * Number(item.dividendYield || 0) / 100, 0);
+  return holdings.reduce((sum, item) => sum + holdingAmount(item) * Number(item.dividendYield || 0) / 100, 0);
+}
+
+function latestMarketPrice(ticker) {
+  const key = String(ticker || "").trim();
+  const navRows = (etfDatabase?.navSeries?.items || [])
+    .filter((row) => row.ticker === key && Number(row.close || row.nav) > 0)
+    .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  if (navRows[0]) return Number(navRows[0].close || navRows[0].nav);
+
+  const priceRows = (etfDatabase?.priceSeries?.items || [])
+    .filter((row) => row.ticker === key && Number(row.close) > 0)
+    .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  if (priceRows[0]) return Number(priceRows[0].close);
+
+  const stock = findStock(key);
+  return Number(stock?.latestPrice?.close || 0);
+}
+
+function estimatedDividendYield(ticker, fallback = 0) {
+  const key = String(ticker || "").trim();
+  const distributions = (etfDatabase?.distributions || [])
+    .filter((row) => row.ticker === key && Number(row.amountPerUnit) > 0)
+    .sort((a, b) => String(b.payDate).localeCompare(String(a.payDate)))
+    .slice(0, 4);
+  const price = latestMarketPrice(key);
+  if (!distributions.length || !price) return Number(fallback || 0);
+  const annualCash = distributions.reduce((sum, row) => sum + Number(row.amountPerUnit || 0), 0);
+  return Number((annualCash / price * 100).toFixed(2));
+}
+
+function holdingUnits(holding) {
+  const lots = Array.isArray(holding.lots) ? holding.lots : [];
+  const lotUnits = lots.reduce((sum, lot) => {
+    const price = Number(lot.price || 0);
+    return price > 0 ? sum + Number(lot.amount || 0) / price : sum;
+  }, 0);
+  if (lotUnits > 0) return lotUnits;
+  const price = latestMarketPrice(holding.ticker);
+  return price > 0 ? holdingAmount(holding) / price : 0;
 }
 
 function calculateBreakdown(profile, holdings) {
@@ -278,7 +378,7 @@ function highDividendDependency(holdings) {
   if (!total) return 0;
   const highDividend = holdings
     .filter((item) => item.type === "高股息")
-    .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    .reduce((sum, item) => sum + holdingAmount(item), 0);
   return highDividend / total * 100;
 }
 
@@ -306,7 +406,7 @@ function buildStockExposure(holdings) {
   }
 
   holdings.forEach((holding) => {
-    const amount = Number(holding.amount || 0);
+    const amount = holdingAmount(holding);
     if (!amount) return;
     const ticker = String(holding.ticker || "").trim();
     const etf = findEtf(ticker);
@@ -393,7 +493,7 @@ function overlapReport(holdings) {
 function groupAmount(items, key) {
   return items.reduce((acc, item) => {
     const name = item[key] || "未分類";
-    acc[name] = (acc[name] || 0) + Number(item.amount || 0);
+    acc[name] = (acc[name] || 0) + holdingAmount(item);
     return acc;
   }, {});
 }
@@ -401,6 +501,12 @@ function groupAmount(items, key) {
 function topShare(grouped, total) {
   const [name = "無", amount = 0] = Object.entries(grouped).sort((a, b) => b[1] - a[1])[0] || [];
   return { name, amount, share: total ? amount / total * 100 : 0 };
+}
+
+function groupEntries(grouped, total) {
+  return Object.entries(grouped)
+    .map(([name, amount]) => ({ name, amount, share: total ? amount / total * 100 : 0 }))
+    .sort((a, b) => b.amount - a.amount);
 }
 
 function dividendStress(profile, holdings) {
@@ -430,13 +536,14 @@ function retirementGap(profile, simulation) {
 
 function buildSimulation(profile, holdings) {
   const annualContribution = Number(profile.monthlyInvestment || 0) * 12;
-  const averageYield = holdings.length
-    ? holdings.reduce((sum, item) => sum + Number(item.dividendYield || 0), 0) / holdings.length
+  const total = totalInvested(holdings);
+  const averageYield = total
+    ? holdings.reduce((sum, item) => sum + holdingAmount(item) * Number(item.dividendYield || 0), 0) / total
     : 3;
   const growthRate = clamp(averageYield * 0.35 + 2.2, 2.5, 6.5) / 100;
   let asset = totalInvested(holdings) + Number(profile.cashSavings || 0) * 0.25;
   let contributed = totalInvested(holdings);
-  return Array.from({ length: 10 }, (_, index) => {
+  return Array.from({ length: state.simulationYears }, (_, index) => {
     contributed += annualContribution;
     asset = asset * (1 + growthRate) + annualContribution;
     const yearlyDividend = asset * averageYield / 100;
@@ -450,22 +557,74 @@ function buildSimulation(profile, holdings) {
   });
 }
 
+function hasMonthlyInput(row) {
+  return monthFields.some((field) => row?.[field] !== "" && row?.[field] !== undefined && row?.[field] !== null);
+}
+
+function monthlyProfile(monthNumber) {
+  const row = state.monthlyCashflows?.[monthNumber] || {};
+  return {
+    ...state.profile,
+    monthlyIncome: row.monthlyIncome === "" ? 0 : Number(row.monthlyIncome || 0),
+    fixedExpense: row.fixedExpense === "" ? 0 : Number(row.fixedExpense || 0),
+    insuranceExpense: row.insuranceExpense === "" ? 0 : Number(row.insuranceExpense || 0),
+    loanExpense: row.loanExpense === "" ? 0 : Number(row.loanExpense || 0),
+    monthlyInvestment: row.monthlyInvestment === "" ? 0 : Number(row.monthlyInvestment || 0)
+  };
+}
+
+function dividendEventsForMonth(holdings, year, monthNumber) {
+  return (etfDatabase?.distributions || [])
+    .filter((row) => {
+      const date = new Date(`${row.payDate}T00:00:00+08:00`);
+      return date.getFullYear() === year && date.getMonth() + 1 === monthNumber;
+    })
+    .map((row) => {
+      const holding = holdings.find((item) => item.ticker === row.ticker);
+      if (!holding) return null;
+      const units = holdingUnits(holding);
+      const amount = units * Number(row.amountPerUnit || 0);
+      return {
+        ticker: row.ticker,
+        payDate: row.payDate,
+        amountPerUnit: Number(row.amountPerUnit || 0),
+        amount
+      };
+    })
+    .filter(Boolean);
+}
+
 function buildCalendar(profile, holdings) {
-  const months = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
-  const baseDividend = annualDividend(holdings) / 12;
-  return months.map((month, index) => {
-    const seasonalExpense = [1, 5, 8].includes(index) ? 3500 : 0;
-    const dividendBoost = [2, 5, 8, 11].includes(index) ? baseDividend * 1.8 : baseDividend * 0.7;
-    const expenses = monthlyTotalExpense(profile) + seasonalExpense;
-    const investable = Number(profile.monthlyIncome) - expenses - Number(profile.monthlyInvestment) + dividendBoost;
-    const status = investable < 0 ? "stress" : investable < Number(profile.monthlyIncome) * 0.08 ? "watch" : "safe";
+  const year = new Date().getFullYear();
+  return monthLabels.map((month, index) => {
+    const monthNumber = index + 1;
+    const hasInput = hasMonthlyInput(state.monthlyCashflows?.[monthNumber]);
+    const monthly = monthlyProfile(monthNumber);
+    const dividendEvents = dividendEventsForMonth(holdings, year, monthNumber);
+    const dividend = dividendEvents.reduce((sum, row) => sum + row.amount, 0);
+    if (!hasInput) {
+      return {
+        month,
+        income: null,
+        expenses: null,
+        dividend,
+        investable: null,
+        status: "pending",
+        dividendEvents,
+        reminder: dividendEvents.length ? "本月有官方配息紀錄；收入支出尚未輸入。" : "本月尚未輸入現金流。"
+      };
+    }
+    const expenses = monthlyTotalExpense(monthly);
+    const investable = Number(monthly.monthlyIncome) - expenses - Number(monthly.monthlyInvestment) + dividend;
+    const status = investable < 0 ? "stress" : investable < Number(monthly.monthlyIncome) * 0.08 ? "watch" : "safe";
     return {
       month,
-      income: Number(profile.monthlyIncome),
+      income: Number(monthly.monthlyIncome),
       expenses,
-      dividend: dividendBoost,
+      dividend,
       investable,
       status,
+      dividendEvents,
       reminder: status === "stress" ? "先補現金流缺口，再談加碼。" : status === "watch" ? "支出接近警戒線，保留現金。" : "現金流穩定，可檢查配置。"
     };
   });
@@ -577,7 +736,37 @@ function syncInputs() {
       refreshReports();
     });
   });
+  q("#simulationYears").value = state.simulationYears;
+  renderMonthlyCashflows();
   renderHoldings();
+}
+
+function renderMonthlyCashflows() {
+  const root = q("#monthlyCashflowEditor");
+  if (!root) return;
+  root.innerHTML = monthLabels.map((label, index) => {
+    const month = index + 1;
+    const row = state.monthlyCashflows?.[month] || {};
+    return `
+      <div class="month-row" data-month="${month}">
+        <strong>${label}</strong>
+        <input data-month-field="monthlyIncome" type="number" min="0" step="1000" placeholder="收入" value="${escapeHtml(row.monthlyIncome)}" />
+        <input data-month-field="fixedExpense" type="number" min="0" step="1000" placeholder="固定支出" value="${escapeHtml(row.fixedExpense)}" />
+        <input data-month-field="insuranceExpense" type="number" min="0" step="500" placeholder="保險" value="${escapeHtml(row.insuranceExpense)}" />
+        <input data-month-field="loanExpense" type="number" min="0" step="1000" placeholder="貸款" value="${escapeHtml(row.loanExpense)}" />
+        <input data-month-field="monthlyInvestment" type="number" min="0" step="1000" placeholder="投資" value="${escapeHtml(row.monthlyInvestment)}" />
+      </div>
+    `;
+  }).join("");
+
+  root.querySelectorAll("[data-month-field]").forEach((input) => {
+    input.addEventListener("input", (event) => {
+      const month = Number(event.target.closest(".month-row").dataset.month);
+      const field = event.target.dataset.monthField;
+      state.monthlyCashflows[month][field] = event.target.value === "" ? "" : Number(event.target.value || 0);
+      refreshReports();
+    });
+  });
 }
 
 function renderHoldings() {
@@ -586,21 +775,36 @@ function renderHoldings() {
   state.holdings.forEach((holding, index) => {
     const officialEtf = findEtf(holding.ticker);
     const officialStock = findStock(holding.ticker);
+    const amount = holdingAmount(holding);
+    const yieldLabel = holding.yieldSource === "official_distributions" ? "官方配息估算" : "手動";
     const row = document.createElement("div");
     row.className = "holding-row";
     row.innerHTML = `
-      <label>代號<input data-field="ticker" value="${escapeHtml(holding.ticker)}" /></label>
-      <label>名稱<input data-field="name" value="${escapeHtml(officialEtf?.shortName || officialStock?.shortName || holding.name)}" /></label>
+      <label>代號<input data-field="ticker" value="${escapeHtml(holding.ticker)}" inputmode="numeric" /></label>
+      <label>名稱<input data-field="name" value="${escapeHtml(officialEtf?.shortName || officialStock?.shortName || holding.name)}" readonly /></label>
       <label>類型
         <select data-field="type">
           ${["市值型", "高股息", "個股", "債券", "海外", "主題"].map((type) => `<option ${holding.type === type ? "selected" : ""}>${type}</option>`).join("")}
         </select>
       </label>
-      <label>金額<input data-field="amount" type="number" min="0" step="1000" value="${holding.amount}" /></label>
-      <label>殖利率<input data-field="dividendYield" type="number" min="0" step="0.1" value="${holding.dividendYield}" /></label>
+      <label>總金額<input value="${formatMoney(amount)}" readonly /></label>
+      <label>殖利率<input data-field="dividendYield" type="number" min="0" step="0.01" value="${holding.dividendYield}" ${officialEtf ? "readonly" : ""} /></label>
       <button class="icon-button" data-remove="${index}" type="button" title="刪除" aria-label="刪除">×</button>
+      <div class="lot-editor">
+        <div class="lot-title">
+          <strong>分批買入</strong>
+          <button class="secondary-button mini-button" data-add-lot="${index}" type="button">新增一筆</button>
+        </div>
+        ${(holding.lots || []).map((lot, lotIndex) => `
+          <div class="lot-row" data-lot="${lotIndex}">
+            <label>買入點位<input data-lot-field="price" type="number" min="0" step="0.01" value="${lot.price}" /></label>
+            <label>投入金額<input data-lot-field="amount" type="number" min="0" step="1000" value="${lot.amount}" /></label>
+            <button class="icon-button" data-remove-lot="${lotIndex}" type="button" title="刪除買入項目" aria-label="刪除買入項目">×</button>
+          </div>
+        `).join("")}
+      </div>
       ${officialEtf
-        ? `<small class="data-note">ETF：${officialEtf.issuer} · 資料日 ${officialEtf.performance.date}</small>`
+        ? `<small class="data-note">ETF：${officialEtf.issuer} · 資料日 ${officialEtf.performance.date} · 殖利率 ${yieldLabel} ${pct(holding.dividendYield, 2)}</small>`
         : officialStock
           ? `<small class="data-note">股票：${officialStock.market} · ${officialStock.industry || "產業未揭露"} · ${officialStock.latestPrice?.date || "無行情日"}</small>`
           : `<small class="data-note warning">尚未對應官方 ETF 或股票主檔</small>`}
@@ -613,10 +817,48 @@ function renderHoldings() {
       const row = event.target.closest(".holding-row");
       const index = [...root.children].indexOf(row);
       const field = event.target.dataset.field;
+      if (!field) return;
       const numeric = ["amount", "dividendYield", "expenseRatio"].includes(field);
-      state.holdings[index][field] = numeric ? Number(event.target.value || 0) : event.target.value;
-      if (field === "ticker") enrichHoldingsFromDatabase();
+      state.holdings[index][field] = numeric ? Number(event.target.value || 0) : String(event.target.value).trim();
+      if (field === "ticker" && String(event.target.value).trim().length >= 4) {
+        state.holdings[index].ticker = String(event.target.value).trim();
+        enrichHoldingsFromDatabase();
+        renderHoldings();
+      }
       if (field === "type") state.holdings[index].sector = defaultSector(event.target.value);
+      refreshReports();
+    });
+  });
+
+  root.querySelectorAll("[data-lot-field]").forEach((input) => {
+    input.addEventListener("input", (event) => {
+      const row = event.target.closest(".holding-row");
+      const index = [...root.children].indexOf(row);
+      const lotIndex = Number(event.target.closest(".lot-row").dataset.lot);
+      const field = event.target.dataset.lotField;
+      state.holdings[index].lots[lotIndex][field] = Number(event.target.value || 0);
+      state.holdings[index].amount = holdingAmount(state.holdings[index]);
+      refreshReports();
+    });
+  });
+
+  root.querySelectorAll("[data-add-lot]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const index = Number(button.dataset.addLot);
+      state.holdings[index].lots = [...(state.holdings[index].lots || []), { price: latestMarketPrice(state.holdings[index].ticker) || 0, amount: 0 }];
+      renderHoldings();
+      refreshReports();
+    });
+  });
+
+  root.querySelectorAll("[data-remove-lot]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const row = button.closest(".holding-row");
+      const index = [...root.children].indexOf(row);
+      state.holdings[index].lots.splice(Number(button.dataset.removeLot), 1);
+      if (!state.holdings[index].lots.length) state.holdings[index].lots.push({ price: 0, amount: 0 });
+      state.holdings[index].amount = holdingAmount(state.holdings[index]);
+      renderHoldings();
       refreshReports();
     });
   });
@@ -742,6 +984,8 @@ function dataSourceHtml() {
 
 function stockExposureHtml(report) {
   const exposure = report.overlap.stockExposure;
+  const total = totalInvested(report.holdings);
+  const sectorRows = groupEntries(exposure.bySector, total);
   return `
     <section class="panel">
       <h3>整體股票重疊度</h3>
@@ -752,6 +996,24 @@ function stockExposureHtml(report) {
         <div class="metric"><span>穿透覆蓋率</span><strong>${pct(exposure.coverageRate)}</strong></div>
       </div>
       <p>${report.overlap.message}</p>
+      <div class="inline-table">
+        <div class="table-title">
+          <h3>股票族群總佔比</h3>
+          <span>${sectorRows.length} 類</span>
+        </div>
+        <table>
+          <thead><tr><th>族群</th><th>穿透金額</th><th>總佔比</th></tr></thead>
+          <tbody>
+            ${sectorRows.slice(0, 10).map((row) => `
+              <tr>
+                <td>${row.name}</td>
+                <td>${formatMoney(row.amount)}</td>
+                <td>${pct(row.share)}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
       <div class="inline-table">
         <div class="table-title">
           <h3>前十大底層股票</h3>
@@ -797,11 +1059,11 @@ function renderFreeReport() {
       ${dataSourceHtml()}
       <section class="panel">
         <h3>退休缺口方向</h3>
-        <p>10 年後推估資產 ${formatMoney(report.gap.projected)}，距離目標仍差 ${formatMoney(report.gap.gap)}。</p>
+        <p>${state.simulationYears} 年後推估資產 ${formatMoney(report.gap.projected)}，距離目標仍差 ${formatMoney(report.gap.gap)}。</p>
       </section>
       <section class="panel locked">
         <h3>現金流預覽</h3>
-        <p>目前每月可用現金流約 ${formatMoney(investableCashflow(report.profile))}。12 個月月曆與 ETF 配息壓力測試需升級後查看。</p>
+        <p>目前每月可用現金流約 ${formatMoney(investableCashflow(report.profile))}。月份月曆與 ETF 配息壓力測試需升級後查看。</p>
       </section>
     </div>
   `;
@@ -810,7 +1072,7 @@ function renderFreeReport() {
 function renderUpgrade() {
   const plans = [
     { name: "免費版", price: "NT$0", action: "保留免費版", key: "free", features: ["財務體質分數", "分數拆解摘要", "3 大風險提示"] },
-    { name: "完整報告版", price: "NT$299", action: state.paidUnlocked ? "已解鎖" : "Mock 解鎖", key: "paid", highlight: true, features: ["整體股票重疊度分析", "高股息依賴與壓力測試", "10 年模擬與 12 個月月曆", "PDF/列印匯出"] },
+    { name: "完整報告版", price: "NT$299", action: state.paidUnlocked ? "已解鎖" : "Mock 解鎖", key: "paid", highlight: true, features: ["整體股票重疊度分析", "高股息依賴與壓力測試", "資產模擬與月份月曆", "PDF/列印匯出"] },
     { name: "一對一健檢版", price: "NT$2,980", action: state.consultingUnlocked ? "已登記" : "Mock 登記", key: "consulting", features: ["完整報告版內容", "預約諮詢 CTA", "個人化調整建議整理"] }
   ];
   q("#plans").innerHTML = plans.map((plan) => `
@@ -902,6 +1164,8 @@ function renderDatabaseView() {
     </table>
   ` : `<p>ETF 資料庫尚未載入。</p>`;
 
+  q("#databaseSectorTable").innerHTML = databaseSectorHtml(db);
+
   q("#priceSeriesTable").innerHTML = db?.priceSeries?.items?.length ? `
     <div class="table-title">
       <h3>官方價格明細</h3>
@@ -973,6 +1237,44 @@ function renderDatabaseView() {
   requestAnimationFrame(drawOfficialPriceChart);
 }
 
+function databaseSectorHtml(db) {
+  const rows = db?.holdings?.items || [];
+  if (!rows.length) return `<section class="panel"><p>尚未載入官方成分股族群摘要。</p></section>`;
+  const byTicker = db.etfs.map((etf) => {
+    const items = rows.filter((row) => row.ticker === etf.ticker);
+    const bySector = items.reduce((acc, row) => {
+      const sector = row.sector || "未分類";
+      acc[sector] = (acc[sector] || 0) + Number(row.weight || 0);
+      return acc;
+    }, {});
+    return {
+      ticker: etf.ticker,
+      name: etf.shortName,
+      sectors: groupEntries(bySector, 100).slice(0, 5),
+      coverage: items.reduce((sum, row) => sum + Number(row.weight || 0), 0)
+    };
+  });
+  return `
+    <div class="table-title">
+      <h3>官方成分股族群摘要</h3>
+      <span>依 ETF 權重加總</span>
+    </div>
+    <table>
+      <thead><tr><th>ETF</th><th>名稱</th><th>穿透覆蓋</th><th>主要族群</th></tr></thead>
+      <tbody>
+        ${byTicker.map((row) => `
+          <tr>
+            <td>${row.ticker}</td>
+            <td>${row.name}</td>
+            <td>${pct(row.coverage)}</td>
+            <td>${row.sectors.length ? row.sectors.map((sector) => `${sector.name} ${pct(sector.amount)}`).join(" / ") : "尚未接上官方成分股"}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
+}
+
 function drawOfficialPriceChart() {
   const canvas = q("#officialPriceChart");
   const rows = etfDatabase?.priceSeries?.items || [];
@@ -994,11 +1296,18 @@ function drawOfficialPriceChart() {
     acc[row.ticker].push(row);
     return acc;
   }, {});
-  const allCloses = rows.map((row) => row.close).filter((value) => Number.isFinite(value));
-  const min = Math.min(...allCloses);
-  const max = Math.max(...allCloses);
+  const normalized = Object.fromEntries(Object.entries(byTicker).map(([ticker, tickerRows]) => {
+    const sorted = [...tickerRows].sort((a, b) => a.date.localeCompare(b.date));
+    const base = Number(sorted[0]?.close || 0) || 1;
+    return [ticker, sorted.map((row) => ({ ...row, normalizedClose: Number(row.close || 0) / base * 100 }))];
+  }));
+  const allValues = Object.values(normalized).flat().map((row) => row.normalizedClose).filter((value) => Number.isFinite(value));
+  const min = Math.floor(Math.min(...allValues) - 1);
+  const max = Math.ceil(Math.max(...allValues) + 1);
   const span = Math.max(1, max - min);
   const colors = ["#0f766e", "#b45309", "#1d4ed8", "#7c3aed"];
+
+  renderPriceChartSummary(normalized);
 
   ctx.clearRect(0, 0, width, height);
   ctx.strokeStyle = "#d9e2df";
@@ -1011,15 +1320,14 @@ function drawOfficialPriceChart() {
     ctx.stroke();
   }
 
-  Object.entries(byTicker).forEach(([ticker, tickerRows], index) => {
-    const sorted = [...tickerRows].sort((a, b) => a.date.localeCompare(b.date));
+  Object.entries(normalized).forEach(([ticker, sorted], index) => {
     ctx.strokeStyle = colors[index % colors.length];
     ctx.fillStyle = colors[index % colors.length];
     ctx.lineWidth = 3;
     ctx.beginPath();
     sorted.forEach((row, pointIndex) => {
       const x = pad + pointIndex * ((width - pad * 2) / Math.max(1, sorted.length - 1));
-      const y = height - pad - ((row.close - min) / span) * (height - pad * 2);
+      const y = height - pad - ((row.normalizedClose - min) / span) * (height - pad * 2);
       if (pointIndex === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     });
@@ -1030,8 +1338,28 @@ function drawOfficialPriceChart() {
 
   ctx.fillStyle = "#65736f";
   ctx.font = "12px Microsoft JhengHei, sans-serif";
-  ctx.fillText(String(max), width - pad - 40, 18);
-  ctx.fillText(String(min), width - pad - 40, height - 10);
+  ctx.fillText(`${max}`, width - pad - 34, 18);
+  ctx.fillText(`${min}`, width - pad - 34, height - 10);
+  ctx.fillText("相對價格", pad, height - 10);
+}
+
+function renderPriceChartSummary(normalized) {
+  const root = q("#priceChartSummary");
+  if (!root) return;
+  const navByTicker = new Map((etfDatabase?.navSeries?.items || []).map((row) => [row.ticker, row]));
+  root.innerHTML = Object.entries(normalized).map(([ticker, rows]) => {
+    const first = rows[0];
+    const last = rows[rows.length - 1];
+    const change = first ? last.normalizedClose - first.normalizedClose : 0;
+    const nav = navByTicker.get(ticker);
+    return `
+      <div class="metric">
+        <span>${ticker} ${last?.date || ""}</span>
+        <strong>${last?.close ?? "-"}</strong>
+        <small>${change >= 0 ? "+" : ""}${change.toFixed(2)}% · NAV ${nav?.nav ?? "-"} · 折溢價 ${nav?.premiumDiscountPercent === null || nav?.premiumDiscountPercent === undefined ? "-" : pct(nav.premiumDiscountPercent, 2)}</small>
+      </div>
+    `;
+  }).join("");
 }
 
 function renderPaidReport() {
@@ -1092,6 +1420,10 @@ function renderPaidReport() {
 function renderSimulation() {
   drawSimulationChart(latestReport.simulation);
   q("#simulationTable").innerHTML = `
+    <div class="table-title">
+      <h3>${state.simulationYears} 年資產模擬</h3>
+      <span>可切換 10 / 15 / 20 / 25 / 30 年</span>
+    </div>
     <table>
       <thead><tr><th>年度</th><th>資產</th><th>累積投入</th><th>年配息</th><th>退休缺口方向</th></tr></thead>
       <tbody>
@@ -1161,7 +1493,7 @@ function drawSimulationChart(rows) {
   ctx.font = "12px Microsoft JhengHei, sans-serif";
   ctx.fillText(formatMoney(max), pad, 18);
   ctx.fillText("第 1 年", pad, height - 8);
-  ctx.fillText("第 10 年", width - pad - 46, height - 8);
+  ctx.fillText(`第 ${rows.length} 年`, width - pad - 54, height - 8);
 }
 
 function renderCalendar() {
@@ -1169,14 +1501,15 @@ function renderCalendar() {
     <article class="calendar-card ${month.status}">
       <div class="panel-head">
         <h3>${month.month}</h3>
-        <span class="badge">${month.status === "safe" ? "安全" : month.status === "watch" ? "普通" : "壓力"}</span>
+        <span class="badge">${month.status === "pending" ? "待輸入" : month.status === "safe" ? "安全" : month.status === "watch" ? "普通" : "壓力"}</span>
       </div>
       <div>
-        <div class="kv"><span>收入</span><strong>${formatMoney(month.income)}</strong></div>
-        <div class="kv"><span>支出</span><strong>${formatMoney(month.expenses)}</strong></div>
+        <div class="kv"><span>收入</span><strong>${month.income === null ? "未輸入" : formatMoney(month.income)}</strong></div>
+        <div class="kv"><span>支出</span><strong>${month.expenses === null ? "未輸入" : formatMoney(month.expenses)}</strong></div>
         <div class="kv"><span>ETF 配息</span><strong>${formatMoney(month.dividend)}</strong></div>
-        <div class="kv"><span>可投資金額</span><strong>${formatMoney(month.investable)}</strong></div>
+        <div class="kv"><span>可投資金額</span><strong>${month.investable === null ? "未計算" : formatMoney(month.investable)}</strong></div>
       </div>
+      ${month.dividendEvents.length ? `<ul class="mini-list">${month.dividendEvents.map((item) => `<li>${item.ticker} ${item.payDate} 每單位 ${item.amountPerUnit}</li>`).join("")}</ul>` : ""}
       <p>${month.reminder}</p>
     </article>
   `).join("");
@@ -1223,6 +1556,9 @@ function reportMarkdown() {
     `- 穿透覆蓋率：${pct(report.overlap.stockExposure.coverageRate)}`,
     `- 說明：${report.overlap.message}`,
     "",
+    "## 股票族群總佔比",
+    ...groupEntries(report.overlap.stockExposure.bySector, totalInvested(report.holdings)).slice(0, 10).map((row) => `- ${row.name}：${pct(row.share)}（${formatMoney(row.amount)}）`),
+    "",
     "## 配息壓力測試",
     `- 月配息估算：${formatMoney(report.stress.monthlyDividend)}`,
     `- 下修 30%：${formatMoney(report.stress.cut30)}`,
@@ -1260,16 +1596,21 @@ function bindEvents() {
     showToast("已儲存到此瀏覽器");
   });
   q("#sampleBtn").addEventListener("click", () => {
-    state = structuredClone(sampleState);
+    state = normalizeState(structuredClone(sampleState));
     syncInputs();
     refreshReports();
     persist();
     showToast("已套用範例資料");
   });
   q("#addHoldingBtn").addEventListener("click", () => {
-    state.holdings.push({ ticker: "", name: "新標的", type: "個股", amount: 0, dividendYield: 3, expenseRatio: 0.2, sector: "未分類" });
+    state.holdings.push({ ticker: "", name: "新標的", type: "個股", amount: 0, lots: [{ price: 0, amount: 0 }], dividendYield: 3, expenseRatio: 0.2, sector: "未分類" });
     renderHoldings();
     refreshReports();
+  });
+  q("#simulationYears").addEventListener("change", (event) => {
+    state.simulationYears = Number(event.target.value);
+    refreshReports();
+    persist();
   });
   q("#reloadDataBtn").addEventListener("click", async () => {
     const updated = await refreshDatabaseFromServer("manual");

@@ -1,4 +1,4 @@
-const cacheName = "cashflow-map-v5";
+const cacheName = "cashflow-map-v6";
 const assets = [
   "./",
   "./index.html",

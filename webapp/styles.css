@@ -116,6 +116,64 @@ h3 {
   gap: 8px;
 }
 
+.panel-head {
+  justify-content: space-between;
+}
+
+.panel-subhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.panel-subhead span,
+.metric small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.inline-control {
+  min-width: 160px;
+}
+
+.compact-metrics {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 12px 0;
+}
+
+.monthly-editor {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.month-row {
+  display: grid;
+  grid-template-columns: 44px repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  align-items: center;
+}
+
+.month-row strong {
+  font-size: 14px;
+}
+
+.month-row input {
+  min-height: 36px;
+  padding: 6px 8px;
+}
+
+.mini-button {
+  min-height: 32px;
+  padding-inline: 10px;
+  font-size: 13px;
+}
+
 .icon-button,
 .primary-button,
 .secondary-button,
@@ -277,7 +335,7 @@ select {
 
 .holding-row {
   display: grid;
-  grid-template-columns: 0.8fr 1fr 0.9fr 1fr 0.9fr 42px;
+  grid-template-columns: 0.75fr 1fr 0.85fr 0.9fr 0.75fr 42px;
   gap: 8px;
   align-items: end;
   padding-bottom: 12px;
@@ -293,6 +351,29 @@ select {
   grid-column: 1 / -1;
   color: var(--muted);
   font-size: 13px;
+}
+
+.lot-editor {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.lot-title,
+.lot-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 42px;
+  gap: 8px;
+  align-items: end;
+}
+
+.lot-title {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
 }
 
 .data-note.warning {
@@ -415,6 +496,7 @@ a {
 .locked {
   position: relative;
   overflow: hidden;
+  padding-bottom: 58px;
 }
 
 .locked::after {
@@ -539,6 +621,19 @@ td:first-child {
   border-left: 5px solid var(--danger);
 }
 
+.calendar-card.pending {
+  border-left: 5px solid var(--line);
+}
+
+.mini-list {
+  display: grid;
+  gap: 4px;
+  padding-left: 18px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .kv {
   display: flex;
   justify-content: space-between;
@@ -575,12 +670,17 @@ td:first-child {
   .input-grid,
   .report-layout,
   .plans,
-  .calendar-grid {
+  .calendar-grid,
+  .compact-metrics {
     grid-template-columns: 1fr;
   }
 
   .holding-row {
     grid-template-columns: repeat(2, minmax(0, 1fr)) 42px;
+  }
+
+  .month-row {
+    grid-template-columns: 40px repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -634,6 +734,12 @@ td:first-child {
   }
 
   .holding-row {
+    grid-template-columns: 1fr;
+  }
+
+  .lot-row,
+  .lot-title,
+  .month-row {
     grid-template-columns: 1fr;
   }
 

@@ -30,7 +30,7 @@
       <button class="tab" data-view="freeReportView" type="button">免費報告</button>
       <button class="tab" data-view="upgradeView" type="button">升級</button>
       <button class="tab paid-tab" data-view="paidReportView" type="button">完整報告</button>
-      <button class="tab paid-tab" data-view="simulationView" type="button">10年模擬</button>
+      <button class="tab paid-tab" data-view="simulationView" type="button">資產模擬</button>
       <button class="tab paid-tab" data-view="calendarView" type="button">月曆</button>
     </nav>
 
@@ -46,17 +46,22 @@
 
         <div class="input-grid">
           <form class="panel" id="profileForm">
-            <h3>每月狀態</h3>
-            <div class="field-grid">
-              <label>月收入<input id="monthlyIncome" type="number" min="0" step="1000" /></label>
-              <label>固定支出<input id="fixedExpense" type="number" min="0" step="1000" /></label>
+              <h3>基本狀態</h3>
+              <div class="field-grid">
+                <label>月收入<input id="monthlyIncome" type="number" min="0" step="1000" /></label>
+                <label>固定支出<input id="fixedExpense" type="number" min="0" step="1000" /></label>
               <label>保險支出<input id="insuranceExpense" type="number" min="0" step="500" /></label>
               <label>貸款支出<input id="loanExpense" type="number" min="0" step="1000" /></label>
               <label>現金存款<input id="cashSavings" type="number" min="0" step="10000" /></label>
               <label>每月投資<input id="monthlyInvestment" type="number" min="0" step="1000" /></label>
-              <label>年齡<input id="age" type="number" min="18" max="80" step="1" /></label>
-              <label>退休月花費<input id="retirementMonthlyNeed" type="number" min="0" step="1000" /></label>
-            </div>
+                <label>年齡<input id="age" type="number" min="18" max="80" step="1" /></label>
+                <label>退休月花費<input id="retirementMonthlyNeed" type="number" min="0" step="1000" /></label>
+              </div>
+              <div class="panel-subhead">
+                <h3>月份現金流</h3>
+                <span>未填月份不代入月曆</span>
+              </div>
+              <div id="monthlyCashflowEditor" class="monthly-editor"></div>
           </form>
 
           <section class="panel">
@@ -79,9 +84,14 @@
         </div>
         <div id="dataQuality" class="report-layout"></div>
         <section class="panel">
-          <h3>官方價格折線</h3>
-          <canvas id="officialPriceChart" height="240" aria-label="官方 ETF 月內價格折線"></canvas>
+          <div class="panel-head">
+            <h3>價格相對走勢</h3>
+            <span class="badge">起點 = 100</span>
+          </div>
+          <div id="priceChartSummary" class="metrics compact-metrics"></div>
+          <canvas id="officialPriceChart" height="260" aria-label="官方 ETF 價格相對走勢"></canvas>
         </section>
+        <div id="databaseSectorTable" class="table-panel"></div>
         <div id="holdingsTable" class="table-panel"></div>
         <div id="navSeriesTable" class="table-panel"></div>
         <div id="priceSeriesTable" class="table-panel"></div>
@@ -126,12 +136,21 @@
       <section id="simulationView" class="view" aria-labelledby="simulationTitle">
         <div class="section-title">
           <div>
-            <h2 id="simulationTitle">10 年資產模擬</h2>
+            <h2 id="simulationTitle">資產模擬</h2>
             <p>以目前投入、ETF 配息與保守年化假設估算。</p>
           </div>
+          <label class="inline-control">期間
+            <select id="simulationYears">
+              <option value="10">10 年</option>
+              <option value="15">15 年</option>
+              <option value="20">20 年</option>
+              <option value="25">25 年</option>
+              <option value="30">30 年</option>
+            </select>
+          </label>
         </div>
         <section class="panel">
-          <canvas id="simulationChart" height="280" aria-label="10 年資產模擬折線圖"></canvas>
+          <canvas id="simulationChart" height="280" aria-label="資產模擬折線圖"></canvas>
         </section>
         <div id="simulationTable" class="table-panel"></div>
       </section>
@@ -139,8 +158,8 @@
       <section id="calendarView" class="view" aria-labelledby="calendarTitle">
         <div class="section-title">
           <div>
-            <h2 id="calendarTitle">12 個月現金流月曆</h2>
-            <p>追蹤收入、支出、ETF 配息與可投資金額。</p>
+            <h2 id="calendarTitle">月曆</h2>
+            <p>依月份輸入值與官方配息日計算。</p>
           </div>
         </div>
         <div id="cashflowCalendar" class="calendar-grid"></div>
