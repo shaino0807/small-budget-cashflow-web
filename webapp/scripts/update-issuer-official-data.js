@@ -41,10 +41,18 @@ const sourceConfigs = {
   }
 };
 
-function fetchText(url) {
+function fetchText(url, redirectCount = 0) {
   return new Promise((resolve, reject) => {
     https
       .get(url, { headers: { "User-Agent": "SmallBudgetCashflowMap/0.1" } }, (res) => {
+        if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location) {
+          if (redirectCount >= 5) {
+            reject(new Error(`Too many redirects for ${url}`));
+            return;
+          }
+          fetchText(new URL(res.headers.location, url).toString(), redirectCount + 1).then(resolve, reject);
+          return;
+        }
         let body = "";
         res.setEncoding("utf8");
         res.on("data", (chunk) => {
