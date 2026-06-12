@@ -264,6 +264,9 @@ function navRow(ticker, date, nav, close, config) {
 
 async function main() {
   const db = JSON.parse(fs.readFileSync(dbPath, "utf8"));
+  const configuredTickers = new Set(Object.keys(sourceConfigs));
+  const previousHoldings = Array.isArray(db.holdings?.items) ? db.holdings.items : [];
+  const previousNavItems = Array.isArray(db.navSeries?.items) ? db.navSeries.items : [];
   const sourceAttempts = [];
   const holdingsItems = [];
   const navItems = [];
@@ -298,16 +301,20 @@ async function main() {
     }
   }
 
-  db.holdings.status = holdingsItems.length ? "official_issuer_pages_loaded_with_gaps" : "missing_official_machine_readable_source";
-  db.holdings.items = holdingsItems;
+  const effectiveHoldingsItems = holdingsItems.length ? holdingsItems : previousHoldings;
+  const effectiveNavItems = navItems.length ? navItems : previousNavItems;
+
+  db.holdings.status = holdingsItems.length ? "official_issuer_pages_loaded_with_gaps" : "preserved_previous_snapshot_after_failed_refresh";
+  db.holdings.items = effectiveHoldingsItems;
   db.holdings.sourceAttempts = sourceAttempts.filter((attempt) => attempt.kind === "holdings");
-  db.navSeries.status = navItems.length ? "official_issuer_pages_loaded" : "missing_official_machine_readable_source";
-  db.navSeries.items = navItems;
+  db.navSeries.status = navItems.length ? "official_issuer_pages_loaded" : "preserved_previous_snapshot_after_failed_refresh";
+  db.navSeries.items = effectiveNavItems;
   db.navSeries.sourceAttempts = sourceAttempts.filter((attempt) => attempt.kind === "nav");
 
   for (const etf of db.etfs) {
-    const holdingRows = holdingsItems.filter((item) => item.ticker === etf.ticker);
-    const hasNav = navItems.some((item) => item.ticker === etf.ticker);
+    if (!configuredTickers.has(etf.ticker)) continue;
+    const holdingRows = effectiveHoldingsItems.filter((item) => item.ticker === etf.ticker);
+    const hasNav = effectiveNavItems.some((item) => item.ticker === etf.ticker);
     const flags = new Set((etf.qualityFlags || []).filter((flag) => ![
       "holdings_missing",
       "holdings_loaded",

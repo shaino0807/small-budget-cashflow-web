@@ -46,7 +46,10 @@
 
         <div class="input-grid">
           <form class="panel" id="profileForm">
-              <h3>基本狀態</h3>
+              <div>
+                <h3>年度預設值</h3>
+                <p class="panel-note">用來建立財務底稿，也可套用到下方每月現金流；已逐月填寫時，以月份資料為準。</p>
+              </div>
               <div class="field-grid">
                 <label>月收入<input id="monthlyIncome" type="number" min="0" step="1000" /></label>
                 <label>固定支出<input id="fixedExpense" type="number" min="0" step="1000" /></label>
@@ -58,8 +61,14 @@
                 <label>退休月花費<input id="retirementMonthlyNeed" type="number" min="0" step="1000" /></label>
               </div>
               <div class="panel-subhead">
-                <h3>月份現金流</h3>
-                <span>未填月份不代入月曆</span>
+                <div>
+                  <h3>月份現金流</h3>
+                  <span>未填月份不代入月曆</span>
+                </div>
+                <div class="subhead-actions">
+                  <button class="secondary-button mini-button" id="applyProfileToMonthsBtn" type="button">套用預設到全年</button>
+                  <button class="secondary-button mini-button" id="clearMonthsBtn" type="button">清空月份</button>
+                </div>
               </div>
               <div id="monthlyCashflowEditor" class="monthly-editor"></div>
           </form>
@@ -126,7 +135,6 @@
             <p>ETF、配息、壓力測試、配置建議與行動項目。</p>
           </div>
           <div class="button-row">
-            <button class="secondary-button" id="markdownBtn" type="button">下載 Markdown</button>
             <button class="primary-button" id="printBtn" type="button">匯出 PDF</button>
           </div>
         </div>

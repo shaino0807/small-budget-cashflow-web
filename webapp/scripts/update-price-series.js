@@ -87,8 +87,10 @@ async function fetchMonthlyPrice(ticker) {
 
 async function main() {
   const db = JSON.parse(fs.readFileSync(dbPath, "utf8"));
+  const featuredTickers = new Set(db.metadata?.featuredTickers || db.etfs.map((etf) => etf.ticker));
+  const targets = db.etfs.filter((etf) => featuredTickers.has(etf.ticker));
   const results = [];
-  for (const etf of db.etfs) {
+  for (const etf of targets) {
     results.push(await fetchMonthlyPrice(etf.ticker));
   }
 
@@ -107,7 +109,7 @@ async function main() {
     usage: "ETF 月內價格折線、開高低收、成交量與成交金額"
   });
 
-  for (const etf of db.etfs) {
+  for (const etf of targets) {
     const hasRows = items.some((row) => row.ticker === etf.ticker);
     etf.qualityFlags = (etf.qualityFlags || []).filter((flag) => flag !== "price_series_missing" && flag !== "daily_price_loaded");
     if (hasRows && !etf.qualityFlags.includes("monthly_price_loaded")) {
@@ -121,6 +123,7 @@ async function main() {
   fs.writeFileSync(dbPath, `${JSON.stringify(db, null, 2)}\n`, "utf8");
   console.log(JSON.stringify({
     queryDate,
+    targetTickers: targets.map((etf) => etf.ticker),
     updatedRows: items.length,
     byTicker: results.map((result) => ({ ticker: result.ticker, rows: result.rows.length, status: result.status }))
   }, null, 2));

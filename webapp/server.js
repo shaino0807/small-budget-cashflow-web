@@ -38,7 +38,7 @@ async function updateDatabase() {
   updatePromise = (async () => {
     const startedAt = new Date().toISOString();
     const steps = [];
-    for (const script of ["update-price-series.js", "update-issuer-official-data.js", "update-stock-master.js", "validate-etf-data.js"]) {
+    for (const script of ["update-etf-master.js", "update-price-series.js", "update-issuer-official-data.js", "update-stock-master.js", "validate-etf-data.js"]) {
       steps.push(await runScript(script));
     }
     return { ok: true, startedAt, finishedAt: new Date().toISOString(), steps };

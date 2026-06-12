@@ -86,6 +86,7 @@ function stockFromHolding(row) {
 
 async function main() {
   const db = JSON.parse(fs.readFileSync(dbPath, "utf8"));
+  const previousStocks = db.stocks && Array.isArray(db.stocks.items) ? db.stocks : null;
   const byTicker = new Map();
   const sourceAttempts = [];
 
@@ -184,21 +185,30 @@ async function main() {
 
   const items = [...byTicker.values()].sort((a, b) => a.ticker.localeCompare(b.ticker));
   const derivedCount = items.filter((item) => item.source === "derived-from-etf-holdings").length;
+  const hasOfficialRows = sourceAttempts.some((item) => item.status === "loaded");
 
-  db.stocks = {
-    status: sourceAttempts.some((item) => item.status === "loaded")
-      ? derivedCount ? "official_twse_loaded_with_derived_gaps" : "official_twse_loaded"
-      : "derived_from_etf_holdings_only",
-    requiredFor: ["直接股票辨識", "ETF 底層股票穿透", "整體股票重疊度"],
-    items,
-    sourceAttempts,
-    limitations: [
-      "TWSE OpenAPI 可補上市股票主檔與每日行情。",
-      "TPEx OpenAPI 可補上櫃股票每日行情，並以代號與名稱建立上櫃股票主檔；產業別與掛牌日若來源未提供會保留空值，不做假資料補值。",
-      "若使用者輸入興櫃或未上市標的，需再接 TPEx 興櫃或其他正式來源；目前會標示為未知標的，不做假資料補值。",
-      "ETF 成分股只有在投信官方成分資料完整時，才能完整穿透到個股曝險。"
-    ]
-  };
+  if (!hasOfficialRows && previousStocks) {
+    db.stocks = {
+      ...previousStocks,
+      status: "preserved_previous_snapshot_after_failed_refresh",
+      sourceAttempts
+    };
+  } else {
+    db.stocks = {
+      status: hasOfficialRows
+        ? derivedCount ? "official_twse_loaded_with_derived_gaps" : "official_twse_loaded"
+        : "derived_from_etf_holdings_only",
+      requiredFor: ["直接股票辨識", "ETF 底層股票穿透", "整體股票重疊度"],
+      items,
+      sourceAttempts,
+      limitations: [
+        "TWSE OpenAPI 可補上市股票主檔與每日行情。",
+        "TPEx OpenAPI 可補上櫃股票每日行情，並以代號與名稱建立上櫃股票主檔；產業別與掛牌日若來源未提供會保留空值，不做假資料補值。",
+        "若使用者輸入興櫃或未上市標的，需再接 TPEx 興櫃或其他正式來源；目前會標示為未知標的，不做假資料補值。",
+        "ETF 成分股只有在投信官方成分資料完整時，才能完整穿透到個股曝險。"
+      ]
+    };
+  }
 
   db.metadata.sources = (db.metadata.sources || []).filter((source) => !["twse-company-basic", "twse-stock-day-all", "tpex-mainboard-daily-close-quotes"].includes(source.id));
   db.metadata.sources.push({
@@ -223,7 +233,8 @@ async function main() {
   fs.writeFileSync(dbPath, `${JSON.stringify(db, null, 2)}\n`, "utf8");
   console.log(JSON.stringify({
     stocks: items.length,
-    derivedCount,
+    effectiveStocks: db.stocks.items.length,
+    derivedCount: db.stocks.items.filter((item) => item.source === "derived-from-etf-holdings").length,
     sourceAttempts
   }, null, 2));
 }

@@ -3,7 +3,7 @@ const path = require("path");
 
 const dbPath = path.join(__dirname, "..", "data", "etf-database.json");
 const db = JSON.parse(fs.readFileSync(dbPath, "utf8"));
-const today = new Date("2026-06-09T00:00:00+08:00");
+const today = new Date();
 const errors = [];
 const warnings = [];
 
@@ -20,6 +20,14 @@ assert(Array.isArray(db.distributions), "配息資料必須是陣列");
 assert(Array.isArray(db.holdings?.items), "ETF 成分股資料必須是陣列");
 assert(Array.isArray(db.navSeries?.items), "NAV/折溢價資料必須是陣列");
 assert(Array.isArray(db.priceSeries?.items), "價格資料必須是陣列");
+if (db.etfMaster) {
+  assert(Array.isArray(db.etfMaster.items), "ETF master items 必須是陣列");
+  assert(db.etfMaster.items.length === db.etfs.length, "ETF master 筆數需與 ETF 主檔一致");
+  const failedMasterSources = (db.etfMaster.sourceAttempts || []).filter((item) => item.status === "failed");
+  if (failedMasterSources.length) {
+    warn(false, `ETF master 部分官方分類來源失敗：${failedMasterSources.map((item) => item.label || item.source).join("、")}`);
+  }
+}
 
 const tickers = new Set();
 for (const etf of db.etfs) {
@@ -32,8 +40,8 @@ for (const etf of db.etfs) {
   assert(etf.sourceUrl, `${etf.ticker} 缺來源 URL`);
 
   const perfDate = new Date(`${etf.performance?.date}T00:00:00+08:00`);
-  const ageDays = Math.round((today - perfDate) / 86400000);
-  warn(ageDays <= 3, `${etf.ticker} 績效資料日期 ${etf.performance?.date} 距今 ${ageDays} 天，需確認是否最新`);
+  const ageDays = Number.isFinite(perfDate.getTime()) ? Math.round((today - perfDate) / 86400000) : 999;
+  warn(ageDays <= 3, `${etf.ticker} 績效資料日期 ${etf.performance?.date || "無"} 距今 ${ageDays} 天，需確認是否最新`);
   warn(!etf.qualityFlags?.includes("holdings_missing"), `${etf.ticker} 成分股權重尚未接上官方資料`);
   warn(!etf.qualityFlags?.includes("holdings_partial"), `${etf.ticker} 成分股權重只接上官方可見列，尚非完整成分股資料`);
   warn(!etf.qualityFlags?.includes("price_series_missing"), `${etf.ticker} 價格折線尚未接上官方資料`);
