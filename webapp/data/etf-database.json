@@ -36,6 +36,13 @@
         "usage": "ETF 每日開高低收、成交量與成交金額"
       },
       {
+        "id": "twse-etfortune-products",
+        "name": "TWSE ETF e添富投資篩選器",
+        "url": "https://www.twse.com.tw/zh/ETFortune/products",
+        "endpoint": "https://www.twse.com.tw/zh/ETFortune/ajaxProductsResult",
+        "usage": "全市場 ETF 主檔、上市日期、追蹤指數、資產規模、收盤價、受益人數、發行人，以及官方篩選器分類"
+      },
+      {
         "id": "twse-stock-day",
         "name": "TWSE STOCK_DAY 各日成交資訊",
         "url": "https://www.twse.com.tw/exchangeReport/STOCK_DAY",
@@ -88,20 +95,14 @@
         "name": "TPEx OpenAPI 上櫃股票行情",
         "url": "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes",
         "usage": "上櫃股票代號、名稱、每日開高低收、成交量、成交金額與發行股數"
-      },
-      {
-        "id": "twse-etfortune-products",
-        "name": "TWSE ETF e添富投資篩選器",
-        "url": "https://www.twse.com.tw/zh/ETFortune/products",
-        "endpoint": "https://www.twse.com.tw/zh/ETFortune/ajaxProductsResult",
-        "usage": "全市場 ETF 主檔、上市日期、追蹤指數、資產規模、收盤價、受益人數、發行人，以及官方篩選器分類"
       }
     ],
     "limitations": [
       "ETF 全市場主檔與分類來自 TWSE ETF e添富投資篩選器官方端點。",
       "TWSE 投資篩選器 assetType 資產類別參數目前回 HTTP 403；在取得可穩定讀取的官方端點前，資產類別保留為未分類，不用名稱猜測補值。",
       "ETF 成分股、NAV/折溢價與配息仍需分投信或其他正式來源逐項接入；未接上的 ETF 會保留缺資料狀態。",
-      "00878 NAV 可見但持股權重表格仍是動態頁，需取得正式 API 或下載檔；不使用第三方資料硬補。"
+      "00878 NAV 可見但持股權重表格仍是動態頁，需取得正式 API 或下載檔；不使用第三方資料硬補。",
+      "投信官方頁已接上可解析來源：0056 與 006208 持股/NAV 可由官方頁解析，00878 NAV 可見但持股權重表格仍是動態頁，需取得正式 API 或下載檔。"
     ],
     "featuredTickers": [
       "0056",
@@ -504,9 +505,9 @@
       "qualityFlags": [
         "recent_distributions_loaded",
         "monthly_price_loaded",
+        "official_twse_master_loaded",
         "holdings_loaded",
-        "nav_series_loaded",
-        "official_twse_master_loaded"
+        "nav_series_loaded"
       ],
       "assetTypes": [],
       "rewardTypes": [
@@ -756,9 +757,9 @@
       "qualityFlags": [
         "recent_distributions_loaded",
         "monthly_price_loaded",
+        "official_twse_master_loaded",
         "holdings_loaded",
-        "nav_series_loaded",
-        "official_twse_master_loaded"
+        "nav_series_loaded"
       ],
       "assetTypes": [],
       "rewardTypes": [
@@ -3738,9 +3739,9 @@
       "qualityFlags": [
         "recent_distributions_loaded",
         "monthly_price_loaded",
+        "official_twse_master_loaded",
         "holdings_missing",
-        "nav_series_loaded",
-        "official_twse_master_loaded"
+        "nav_series_loaded"
       ],
       "assetTypes": [],
       "rewardTypes": [
@@ -8761,7 +8762,7 @@
       }
     ],
     "queryDate": "20260612",
-    "updatedAt": "2026-06-12T15:36:49.215Z",
+    "updatedAt": "2026-06-12T15:53:09.020Z",
     "source": "twse-stock-day"
   },
   "navSeries": {
