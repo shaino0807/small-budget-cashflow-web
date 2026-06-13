@@ -47,8 +47,9 @@ node webapp\scripts\validate-etf-data.js
 目前已接上 TWSE 官方月內價格折線；價格折線更新只針對 `metadata.featuredTickers`，避免全市場逐檔呼叫。
 目前已接上 0056 / 006208 官方成分股與 NAV/折溢價，00878 已接 NAV/折溢價。
 目前已接上 TWSE 上市與 TPEx 上櫃股票主檔 / 日行情，用於直接股票辨識與整體股票重疊度。
+ETF 主檔會保留 TWSE 官方篩選器可讀分類：`managerType`、`rewardTypes`、`themes`。由於 TWSE 投資篩選器 `assetType` 資產類別參數目前回 `HTTP 403`，`assetTypes` 仍保留官方缺口；前端另使用 `displayClassification` 顯示層分類，來源只限 TWSE 官方主檔欄位、官方 hashtag / rewardType 篩選器與透明關鍵字規則，不把它偽裝成官方 `assetType`。
 目前前端會把官方產業代碼顯示成可讀名稱，並歸納成半導體業、電子科技業、金融股、醫療與生技、景氣循環股等分析族群；這是顯示層分類，不會把猜測分類寫回官方資料庫。
-仍待補齊：00878 官方成分股權重；TWSE 投資篩選器 `assetType` 資產類別參數目前回 `HTTP 403`，在取得可穩定讀取的官方端點前，資產類別保留缺口，不用名稱猜測補值。
+仍待補齊：00878 官方成分股權重；TWSE `assetType` 正式可讀端點。
 
 ## 對應位置
 

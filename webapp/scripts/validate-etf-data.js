@@ -28,6 +28,7 @@ if (db.etfMaster) {
     warn(false, `ETF master 部分官方分類來源失敗：${failedMasterSources.map((item) => item.label || item.source).join("、")}`);
   }
 }
+assert(db.classificationRules?.source === "derived_from_official_twse_fields", "ETF 顯示分類規則來源必須標記為 derived_from_official_twse_fields");
 
 const tickers = new Set();
 for (const etf of db.etfs) {
@@ -38,6 +39,7 @@ for (const etf of db.etfs) {
   assert(etf.issuer, `${etf.ticker} 缺發行公司`);
   assert(etf.indexName, `${etf.ticker} 缺追蹤指數`);
   assert(etf.sourceUrl, `${etf.ticker} 缺來源 URL`);
+  assert(etf.displayClassification?.primary, `${etf.ticker} 缺顯示分類`);
 
   const perfDate = new Date(`${etf.performance?.date}T00:00:00+08:00`);
   const ageDays = Number.isFinite(perfDate.getTime()) ? Math.round((today - perfDate) / 86400000) : 999;

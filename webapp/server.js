@@ -55,6 +55,10 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (urlPath === "/api/update-database") {
+    if (process.env.SMOKE_TEST === "1") {
+      sendJson(res, 200, { ok: true, skipped: true, reason: "smoke-test" });
+      return;
+    }
     updateDatabase()
       .then((result) => sendJson(res, 200, result))
       .catch((error) => sendJson(res, 500, { ok: false, error: error.message }));

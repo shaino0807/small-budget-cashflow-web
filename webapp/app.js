@@ -207,6 +207,12 @@ function validateEtfDatabase(db) {
     errors.push("ETF 主檔不可為空");
   }
 
+  if (!db?.classificationRules) {
+    warnings.push("ETF 顯示分類規則尚未載入");
+  } else if (db.classificationRules.source !== "derived_from_official_twse_fields") {
+    warnings.push("ETF 顯示分類規則來源需重新確認");
+  }
+
   for (const etf of db?.etfs || []) {
     if (!etf.ticker) errors.push("ETF 缺 ticker");
     if (tickers.has(etf.ticker)) errors.push(`ETF ticker 重複：${etf.ticker}`);
@@ -214,6 +220,7 @@ function validateEtfDatabase(db) {
     if (!etf.shortName || !etf.fundName) errors.push(`${etf.ticker} 缺名稱`);
     if (!etf.issuer) errors.push(`${etf.ticker} 缺發行公司`);
     if (!etf.sourceUrl) errors.push(`${etf.ticker} 缺來源 URL`);
+    if (!etf.displayClassification?.primary) warnings.push(`${etf.ticker} 缺顯示分類`);
 
     const date = new Date(`${etf.performance?.date || ""}T00:00:00+08:00`);
     if (Number.isNaN(date.getTime())) {
@@ -285,7 +292,7 @@ function enrichHoldingsFromDatabase() {
       ...holding,
       name: etf.shortName,
       type: etfDisplayType(etf, holding.type === "個股" ? "ETF" : holding.type),
-      sector: etf.themes?.[0] || etf.assetTypes?.[0] || holding.sector,
+      sector: etf.themes?.[0] || etf.displayClassification?.primary || etf.assetTypes?.[0] || holding.sector,
       dividendYield: estimatedDividendYield(etf.ticker, holding.dividendYield),
       yieldSource: "official_distributions",
       dataSource: "official_snapshot",
@@ -372,6 +379,10 @@ function estimatedDividendYield(ticker, fallback = 0) {
 }
 
 function etfDisplayType(etf, fallback = "ETF") {
+  const display = etf?.displayClassification?.primary;
+  if (display && display !== "ETF" && display !== "未分類") {
+    return display === "股票型" ? "股票型ETF" : display;
+  }
   const assetTypes = etf?.assetTypes || [];
   const rewardTypes = etf?.rewardTypes || [];
   const themes = etf?.themes || [];
@@ -386,6 +397,21 @@ function etfDisplayType(etf, fallback = "ETF") {
   if (themes.includes("大型權值") || themes.includes("全市場指數")) return "市值型";
   if (assetTypes.includes("股票型")) return "股票型ETF";
   return fallback || etf?.category || "ETF";
+}
+
+function classificationTags(etf) {
+  const display = etf?.displayClassification;
+  const tags = [];
+  if (display?.primary && display.primary !== "ETF") tags.push(display.primary);
+  if (display?.market && display.market !== "未分類") tags.push(display.market);
+  if (display?.strategy && display.strategy !== "未分類") tags.push(display.strategy);
+  return tags.length ? tags : ["未分類"];
+}
+
+function tagListHtml(tags) {
+  const cleanTags = tags.filter(Boolean);
+  const items = cleanTags.length ? cleanTags : ["未分類"];
+  return `<div class="tag-list">${items.map((tag) => `<span class="mini-tag">${tag}</span>`).join("")}</div>`;
 }
 
 function industryDisplayName(value) {
@@ -1335,16 +1361,33 @@ function renderDatabaseView() {
     failed: "失敗",
     loading: "載入中"
   }[quality.status] || quality.status;
+  const classifiedCount = db?.etfs?.filter((etf) => etf.displayClassification?.confidence === "rule_based").length || 0;
+  const officialAssetTypesCount = db?.etfs?.filter((etf) => etf.assetTypes?.length).length || 0;
 
   q("#dataQuality").innerHTML = `
     <section class="score-panel">
       <span class="badge">${statusText}</span>
       <div class="metrics">
         <div class="metric"><span>ETF 主檔</span><strong>${quality.counts.etfs}</strong></div>
+        <div class="metric"><span>顯示分類</span><strong>${classifiedCount}</strong><small>規則透明標記</small></div>
+        <div class="metric"><span>官方 assetType</span><strong>${officialAssetTypesCount}</strong><small>TWSE 端點目前 403</small></div>
         <div class="metric"><span>股票主檔</span><strong>${quality.counts.stocks}</strong></div>
         <div class="metric"><span>配息資料</span><strong>${quality.counts.distributions}</strong></div>
         <div class="metric"><span>成分股</span><strong>${quality.counts.holdings}</strong></div>
         <div class="metric"><span>NAV/價格</span><strong>${quality.counts.navSeries + quality.counts.priceSeries}</strong></div>
+      </div>
+    </section>
+    <section class="panel">
+      <h3>ETF 分類規則</h3>
+      <p class="panel-note">全市場主檔來自 TWSE e添富官方端點；顯示分類只使用官方欄位、官方篩選器標籤與透明關鍵字規則，不覆蓋官方 assetType。</p>
+      <div class="classification-strip">
+        ${Object.entries((db?.etfs || []).reduce((acc, etf) => {
+          const key = etf.displayClassification?.primary || "未分類";
+          acc[key] = (acc[key] || 0) + 1;
+          return acc;
+        }, {})).sort((a, b) => b[1] - a[1]).map(([name, count]) => `
+          <span><strong>${name}</strong>${count}</span>
+        `).join("")}
       </div>
     </section>
     <section class="panel">
@@ -1363,12 +1406,14 @@ function renderDatabaseView() {
       <span>${db.etfs.length} 檔</span>
     </div>
     <table>
-      <thead><tr><th>代號</th><th>名稱</th><th>發行公司</th><th>追蹤指數</th><th>資產規模</th><th>資料日</th><th>來源</th></tr></thead>
+      <thead><tr><th>代號</th><th>名稱</th><th>顯示分類</th><th>官方標籤</th><th>發行公司</th><th>追蹤指數</th><th>資產規模</th><th>資料日</th><th>來源</th></tr></thead>
       <tbody>
         ${db.etfs.map((etf) => `
           <tr>
             <td>${etf.ticker}</td>
             <td>${etf.shortName}</td>
+            <td>${tagListHtml(classificationTags(etf))}</td>
+            <td>${tagListHtml([...(etf.assetTypes || []), ...(etf.rewardTypes || []), ...(etf.themes || [])].slice(0, 4))}</td>
             <td>${etf.issuer}</td>
             <td>${etf.indexName}</td>
             <td>${number.format(etf.aumBillionTwd)} 億</td>
