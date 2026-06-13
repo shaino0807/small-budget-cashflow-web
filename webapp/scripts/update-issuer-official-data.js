@@ -4,6 +4,7 @@ const path = require("path");
 const vm = require("vm");
 
 const dbPath = path.join(__dirname, "..", "data", "etf-database.json");
+const requestTimeoutMs = 15000;
 
 const sourceConfigs = {
   "0056": {
@@ -43,7 +44,7 @@ const sourceConfigs = {
 
 function fetchText(url, redirectCount = 0) {
   return new Promise((resolve, reject) => {
-    https
+    const req = https
       .get(url, { headers: { "User-Agent": "SmallBudgetCashflowMap/0.1" } }, (res) => {
         if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location) {
           if (redirectCount >= 5) {
@@ -67,6 +68,9 @@ function fetchText(url, redirectCount = 0) {
         });
       })
       .on("error", reject);
+    req.setTimeout(requestTimeoutMs, () => {
+      req.destroy(new Error(`Request timeout after ${requestTimeoutMs}ms`));
+    });
   });
 }
 
@@ -268,8 +272,8 @@ async function main() {
   const previousHoldings = Array.isArray(db.holdings?.items) ? db.holdings.items : [];
   const previousNavItems = Array.isArray(db.navSeries?.items) ? db.navSeries.items : [];
   const sourceAttempts = [];
-  const holdingsItems = [];
-  const navItems = [];
+  const holdingsItems = previousHoldings.filter((item) => !configuredTickers.has(item.ticker));
+  const navItems = previousNavItems.filter((item) => !configuredTickers.has(item.ticker));
 
   for (const ticker of Object.keys(sourceConfigs)) {
     const config = sourceConfigs[ticker];
@@ -281,10 +285,18 @@ async function main() {
         : ticker === "006208"
           ? parseFubonHoldings(holdingsHtml, ticker, config.holdings)
           : parseCathayHoldings(holdingsHtml, ticker, config.holdings);
-      holdingsItems.push(...parsed);
-      sourceAttempts.push({ ticker, kind: "holdings", status: parsed.length ? "loaded" : "no_visible_rows", rows: parsed.length, url: config.holdings.url });
+      if (parsed.length) {
+        holdingsItems.push(...parsed);
+        sourceAttempts.push({ ticker, kind: "holdings", status: "loaded", rows: parsed.length, url: config.holdings.url });
+      } else {
+        const preserved = previousHoldings.filter((item) => item.ticker === ticker);
+        holdingsItems.push(...preserved);
+        sourceAttempts.push({ ticker, kind: "holdings", status: preserved.length ? "no_visible_rows_preserved_previous" : "no_visible_rows", rows: parsed.length, preservedRows: preserved.length, url: config.holdings.url });
+      }
     } catch (error) {
-      sourceAttempts.push({ ticker, kind: "holdings", status: "failed", error: error.message, url: config.holdings.url });
+      const preserved = previousHoldings.filter((item) => item.ticker === ticker);
+      holdingsItems.push(...preserved);
+      sourceAttempts.push({ ticker, kind: "holdings", status: preserved.length ? "failed_preserved_previous" : "failed", error: error.message, preservedRows: preserved.length, url: config.holdings.url });
     }
 
     try {
@@ -294,27 +306,32 @@ async function main() {
         : ticker === "006208"
           ? parseFubonNav(navHtml, ticker, config.nav, db)
           : parseCathayNav(navHtml, ticker, config.nav);
-      if (parsed) navItems.push(parsed);
-      sourceAttempts.push({ ticker, kind: "nav", status: parsed ? "loaded" : "no_visible_nav", rows: parsed ? 1 : 0, url: config.nav.url });
+      if (parsed) {
+        navItems.push(parsed);
+        sourceAttempts.push({ ticker, kind: "nav", status: "loaded", rows: 1, url: config.nav.url });
+      } else {
+        const preserved = previousNavItems.filter((item) => item.ticker === ticker);
+        navItems.push(...preserved);
+        sourceAttempts.push({ ticker, kind: "nav", status: preserved.length ? "no_visible_nav_preserved_previous" : "no_visible_nav", rows: 0, preservedRows: preserved.length, url: config.nav.url });
+      }
     } catch (error) {
-      sourceAttempts.push({ ticker, kind: "nav", status: "failed", error: error.message, url: config.nav.url });
+      const preserved = previousNavItems.filter((item) => item.ticker === ticker);
+      navItems.push(...preserved);
+      sourceAttempts.push({ ticker, kind: "nav", status: preserved.length ? "failed_preserved_previous" : "failed", error: error.message, preservedRows: preserved.length, url: config.nav.url });
     }
   }
 
-  const effectiveHoldingsItems = holdingsItems.length ? holdingsItems : previousHoldings;
-  const effectiveNavItems = navItems.length ? navItems : previousNavItems;
-
-  db.holdings.status = holdingsItems.length ? "official_issuer_pages_loaded_with_gaps" : "preserved_previous_snapshot_after_failed_refresh";
-  db.holdings.items = effectiveHoldingsItems;
+  db.holdings.status = "official_issuer_pages_loaded_with_gaps";
+  db.holdings.items = holdingsItems;
   db.holdings.sourceAttempts = sourceAttempts.filter((attempt) => attempt.kind === "holdings");
-  db.navSeries.status = navItems.length ? "official_issuer_pages_loaded" : "preserved_previous_snapshot_after_failed_refresh";
-  db.navSeries.items = effectiveNavItems;
+  db.navSeries.status = "official_issuer_pages_loaded";
+  db.navSeries.items = navItems;
   db.navSeries.sourceAttempts = sourceAttempts.filter((attempt) => attempt.kind === "nav");
 
   for (const etf of db.etfs) {
     if (!configuredTickers.has(etf.ticker)) continue;
-    const holdingRows = effectiveHoldingsItems.filter((item) => item.ticker === etf.ticker);
-    const hasNav = effectiveNavItems.some((item) => item.ticker === etf.ticker);
+    const holdingRows = holdingsItems.filter((item) => item.ticker === etf.ticker);
+    const hasNav = navItems.some((item) => item.ticker === etf.ticker);
     const flags = new Set((etf.qualityFlags || []).filter((flag) => ![
       "holdings_missing",
       "holdings_loaded",

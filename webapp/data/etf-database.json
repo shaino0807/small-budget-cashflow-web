@@ -13137,8 +13137,9 @@
       {
         "ticker": "0056",
         "kind": "holdings",
-        "status": "no_visible_rows",
+        "status": "no_visible_rows_preserved_previous",
         "rows": 0,
+        "preservedRows": 49,
         "url": "https://www.yuantaetfs.com/product/detail/0056/ratio"
       },
       {
@@ -13146,6 +13147,7 @@
         "kind": "holdings",
         "status": "no_visible_rows",
         "rows": 0,
+        "preservedRows": 0,
         "url": "https://www.cathaysite.com.tw/ETF/detail/ECN?lang=en_US"
       },
       {
@@ -13610,15 +13612,6 @@
         "source": "yuanta-pcf-nav"
       },
       {
-        "ticker": "006208",
-        "date": "2026-06-12",
-        "close": 236.1,
-        "nav": 237.17,
-        "premiumDiscountPercent": -0.4512,
-        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
-        "source": "fubon-fund-assets-nav"
-      },
-      {
         "ticker": "00878",
         "date": "2026-06-12",
         "close": 32.05,
@@ -13626,14 +13619,24 @@
         "premiumDiscountPercent": -0.4967,
         "sourceUrl": "https://www.cathaysite.com.tw/fund-details/ECN?tab=net_worth",
         "source": "cathay-fund-detail-nav"
+      },
+      {
+        "ticker": "006208",
+        "date": "2026-06-12",
+        "close": 236.1,
+        "nav": 237.17,
+        "premiumDiscountPercent": -0.4512,
+        "sourceUrl": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+        "source": "fubon-fund-assets-nav"
       }
     ],
     "sourceAttempts": [
       {
         "ticker": "0056",
         "kind": "nav",
-        "status": "no_visible_nav",
+        "status": "no_visible_nav_preserved_previous",
         "rows": 0,
+        "preservedRows": 1,
         "url": "https://www.yuantaetfs.com/product/detail/0056/ratio"
       },
       {
