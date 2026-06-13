@@ -18,8 +18,9 @@
 
 - 本地 Git：使用中
 - 預設 branch：`main`
-- GitHub repo：使用者已要求建立，但目前 GitHub CLI token 失效，待重新登入後再建立
-- GitHub Pages：未啟用
+- GitHub repo：`https://github.com/shaino0807/small-budget-cashflow-web`
+- GitHub Pages：已啟用，使用 GitHub Actions workflow 部署
+- 對外網址：`https://shaino0807.github.io/small-budget-cashflow-web/`
 
 ## Obsidian
 
