@@ -36,35 +36,17 @@
         "usage": "ETF 每日開高低收、成交量與成交金額"
       },
       {
-        "id": "twse-stock-day",
-        "name": "TWSE STOCK_DAY 各日成交資訊",
-        "url": "https://www.twse.com.tw/exchangeReport/STOCK_DAY",
-        "usage": "ETF 月內價格折線、開高低收、成交量與成交金額"
-      },
-      {
-        "id": "twse-company-basic",
-        "name": "TWSE OpenAPI 上市公司基本資料",
-        "url": "https://openapi.twse.com.tw/v1/opendata/t187ap03_L",
-        "usage": "股票主檔、公司簡稱、產業別與上市日期"
-      },
-      {
-        "id": "twse-stock-day-all",
-        "name": "TWSE OpenAPI 上市個股日成交資訊",
-        "url": "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL",
-        "usage": "股票每日開高低收、成交量與最新價格"
-      },
-      {
-        "id": "tpex-mainboard-daily-close-quotes",
-        "name": "TPEx OpenAPI 上櫃股票行情",
-        "url": "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes",
-        "usage": "上櫃股票代號、名稱、每日開高低收、成交量、成交金額與發行股數"
-      },
-      {
         "id": "twse-etfortune-products",
         "name": "TWSE ETF e添富投資篩選器",
         "url": "https://www.twse.com.tw/zh/ETFortune/products",
         "endpoint": "https://www.twse.com.tw/zh/ETFortune/ajaxProductsResult",
         "usage": "全市場 ETF 主檔、上市日期、追蹤指數、資產規模、收盤價、受益人數、發行人，以及官方篩選器分類"
+      },
+      {
+        "id": "twse-stock-day",
+        "name": "TWSE STOCK_DAY 各日成交資訊",
+        "url": "https://www.twse.com.tw/exchangeReport/STOCK_DAY",
+        "usage": "ETF 月內價格折線、開高低收、成交量與成交金額"
       },
       {
         "id": "yuanta-holdings-ratio",
@@ -95,6 +77,24 @@
         "name": "富邦投信 ETF 基金資產",
         "url": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
         "usage": "006208 官方基金資產、完整可見持股列與 NAV"
+      },
+      {
+        "id": "twse-company-basic",
+        "name": "TWSE OpenAPI 上市公司基本資料",
+        "url": "https://openapi.twse.com.tw/v1/opendata/t187ap03_L",
+        "usage": "股票主檔、公司簡稱、產業別與上市日期"
+      },
+      {
+        "id": "twse-stock-day-all",
+        "name": "TWSE OpenAPI 上市個股日成交資訊",
+        "url": "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL",
+        "usage": "股票每日開高低收、成交量與最新價格"
+      },
+      {
+        "id": "tpex-mainboard-daily-close-quotes",
+        "name": "TPEx OpenAPI 上櫃股票行情",
+        "url": "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes",
+        "usage": "上櫃股票代號、名稱、每日開高低收、成交量、成交金額與發行股數"
       }
     ],
     "limitations": [
@@ -13590,7 +13590,7 @@
       }
     ],
     "queryDate": "20260613",
-    "updatedAt": "2026-06-13T05:00:04.938Z",
+    "updatedAt": "2026-06-13T11:21:05.546Z",
     "source": "twse-stock-day"
   },
   "navSeries": {
