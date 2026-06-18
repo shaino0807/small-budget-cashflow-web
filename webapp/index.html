@@ -25,8 +25,8 @@
     </header>
 
     <nav class="tabbar" aria-label="主要功能">
-      <button class="tab is-active" data-view="inputView" type="button">輸入</button>
-      <button class="tab" data-view="databaseView" type="button">資料庫</button>
+      <button class="tab is-active" data-view="landingView" type="button">首頁</button>
+      <button class="tab" data-view="inputView" type="button">輸入</button>
       <button class="tab" data-view="freeReportView" type="button">免費報告</button>
       <button class="tab" data-view="upgradeView" type="button">升級</button>
       <button class="tab paid-tab" data-view="paidReportView" type="button">完整報告</button>
@@ -35,7 +35,106 @@
     </nav>
 
     <main>
-      <section id="inputView" class="view is-active" aria-labelledby="inputTitle">
+      <section id="landingView" class="view is-active" aria-labelledby="landingTitle">
+        <div class="hero-section">
+          <div class="hero-copy">
+            <span class="eyebrow">給每月只剩 5,000 到 10,000 的你</span>
+            <h2 id="landingTitle">先知道錢該存、該還，還是可以開始投資</h2>
+            <p>3 分鐘做完現金流健檢，先拿免費報告，再決定要不要看完整配置或預約諮詢。</p>
+            <div class="hero-actions">
+              <button class="primary-button" data-scroll-target="quickCheckPanel" type="button">開始 5 題健檢</button>
+              <button class="secondary-button" data-goto="freeReportView" type="button">先看目前報告</button>
+            </div>
+            <div class="pain-points" aria-label="常見痛點">
+              <span>薪水進來又出去</span>
+              <span>怕投資賠錢</span>
+              <span>家用壓力固定</span>
+              <span>不知道 5,000 怎麼分</span>
+            </div>
+          </div>
+          <div class="hero-card" aria-label="健檢會回答的問題">
+            <strong>填完後會得到</strong>
+            <ul class="feature-list">
+              <li>你現在最該先處理的一件事</li>
+              <li>每月 5,000 到 10,000 的分配方式</li>
+              <li>你目前不適合做的投資動作</li>
+            </ul>
+          </div>
+        </div>
+
+        <section class="quick-check panel" id="quickCheckPanel" aria-labelledby="quickCheckTitle">
+          <div class="panel-head">
+            <div>
+              <h3 id="quickCheckTitle">5 題現金流健檢</h3>
+              <p class="panel-note">不用登入。資料只存在這台瀏覽器，先看免費結果。</p>
+            </div>
+            <span class="badge">約 3 分鐘</span>
+          </div>
+          <div class="quiz-grid">
+            <label>1. 你每月收入大約多少？
+              <input id="quizIncome" type="number" min="0" step="1000" placeholder="例如 42000" />
+            </label>
+            <label>2. 每月固定支出大約多少？
+              <input id="quizExpense" type="number" min="0" step="1000" placeholder="房租、家用、保險、貸款合計" />
+            </label>
+            <label>3. 目前存款大約多少？
+              <input id="quizSavings" type="number" min="0" step="10000" placeholder="例如 80000" />
+            </label>
+          </div>
+          <div class="choice-block">
+            <span>4. 每月最多可投入多少？</span>
+            <div class="choice-row" id="quizCapacity">
+              <button class="choice-button" data-capacity="under5000" type="button">5,000 以下</button>
+              <button class="choice-button is-selected" data-capacity="5000to10000" type="button">5,000 到 10,000</button>
+              <button class="choice-button" data-capacity="over10000" type="button">10,000 以上</button>
+            </div>
+          </div>
+          <div class="choice-block">
+            <span>5. 你現在最擔心什麼？</span>
+            <div class="choice-row" id="quizConcern">
+              <button class="choice-button is-selected" data-concern="saving" type="button">存不到錢</button>
+              <button class="choice-button" data-concern="investing" type="button">不會投資</button>
+              <button class="choice-button" data-concern="loss" type="button">怕賠錢</button>
+              <button class="choice-button" data-concern="family" type="button">家用壓力</button>
+            </div>
+          </div>
+          <div class="quick-result" id="quickResult"></div>
+          <div class="button-row">
+            <button class="primary-button" id="quickGenerateBtn" type="button">產生免費報告</button>
+            <button class="secondary-button" data-goto="inputView" type="button">我想自己細填</button>
+          </div>
+        </section>
+
+        <section class="trust-strip" aria-label="資料來源信任背書">
+          <div>
+            <strong>資料不是亂猜</strong>
+            <p>本工具使用公開官方 ETF / 股票資料，不用網路謠言或手動亂填。</p>
+          </div>
+          <button class="secondary-button" data-goto="databaseView" type="button">查看資料後台</button>
+        </section>
+
+        <section class="contact-panel panel" id="contactPanel" aria-labelledby="contactTitle">
+          <span class="eyebrow">需要人幫你看</span>
+          <h3 id="contactTitle">把免費報告帶來，下一步可以直接問配置</h3>
+          <p class="panel-note">下方連結先保留為導流入口，正式上線前替換成你的 LINE 個人帳號、IG 與表單網址。</p>
+          <div class="contact-grid">
+            <a id="line-contact" class="contact-card" href="#" aria-label="LINE 個人諮詢">
+              <strong>LINE 個人諮詢</strong>
+              <span>傳你的月收入、支出與報告分數</span>
+            </a>
+            <a id="ig-contact" class="contact-card" href="#" aria-label="IG 看案例">
+              <strong>IG 看案例</strong>
+              <span>看 5,000 到 10,000 月現金流案例</span>
+            </a>
+            <a id="form-contact" class="contact-card" href="#" aria-label="填表領配置表">
+              <strong>填表領配置表</strong>
+              <span>留下問題，回覆你的分配方向</span>
+            </a>
+          </div>
+        </section>
+      </section>
+
+      <section id="inputView" class="view" aria-labelledby="inputTitle">
         <div class="section-title">
           <div>
             <h2 id="inputTitle">財務資料</h2>
@@ -86,8 +185,8 @@
       <section id="databaseView" class="view" aria-labelledby="databaseTitle">
         <div class="section-title">
           <div>
-            <h2 id="databaseTitle">ETF / 股票資料庫</h2>
-            <p id="databaseSummary">載入官方資料快照中。</p>
+            <h2 id="databaseTitle">後台資料庫</h2>
+            <p id="databaseSummary">這裡給管理者查核官方資料快照，外部使用者看免費報告即可。</p>
           </div>
           <button class="secondary-button" id="reloadDataBtn" type="button">重新讀取</button>
         </div>

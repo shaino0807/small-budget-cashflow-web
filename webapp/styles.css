@@ -1,6 +1,6 @@
 :root {
   color-scheme: light;
-  --bg: #fbf7f1;
+  --bg: #fff8ef;
   --surface: rgba(255, 255, 255, 0.78);
   --surface-solid: #ffffff;
   --surface-2: #eef8f5;
@@ -27,8 +27,7 @@ body {
   margin: 0;
   min-width: 320px;
   background:
-    radial-gradient(1200px 520px at 16% -12%, rgba(17, 128, 111, 0.15), transparent 58%),
-    radial-gradient(900px 460px at 100% 4%, rgba(228, 166, 77, 0.18), transparent 62%),
+    linear-gradient(135deg, rgba(255, 246, 232, 0.94) 0%, rgba(255, 255, 255, 0.86) 42%, rgba(238, 248, 245, 0.92) 100%),
     linear-gradient(180deg, #fffaf3 0%, #f7f6f1 48%, #eef7f4 100%),
     var(--bg);
   color: var(--text);
@@ -305,6 +304,237 @@ main {
   width: min(1180px, 100%);
   margin: 0 auto;
   padding: 24px clamp(16px, 4vw, 32px) 40px;
+}
+
+.hero-section {
+  position: relative;
+  display: grid;
+  gap: 22px;
+  min-height: clamp(430px, 62vh, 620px);
+  align-content: center;
+  padding: clamp(28px, 6vw, 72px);
+  overflow: hidden;
+  border: 1px solid rgba(199, 109, 50, 0.16);
+  border-radius: 8px;
+  background:
+    linear-gradient(125deg, rgba(255, 244, 224, 0.92), rgba(255, 255, 255, 0.76) 48%, rgba(232, 247, 243, 0.84)),
+    repeating-linear-gradient(90deg, rgba(199, 109, 50, 0.06) 0 1px, transparent 1px 34px);
+  box-shadow: var(--shadow);
+}
+
+.hero-section::before {
+  position: absolute;
+  inset: auto 6% 8% auto;
+  width: min(360px, 42vw);
+  height: min(360px, 42vw);
+  content: "";
+  border: 1px solid rgba(17, 128, 111, 0.18);
+  border-radius: 50%;
+  animation: slow-spin 18s linear infinite;
+}
+
+.hero-section::after {
+  position: absolute;
+  inset: 18% auto auto 8%;
+  width: 140px;
+  height: 140px;
+  content: "";
+  border: 1px solid rgba(199, 109, 50, 0.20);
+  transform: rotate(18deg);
+  animation: soft-float 8s ease-in-out infinite;
+}
+
+.hero-copy {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 18px;
+  max-width: 760px;
+}
+
+.eyebrow {
+  display: inline-flex;
+  width: max-content;
+  max-width: 100%;
+  min-height: 30px;
+  align-items: center;
+  padding: 0 10px;
+  border: 1px solid rgba(199, 109, 50, 0.20);
+  border-radius: 8px;
+  background: rgba(255, 250, 243, 0.78);
+  color: #8a4a1f;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.hero-copy h2 {
+  max-width: 720px;
+  font-size: clamp(32px, 6vw, 62px);
+  line-height: 1.08;
+}
+
+.hero-copy p {
+  max-width: 650px;
+  color: #4d5a54;
+  font-size: clamp(16px, 2vw, 20px);
+  font-weight: 700;
+}
+
+.hero-actions,
+.pain-points,
+.choice-row,
+.cta-grid,
+.contact-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pain-points span {
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid rgba(17, 128, 111, 0.15);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.70);
+  color: var(--primary-2);
+  font-weight: 800;
+}
+
+.hero-card {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  max-width: 720px;
+  gap: 10px;
+  color: #39443f;
+  font-weight: 800;
+}
+
+.quick-check,
+.trust-strip,
+.contact-panel {
+  margin-top: 18px;
+}
+
+.quiz-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.choice-block {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.choice-button {
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.84);
+  color: var(--text);
+  font-weight: 800;
+}
+
+.choice-button.is-selected {
+  border-color: rgba(17, 128, 111, 0.42);
+  background: rgba(238, 248, 245, 0.96);
+  color: var(--primary-2);
+  box-shadow: inset 0 0 0 1px rgba(17, 128, 111, 0.12);
+}
+
+.quick-result {
+  margin: 16px 0;
+}
+
+.quick-result-card {
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+  border: 1px solid rgba(199, 109, 50, 0.20);
+  border-radius: 8px;
+  background: rgba(255, 248, 237, 0.84);
+}
+
+.quick-result-card span,
+.prescription-card span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.quick-result-card strong,
+.prescription-card strong {
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+.trust-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid rgba(17, 128, 111, 0.18);
+  border-radius: 8px;
+  background: rgba(238, 248, 245, 0.78);
+  box-shadow: var(--soft-shadow);
+}
+
+.trust-strip p,
+.contact-panel p,
+.lead-cta-panel p {
+  color: var(--muted);
+}
+
+.prescription-panel,
+.lead-cta-panel,
+.trust-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.prescription-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.prescription-card,
+.contact-card {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.76);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.contact-card:hover {
+  border-color: rgba(17, 128, 111, 0.28);
+  box-shadow: var(--soft-shadow);
+}
+
+.contact-card span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.cta-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  text-decoration: none;
 }
 
 .view {
@@ -783,6 +1013,27 @@ td:first-child {
   box-shadow: var(--shadow);
 }
 
+@keyframes slow-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes soft-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(18deg);
+  }
+
+  50% {
+    transform: translateY(14px) rotate(24deg);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -795,6 +1046,10 @@ td:first-child {
 }
 
 @media (max-width: 880px) {
+  .quiz-grid {
+    grid-template-columns: 1fr;
+  }
+
   .input-grid,
   .report-layout,
   .plans,
@@ -809,6 +1064,10 @@ td:first-child {
 
   .month-row {
     grid-template-columns: 40px repeat(2, minmax(0, 1fr));
+  }
+
+  .trust-strip {
+    display: grid;
   }
 }
 
@@ -850,6 +1109,39 @@ td:first-child {
 
   .tabbar {
     top: 67px;
+  }
+
+  main {
+    padding-top: 16px;
+  }
+
+  .hero-section {
+    min-height: auto;
+    padding: 24px 16px;
+  }
+
+  .hero-section::before {
+    width: 220px;
+    height: 220px;
+    opacity: 0.45;
+  }
+
+  .hero-section::after {
+    width: 86px;
+    height: 86px;
+    opacity: 0.55;
+  }
+
+  .hero-copy h2 {
+    font-size: 34px;
+  }
+
+  .hero-actions button,
+  .hero-actions .secondary-button,
+  .choice-button,
+  .cta-link,
+  .contact-card {
+    width: 100%;
   }
 
   .section-title {

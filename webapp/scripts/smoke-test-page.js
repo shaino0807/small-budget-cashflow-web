@@ -72,6 +72,7 @@ async function main() {
   let chromeProcess = null;
   const failures = [];
   const consoleErrors = [];
+  const runtimeErrors = [];
   const badResponses = [];
 
   try {
@@ -132,6 +133,9 @@ async function main() {
       if (message.method === "Runtime.consoleAPICalled" && message.params.type === "error") {
         consoleErrors.push(message.params.args.map((arg) => arg.value || arg.description || "").join(" "));
       }
+      if (message.method === "Runtime.exceptionThrown") {
+        runtimeErrors.push(message.params.exceptionDetails?.exception?.description || message.params.exceptionDetails?.text || "runtime exception");
+      }
       if (message.method === "Network.loadingFailed") {
         failures.push(message.params.errorText || message.params.blockedReason || "loadingFailed");
       }
@@ -165,25 +169,13 @@ async function main() {
         title: document.title,
         activeView: document.querySelector('.view.is-active')?.id,
         header: document.querySelector('h1')?.textContent,
+        heroTitle: document.querySelector('#landingTitle')?.textContent,
+        quickCheckExists: Boolean(document.querySelector('#quickCheckPanel')),
+        contactExists: Boolean(document.querySelector('#contactPanel')),
         tabCount: document.querySelectorAll('.tab').length,
         panelCount: document.querySelectorAll('.panel,.score-panel,.table-panel,.plan-card,.calendar-card').length,
         bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth),
         htmlLength: document.body.innerText.length
-      }))()`
-    });
-
-    await send(ws, "Runtime.evaluate", {
-      expression: `document.querySelector('[data-view="databaseView"]')?.click()`
-    });
-    await wait(1200);
-    const databaseMetrics = await send(ws, "Runtime.evaluate", {
-      returnByValue: true,
-      expression: `(() => ({
-        activeView: document.querySelector('.view.is-active')?.id,
-        summary: document.querySelector('#databaseSummary')?.textContent,
-        classificationStrip: document.querySelector('.classification-strip')?.innerText || '',
-        etfRows: document.querySelectorAll('#etfDatabaseTable tbody tr').length,
-        bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
       }))()`
     });
     if (screenshotPath) {
@@ -191,18 +183,81 @@ async function main() {
       fs.writeFileSync(screenshotPath, Buffer.from(shot.data, "base64"));
     }
 
+    await send(ws, "Runtime.evaluate", {
+      expression: `(() => {
+        document.querySelector('#quizIncome').value = '42000';
+        document.querySelector('#quizExpense').value = '33000';
+        document.querySelector('#quizSavings').value = '80000';
+        document.querySelector('[data-capacity="5000to10000"]').click();
+        document.querySelector('[data-concern="family"]').click();
+        document.querySelector('#quickGenerateBtn').click();
+      })()`
+    });
+    await wait(800);
+    const freeReportMetrics = await send(ws, "Runtime.evaluate", {
+      returnByValue: true,
+      expression: `(() => {
+        const text = document.querySelector('#freeReport')?.innerText || '';
+        return {
+          activeView: document.querySelector('.view.is-active')?.id,
+          hasPrescription: text.includes('本月最該做的 3 件事'),
+          hasFirstAction: text.includes('先處理'),
+          hasAllocation: text.includes('月投入配置'),
+          hasAvoid: text.includes('先不要做'),
+          hasNumbers: /\\$|5,000|8,000|10,000|NT/.test(text),
+          bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
+        };
+      })()`
+    });
+
+    await send(ws, "Runtime.evaluate", {
+      expression: `window.goTo ? window.goTo("databaseView") : document.querySelector('[data-goto="databaseView"]')?.click()`
+    });
+    for (let i = 0; i < 12; i++) {
+      const rows = await send(ws, "Runtime.evaluate", {
+        returnByValue: true,
+        expression: `document.querySelectorAll('#etfDatabaseTable tbody tr').length`
+      });
+      if (rows.result.value > 0) break;
+      await wait(500);
+    }
+    const databaseMetrics = await send(ws, "Runtime.evaluate", {
+      returnByValue: true,
+      expression: `(() => ({
+        activeView: document.querySelector('.view.is-active')?.id,
+        summary: document.querySelector('#databaseSummary')?.textContent,
+        dataQuality: document.querySelector('#dataQuality')?.innerText || '',
+        classificationStrip: document.querySelector('.classification-strip')?.innerText || '',
+        etfRows: document.querySelectorAll('#etfDatabaseTable tbody tr').length,
+        bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
+      }))()`
+    });
     const result = {
       url: targetUrl,
       viewport: "390x844 mobile",
       consoleErrors,
+      runtimeErrors,
       failedRequests: failures,
       badResponses,
       input: inputMetrics.result.value,
+      freeReport: freeReportMetrics.result.value,
       database: databaseMetrics.result.value,
       passed: consoleErrors.length === 0
+        && runtimeErrors.length === 0
         && failures.length === 0
         && badResponses.length === 0
+        && inputMetrics.result.value.activeView === "landingView"
+        && inputMetrics.result.value.quickCheckExists
+        && inputMetrics.result.value.contactExists
         && inputMetrics.result.value.bodyOverflow === 0
+        && freeReportMetrics.result.value.activeView === "freeReportView"
+        && freeReportMetrics.result.value.hasPrescription
+        && freeReportMetrics.result.value.hasFirstAction
+        && freeReportMetrics.result.value.hasAllocation
+        && freeReportMetrics.result.value.hasAvoid
+        && freeReportMetrics.result.value.hasNumbers
+        && freeReportMetrics.result.value.bodyOverflow === 0
+        && databaseMetrics.result.value.activeView === "databaseView"
         && databaseMetrics.result.value.bodyOverflow === 0
         && databaseMetrics.result.value.etfRows > 0
     };

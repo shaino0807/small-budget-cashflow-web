@@ -43,6 +43,28 @@ const industryNames = {
   "91": "存託憑證"
 };
 
+const defaultState = {
+  profile: {
+    monthlyIncome: 0,
+    fixedExpense: 0,
+    insuranceExpense: 0,
+    loanExpense: 0,
+    cashSavings: 0,
+    monthlyInvestment: 0,
+    age: 35,
+    retirementMonthlyNeed: 30000
+  },
+  holdings: [],
+  monthlyCashflows: {},
+  simulationYears: 10,
+  paidUnlocked: false,
+  consultingUnlocked: false,
+  leadProfile: {
+    capacity: "5000to10000",
+    concern: "saving"
+  }
+};
+
 const sampleState = {
   profile: {
     monthlyIncome: 62000,
@@ -62,11 +84,15 @@ const sampleState = {
   monthlyCashflows: {},
   simulationYears: 10,
   paidUnlocked: false,
-  consultingUnlocked: false
+  consultingUnlocked: false,
+  leadProfile: {
+    capacity: "5000to10000",
+    concern: "investing"
+  }
 };
 
 let state = loadState();
-let activeView = "inputView";
+let activeView = "landingView";
 let etfDatabase = null;
 let etfDataQuality = {
   status: "loading",
@@ -74,7 +100,7 @@ let etfDataQuality = {
   warnings: ["ETF 官方資料庫尚未載入"],
   counts: { etfs: 0, distributions: 0, holdings: 0, stocks: 0, priceSeries: 0, navSeries: 0 }
 };
-let latestReport = buildReport();
+let latestReport = null;
 
 const profileFields = [
   "monthlyIncome",
@@ -97,23 +123,26 @@ const number = new Intl.NumberFormat("zh-TW", {
   maximumFractionDigits: 0
 });
 
+latestReport = buildReport();
+
 function loadState() {
   const saved = localStorage.getItem(storageKey);
-  if (!saved) return normalizeState(structuredClone(sampleState));
+  if (!saved) return normalizeState(structuredClone(defaultState));
   try {
-    return normalizeState({ ...structuredClone(sampleState), ...JSON.parse(saved) });
+    return normalizeState({ ...structuredClone(defaultState), ...JSON.parse(saved) });
   } catch {
-    return normalizeState(structuredClone(sampleState));
+    return normalizeState(structuredClone(defaultState));
   }
 }
 
 function normalizeState(next) {
-  next.profile = { ...structuredClone(sampleState.profile), ...(next.profile || {}) };
-  next.holdings = Array.isArray(next.holdings) ? next.holdings.map(normalizeHolding) : structuredClone(sampleState.holdings);
+  next.profile = { ...structuredClone(defaultState.profile), ...(next.profile || {}) };
+  next.holdings = Array.isArray(next.holdings) ? next.holdings.map(normalizeHolding) : structuredClone(defaultState.holdings);
   next.monthlyCashflows = normalizeMonthlyCashflows(next.monthlyCashflows, next.profile);
   next.simulationYears = simulationYearOptions.includes(Number(next.simulationYears)) ? Number(next.simulationYears) : 10;
   next.paidUnlocked = Boolean(next.paidUnlocked);
   next.consultingUnlocked = Boolean(next.consultingUnlocked);
+  next.leadProfile = { ...structuredClone(defaultState.leadProfile), ...(next.leadProfile || {}) };
   return next;
 }
 
@@ -896,6 +925,69 @@ function personalizedActions(report) {
   return actions.slice(0, 4);
 }
 
+function capacityAmount(capacity) {
+  if (capacity === "under5000") return 4000;
+  if (capacity === "over10000") return 12000;
+  return 8000;
+}
+
+function capacityLabel(capacity) {
+  if (capacity === "under5000") return "5,000 以下";
+  if (capacity === "over10000") return "10,000 以上";
+  return "5,000 到 10,000";
+}
+
+function concernLabel(concern) {
+  return {
+    saving: "存不到錢",
+    investing: "不會投資",
+    loss: "怕賠錢",
+    family: "家用壓力"
+  }[concern] || "存不到錢";
+}
+
+function monthlyPlanBudget(report) {
+  const profile = report.profile;
+  const freeCash = Math.max(0, Number(profile.monthlyIncome || 0) - monthlyTotalExpense(profile));
+  const picked = Number(profile.monthlyInvestment || 0) || capacityAmount(state.leadProfile?.capacity);
+  if (freeCash > 0) return Math.max(1000, Math.min(picked, freeCash));
+  return Math.max(0, picked);
+}
+
+function beginnerPrescription(report) {
+  const profile = report.profile;
+  const expenses = monthlyTotalExpense(profile);
+  const freeBeforeInvestment = Number(profile.monthlyIncome || 0) - expenses;
+  const budget = monthlyPlanBudget(report);
+  const reserveTarget = expenses * 6;
+  const reserveGap = Math.max(0, reserveTarget - Number(profile.cashSavings || 0));
+  const emergencyWeak = reserveGap > expenses;
+  const invest = emergencyWeak ? Math.round(budget * 0.25 / 500) * 500 : Math.round(budget * 0.6 / 500) * 500;
+  const safety = Math.max(0, budget - invest);
+  const avoidBuffer = Math.max(0, budget - invest);
+  const concern = concernLabel(state.leadProfile?.concern);
+  const firstAction = emergencyWeak
+    ? `先把安全水位補到 ${formatMoney(reserveTarget)}。你目前還差 ${formatMoney(reserveGap)}，本月先保留 ${formatMoney(safety)}，投資不要超過 ${formatMoney(invest)}。`
+    : `安全水位已接近可用，先把每月 ${formatMoney(budget)} 拆成 ${formatMoney(safety)} 備用金與 ${formatMoney(invest)} 低波動投入。`;
+  const allocation = budget > 0
+    ? `以每月 ${formatMoney(budget)} 來看，建議 ${formatMoney(safety)} 放現金安全水位，${formatMoney(invest)} 做低波動 ETF 定期投入。`
+    : `目前每月剩餘現金流約 ${formatMoney(freeBeforeInvestment)}，先不要新增投資金額，第一步是把支出壓到收入以下。`;
+  const avoid = budget > 0
+    ? `不適合把 ${formatMoney(budget)} 全部押在單一高股息 ETF，也不適合用生活費追求配息。至少保留 ${formatMoney(avoidBuffer)} 給現金與家用緩衝。`
+    : `不適合在現金流為負時硬買 ETF。先把每月支出至少降 ${formatMoney(Math.abs(Math.min(0, freeBeforeInvestment)) + 1000)}，再談投資。`;
+  return {
+    budget,
+    safety,
+    invest,
+    reserveTarget,
+    reserveGap,
+    concern,
+    firstAction,
+    allocation,
+    avoid
+  };
+}
+
 function buildReport() {
   const profile = state.profile;
   const holdings = state.holdings;
@@ -924,6 +1016,7 @@ function buildReport() {
   };
   report.allocations = allocationRecommendations(report);
   report.actions = personalizedActions(report);
+  report.prescription = beginnerPrescription(report);
   return report;
 }
 
@@ -936,6 +1029,7 @@ function syncInputs() {
     });
   });
   q("#simulationYears").value = state.simulationYears;
+  syncQuizInputs();
   renderMonthlyCashflows();
   renderHoldings();
 }
@@ -1130,6 +1224,7 @@ function escapeHtml(value) {
 function refreshReports() {
   latestReport = buildReport();
   renderHeader();
+  renderQuickResult();
   renderDatabaseView();
   renderFreeReport();
   renderUpgrade();
@@ -1141,6 +1236,67 @@ function refreshReports() {
 function renderHeader() {
   q("#headerStatus").textContent = state.paidUnlocked ? "完整報告已解鎖" : "免費健檢";
   document.querySelectorAll(".paid-tab").forEach((tab) => tab.classList.toggle("is-locked", !state.paidUnlocked));
+}
+
+function updateProfileInputs() {
+  profileFields.forEach((field) => {
+    const input = q(`#${field}`);
+    if (input) input.value = state.profile[field];
+  });
+}
+
+function syncQuizInputs() {
+  const income = q("#quizIncome");
+  const expense = q("#quizExpense");
+  const savings = q("#quizSavings");
+  if (income) income.value = state.profile.monthlyIncome || "";
+  if (expense) expense.value = monthlyTotalExpense(state.profile) || "";
+  if (savings) savings.value = state.profile.cashSavings || "";
+  document.querySelectorAll("[data-capacity]").forEach((button) => {
+    button.classList.toggle("is-selected", button.dataset.capacity === state.leadProfile.capacity);
+  });
+  document.querySelectorAll("[data-concern]").forEach((button) => {
+    button.classList.toggle("is-selected", button.dataset.concern === state.leadProfile.concern);
+  });
+}
+
+function applyQuickCheck() {
+  const income = Number(q("#quizIncome")?.value || 0);
+  const expense = Number(q("#quizExpense")?.value || 0);
+  const savings = Number(q("#quizSavings")?.value || 0);
+  const capacity = state.leadProfile.capacity || "5000to10000";
+  const monthlyInvestment = Math.min(capacityAmount(capacity), Math.max(0, income - expense));
+  state.profile.monthlyIncome = income;
+  state.profile.fixedExpense = expense;
+  state.profile.insuranceExpense = 0;
+  state.profile.loanExpense = 0;
+  state.profile.cashSavings = savings;
+  state.profile.monthlyInvestment = monthlyInvestment;
+  state.profile.retirementMonthlyNeed = Math.max(30000, Math.round(expense / 1000) * 1000);
+  const currentMonth = new Date().getMonth() + 1;
+  state.monthlyCashflows[currentMonth] = {
+    monthlyIncome: income,
+    fixedExpense: expense,
+    insuranceExpense: 0,
+    loanExpense: 0,
+    monthlyInvestment
+  };
+  updateProfileInputs();
+  renderMonthlyCashflows();
+  refreshReports();
+  persist();
+}
+
+function renderQuickResult() {
+  const root = q("#quickResult");
+  if (!root || !latestReport?.prescription) return;
+  const item = latestReport.prescription;
+  root.innerHTML = `
+    <div class="quick-result-card">
+      <span>目前試算</span>
+      <strong>每月可規劃 ${formatMoney(item.budget)}，先放 ${formatMoney(item.safety)} 安全水位，${formatMoney(item.invest)} 再投入。</strong>
+    </div>
+  `;
 }
 
 function scoreHtml(report) {
@@ -1291,14 +1447,72 @@ function stockExposureHtml(report) {
   `;
 }
 
+function beginnerPrescriptionHtml(report) {
+  const item = report.prescription;
+  return `
+    <section class="panel prescription-panel">
+      <span class="eyebrow">免費報告先給你方向</span>
+      <h3>本月最該做的 3 件事</h3>
+      <div class="prescription-grid">
+        <article class="prescription-card">
+          <span>先處理</span>
+          <strong>${item.firstAction}</strong>
+        </article>
+        <article class="prescription-card">
+          <span>月投入配置</span>
+          <strong>${item.allocation}</strong>
+        </article>
+        <article class="prescription-card">
+          <span>先不要做</span>
+          <strong>${item.avoid}</strong>
+        </article>
+      </div>
+      <p class="panel-note">你選的投入區間是 ${capacityLabel(state.leadProfile?.capacity)}，最擔心的是「${item.concern}」。完整報告會把 ETF 重疊、配息壓力與月份現金流一起排進去。</p>
+    </section>
+  `;
+}
+
+function trustSourceHtml() {
+  const quality = etfDataQuality;
+  return `
+    <section class="panel trust-panel">
+      <span class="eyebrow">資料來源</span>
+      <h3>本工具使用公開官方 ETF / 股票資料，不用網路謠言或手動亂填。</h3>
+      <div class="metrics">
+        <div class="metric"><span>ETF 主檔</span><strong>${quality.counts.etfs || 0} 檔</strong></div>
+        <div class="metric"><span>股票主檔</span><strong>${quality.counts.stocks || 0} 檔</strong></div>
+        <div class="metric"><span>配息資料</span><strong>${quality.counts.distributions || 0} 筆</strong></div>
+        <div class="metric"><span>資料狀態</span><strong>${quality.status === "failed" ? "需檢查" : "可查核"}</strong></div>
+      </div>
+      <button class="secondary-button" data-goto="databaseView" type="button">查看資料後台</button>
+    </section>
+  `;
+}
+
+function leadCtaHtml() {
+  return `
+    <section class="panel lead-cta-panel">
+      <span class="eyebrow">下一步</span>
+      <h3>想把每月 5,000 到 10,000 排成自己的現金流表？</h3>
+      <p>先領完整報告，或直接從 LINE / IG / 表單留下問題。連結可替換成你的正式帳號。</p>
+      <div class="cta-grid">
+        <a class="primary-button cta-link" href="#contactPanel">LINE 個人諮詢</a>
+        <a class="secondary-button cta-link" href="#contactPanel">IG 看案例</a>
+        <a class="secondary-button cta-link" href="#contactPanel">填表領配置表</a>
+      </div>
+    </section>
+  `;
+}
+
 function renderFreeReport() {
   const report = latestReport;
   q("#freeReport").innerHTML = `
     ${scoreHtml(report)}
     <div class="stack">
+      ${beginnerPrescriptionHtml(report)}
       ${breakdownHtml(report)}
       ${risksHtml(report, false)}
-      ${dataSourceHtml()}
+      ${trustSourceHtml()}
       <section class="panel">
         <h3>退休缺口方向</h3>
         <p>${state.simulationYears} 年後推估資產 ${formatMoney(report.gap.projected)}，距離目標仍差 ${formatMoney(report.gap.gap)}。</p>
@@ -1307,8 +1521,10 @@ function renderFreeReport() {
         <h3>現金流預覽</h3>
         <p>目前每月可用現金流約 ${formatMoney(investableCashflow(report.profile))}。月份月曆與 ETF 配息壓力測試需升級後查看。</p>
       </section>
+      ${leadCtaHtml()}
     </div>
   `;
+  bindGotoButtons();
 }
 
 function renderUpgrade() {
@@ -1799,6 +2015,29 @@ function bindEvents() {
   document.querySelectorAll(".tab").forEach((tab) => {
     tab.addEventListener("click", () => goTo(tab.dataset.view));
   });
+  document.querySelectorAll("[data-scroll-target]").forEach((button) => {
+    button.addEventListener("click", () => {
+      q(`#${button.dataset.scrollTarget}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
+  document.querySelectorAll("[data-capacity]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.leadProfile.capacity = button.dataset.capacity;
+      syncQuizInputs();
+      refreshReports();
+    });
+  });
+  document.querySelectorAll("[data-concern]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.leadProfile.concern = button.dataset.concern;
+      syncQuizInputs();
+      refreshReports();
+    });
+  });
+  q("#quickGenerateBtn").addEventListener("click", () => {
+    applyQuickCheck();
+    goTo("freeReportView");
+  });
   q("#generateBtn").addEventListener("click", () => {
     refreshReports();
     persist();
@@ -1810,7 +2049,10 @@ function bindEvents() {
   });
   q("#sampleBtn").addEventListener("click", () => {
     state = normalizeState(structuredClone(sampleState));
-    syncInputs();
+    updateProfileInputs();
+    syncQuizInputs();
+    renderMonthlyCashflows();
+    renderHoldings();
     refreshReports();
     persist();
     showToast("已套用範例資料");
