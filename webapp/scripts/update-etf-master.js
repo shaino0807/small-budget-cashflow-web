@@ -1,4 +1,5 @@
 const fs = require("fs");
+const http = require("http");
 const https = require("https");
 const path = require("path");
 
@@ -32,10 +33,11 @@ const filters = [
   { field: "hashtag", value: "ff808081899b8efc0189aa0864d40027", label: "公司治理及ESG", target: "themes" }
 ];
 
-function postProducts(params = {}) {
-  const body = new URLSearchParams(params).toString();
+function requestProducts(url, body, redirectCount = 0) {
   return new Promise((resolve, reject) => {
-    const req = https.request(productsUrl, {
+    const target = new URL(url);
+    const client = target.protocol === "http:" ? http : https;
+    const req = client.request(target, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
@@ -45,6 +47,16 @@ function postProducts(params = {}) {
         "X-Requested-With": "XMLHttpRequest"
       }
     }, (res) => {
+      if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location) {
+        res.resume();
+        if (redirectCount >= 5) {
+          reject(new Error(`Too many redirects for ${url}`));
+          return;
+        }
+        const nextUrl = new URL(res.headers.location, url).toString();
+        requestProducts(nextUrl, body, redirectCount + 1).then(resolve, reject);
+        return;
+      }
       let response = "";
       res.setEncoding("utf8");
       res.on("data", (chunk) => {
@@ -68,9 +80,17 @@ function postProducts(params = {}) {
       });
     });
     req.on("error", reject);
+    req.setTimeout(15000, () => {
+      req.destroy(new Error(`Request timeout for ${url}`));
+    });
     req.write(body);
     req.end();
   });
+}
+
+function postProducts(params = {}) {
+  const body = new URLSearchParams(params).toString();
+  return requestProducts(productsUrl, body);
 }
 
 function toNumber(value) {
