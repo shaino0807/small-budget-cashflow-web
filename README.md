@@ -80,6 +80,8 @@ ETF 主檔會保留 TWSE 官方篩選器可讀分類：`managerType`、`rewardTy
 
 正式部署後臺時，將 `webapp/runtime-config.js` 的 `window.CASHFLOW_API_BASE` 設為 HTTPS API 網址。GitHub Pages 只負責靜態前端，SQLite 與密鑰必須部署在有持久磁碟與環境變數保護的後臺主機。
 
+正式部署建議在 GitHub repository secret 新增 `BACKEND_API_BASE`。Pages workflow 會在部署時執行 `build-runtime-config.js`，把 HTTPS 後臺網址寫入部署產物，不需要再修改或提交 `runtime-config.js`。
+
 管理端入口使用 `?admin=1`，例如 `http://localhost:5188/?admin=1`。公開首頁預設不顯示管理端分頁。
 
 `render.yaml` 已準備 Render Docker Web Service、Singapore 區域、1 GB 持久磁碟及健康檢查。Render 持久磁碟需要付費 Web Service。建立 Blueprint 時只需另外輸入後臺專用的 `GITHUB_ACTIONS_TOKEN`；此 token 不會進入前端。每次頁面開啟都會要求後臺檢查更新，後臺最多每 15 分鐘安全觸發一次 GitHub Actions，避免流量成長後對 GitHub 與官方資料來源造成濫用。
