@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: small-budget-cashflow-api
+    runtime: docker
+    region: singapore
+    plan: starter
+    dockerfilePath: ./webapp/Dockerfile
+    dockerContext: ./webapp
+    healthCheckPath: /api/health
+    maxShutdownDelaySeconds: 30
+    envVars:
+      - key: CUSTOMER_DATA_KEY
+        generateValue: true
+      - key: ACCESS_CODE_PEPPER
+        generateValue: true
+      - key: ADMIN_API_KEY
+        generateValue: true
+      - key: CUSTOMER_DATA_DIR
+        value: /data
+      - key: CUSTOMER_RETENTION_DAYS
+        value: "365"
+      - key: MARKET_REFRESH_MINUTES
+        value: "15"
+      - key: ACTION_DISPATCH_MINUTES
+        value: "15"
+      - key: ALLOWED_ORIGINS
+        value: https://shaino0807.github.io
+      - key: GITHUB_REPOSITORY
+        value: shaino0807/small-budget-cashflow-web
+      - key: GITHUB_WORKFLOW_FILE
+        value: pages.yml
+      - key: GITHUB_WORKFLOW_REF
+        value: main
+      - key: GITHUB_ACTIONS_TOKEN
+        sync: false
+    disk:
+      name: customer-data
+      mountPath: /data
+      sizeGB: 1

@@ -42,6 +42,7 @@ jobs:
           node webapp/scripts/update-price-series.js
           node webapp/scripts/update-issuer-official-data.js
           node webapp/scripts/update-stock-master.js
+          node webapp/scripts/finalize-data-quality.js
           node webapp/scripts/validate-etf-data.js
 
       - name: Commit refreshed database

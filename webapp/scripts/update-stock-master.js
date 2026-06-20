@@ -127,7 +127,9 @@ async function main() {
       if (!ticker || !byTicker.has(ticker)) return;
       const stock = byTicker.get(ticker);
       stock.latestPrice = {
-        date: db.metadata?.snapshotDate || new Date().toISOString().slice(0, 10),
+        date: null,
+        observedAt: new Date().toISOString(),
+        sourceDateStatus: "official_endpoint_does_not_provide_date",
         open: toNumber(getField(row, ["OpeningPrice", "開盤價"])),
         high: toNumber(getField(row, ["HighestPrice", "最高價"])),
         low: toNumber(getField(row, ["LowestPrice", "最低價"])),
@@ -138,7 +140,14 @@ async function main() {
       };
       stock.qualityFlags = [...new Set([...(stock.qualityFlags || []), "daily_price_loaded"])];
     });
-    sourceAttempts.push({ source: "twse-stock-day-all", status: "loaded", rows: rows.length, url: twseDailyUrl });
+    sourceAttempts.push({
+      source: "twse-stock-day-all",
+      status: "loaded",
+      rows: rows.length,
+      sourceDataDate: null,
+      dateEvidence: "官方回應列未提供交易日期",
+      url: twseDailyUrl
+    });
   } catch (error) {
     sourceAttempts.push({ source: "twse-stock-day-all", status: "failed", error: error.message, url: twseDailyUrl });
   }
@@ -147,11 +156,13 @@ async function main() {
     const rows = await getJson(tpexDailyUrl);
     if (!Array.isArray(rows)) throw new Error("TPEx daily response is not an array");
     let stockRows = 0;
+    const officialDates = [];
     rows.forEach((row) => {
       const ticker = normalizeTicker(getField(row, ["SecuritiesCompanyCode", "Code", "代號"]));
       if (!isFourDigitStock(ticker)) return;
       stockRows += 1;
-      const date = rocCompactToIso(getField(row, ["Date", "資料日期"])) || db.metadata?.snapshotDate || new Date().toISOString().slice(0, 10);
+      const date = rocCompactToIso(getField(row, ["Date", "資料日期"]));
+      if (date) officialDates.push(date);
       const existing = byTicker.get(ticker);
       byTicker.set(ticker, {
         ticker,
@@ -162,6 +173,8 @@ async function main() {
         listingDate: existing?.listingDate || null,
         latestPrice: {
           date,
+          observedAt: new Date().toISOString(),
+          sourceDateStatus: date ? "official_row_date" : "official_row_date_missing",
           open: toNumber(getField(row, ["Open", "開盤"])),
           high: toNumber(getField(row, ["High", "最高"])),
           low: toNumber(getField(row, ["Low", "最低"])),
@@ -178,7 +191,15 @@ async function main() {
         qualityFlags: ["official_tpex_quote_loaded", "daily_price_loaded", "master_from_daily_quote"]
       });
     });
-    sourceAttempts.push({ source: "tpex-mainboard-daily-close-quotes", status: "loaded", rows: rows.length, stockRows, url: tpexDailyUrl });
+    sourceAttempts.push({
+      source: "tpex-mainboard-daily-close-quotes",
+      status: "loaded",
+      rows: rows.length,
+      stockRows,
+      sourceDataDate: officialDates.sort().at(-1) || null,
+      dateEvidence: "官方 Date 欄位",
+      url: tpexDailyUrl
+    });
   } catch (error) {
     sourceAttempts.push({ source: "tpex-mainboard-daily-close-quotes", status: "failed", error: error.message, url: tpexDailyUrl });
   }
@@ -200,6 +221,7 @@ async function main() {
         : "derived_from_etf_holdings_only",
       requiredFor: ["直接股票辨識", "ETF 底層股票穿透", "整體股票重疊度"],
       items,
+      updatedAt: new Date().toISOString(),
       sourceAttempts,
       limitations: [
         "TWSE OpenAPI 可補上市股票主檔與每日行情。",

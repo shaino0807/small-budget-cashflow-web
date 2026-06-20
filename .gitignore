@@ -8,6 +8,8 @@ Thumbs.db
 # 敏感資料
 .env
 .env.*
+!.env.example
+!webapp/.env.example
 *.key
 credentials.*
 secrets.*
@@ -26,6 +28,10 @@ build/
 .cache/
 webapp/screenshots/
 webapp/reports/
+webapp/private-data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
 
 # Portable project-local skills
 !project-skills/

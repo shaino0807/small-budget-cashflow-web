@@ -1,4 +1,5 @@
 const { spawn } = require("child_process");
+const crypto = require("crypto");
 const fs = require("fs");
 const http = require("http");
 const os = require("os");
@@ -70,6 +71,7 @@ send.pending = new Map();
 async function main() {
   let serverProcess = null;
   let chromeProcess = null;
+  let customerDataDir = null;
   const failures = [];
   const consoleErrors = [];
   const runtimeErrors = [];
@@ -77,9 +79,17 @@ async function main() {
 
   try {
     if (shouldServe) {
+      customerDataDir = fs.mkdtempSync(path.join(os.tmpdir(), "cashflow-smoke-data-"));
       serverProcess = spawn(process.execPath, [path.join(__dirname, "..", "server.js")], {
         cwd: path.join(__dirname, "..", ".."),
-        env: { ...process.env, SMOKE_TEST: "1" },
+        env: {
+          ...process.env,
+          SMOKE_TEST: "1",
+          CUSTOMER_DATA_DIR: customerDataDir,
+          CUSTOMER_DATA_KEY: crypto.randomBytes(32).toString("base64"),
+          ACCESS_CODE_PEPPER: crypto.randomBytes(24).toString("base64url"),
+          ADMIN_API_KEY: crypto.randomBytes(24).toString("base64url")
+        },
         windowsHide: true,
         stdio: "ignore"
       });
@@ -178,6 +188,36 @@ async function main() {
         htmlLength: document.body.innerText.length
       }))()`
     });
+    await send(ws, "Runtime.evaluate", {
+      expression: `document.querySelector('#quickGenerateBtn').click()`
+    });
+    await wait(200);
+    const validationMetrics = await send(ws, "Runtime.evaluate", {
+      returnByValue: true,
+      expression: `(() => ({
+        activeView: document.querySelector('.view.is-active')?.id,
+        quickErrorsVisible: !document.querySelector('#quickValidationErrors')?.hidden,
+        quickErrorCount: document.querySelectorAll('#quickValidationErrors li').length
+      }))()`
+    });
+    await send(ws, "Runtime.evaluate", {
+      expression: `(() => {
+        document.querySelector('.tab[data-view="inputView"]').click();
+        document.querySelector('#generateBtn').click();
+      })()`
+    });
+    await wait(200);
+    const detailedValidationMetrics = await send(ws, "Runtime.evaluate", {
+      returnByValue: true,
+      expression: `(() => ({
+        activeView: document.querySelector('.view.is-active')?.id,
+        errorsVisible: !document.querySelector('#profileValidationErrors')?.hidden,
+        errorCount: document.querySelectorAll('#profileValidationErrors li').length
+      }))()`
+    });
+    await send(ws, "Runtime.evaluate", {
+      expression: `document.querySelector('.tab[data-view="landingView"]').click()`
+    });
     if (screenshotPath) {
       const shot = await send(ws, "Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
       fs.writeFileSync(screenshotPath, Buffer.from(shot.data, "base64"));
@@ -185,9 +225,88 @@ async function main() {
 
     await send(ws, "Runtime.evaluate", {
       expression: `(() => {
+        document.querySelector('[data-check-type="stock"]').click();
+        const consent = document.querySelector('#dataConsent');
+        if (!consent.checked) consent.click();
+        document.querySelector('#contactChannel').value = 'line';
+        document.querySelector('#contactChannel').dispatchEvent(new Event('change', { bubbles: true }));
+        document.querySelector('#contactValue').value = 'test-secret-contact';
+        document.querySelector('#contactValue').dispatchEvent(new Event('input', { bubbles: true }));
+        document.querySelector('#stockMonthlyBudget').value = '8000';
+        document.querySelector('#stockMonthlyBudget').dispatchEvent(new Event('input', { bubbles: true }));
+        document.querySelector('[data-stock-reason="friend"]').click();
+        document.querySelector('[data-stock-drop="unsure"]').click();
+        document.querySelector('[data-stock-count="1to3"]').click();
+        document.querySelector('[data-stock-horizon="3months"]').click();
+        document.querySelector('#quickGenerateBtn').click();
+      })()`
+    });
+    await wait(800);
+    const stockReportMetrics = await send(ws, "Runtime.evaluate", {
+      returnByValue: true,
+      expression: `(() => {
+        const text = document.querySelector('#freeReport')?.innerText || '';
+        const localState = localStorage.getItem('cashflow-map-web-state') || '';
+        return {
+          activeView: document.querySelector('.view.is-active')?.id,
+          hasStockConclusion: text.includes('你現在每月最多只適合拿多少買股票'),
+          hasSingleStockLimit: text.includes('單一個股最多不要超過多少'),
+          hasAvoidOperations: text.includes('你目前不適合做什麼操作'),
+          hasRedLight: text.includes('紅燈') && text.includes('先不要買股票，先補現金流'),
+          hasNoTipPositioning: text.includes('不提供選股推薦'),
+          hasStockCta: text.includes('這檔股票我能不能買'),
+          hasGeneratedAt: text.includes('產生時間'),
+          hasInputVersion: text.includes('cashflow-input-v2'),
+          hasReportVersion: text.includes('cashflow-report-v2'),
+          hasEncryptedSave: text.includes('已加密保存') && text.includes('報告編號') && text.includes('存取碼'),
+          sensitiveDataExcludedFromLocalStorage: !localState.includes('test-secret-contact') && !localState.includes(state.reportMeta?.accessCode || '__missing__'),
+          bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
+        };
+      })()`
+    });
+    const stockLightMatrix = await send(ws, "Runtime.evaluate", {
+      returnByValue: true,
+      expression: `(() => {
+        const setCase = ({ income, expense, savings, loan = 0, reason = 'learn', drop = 'hold', horizon = '3years', budget = 8000, count = '0' }) => {
+          state.profile.monthlyIncome = income;
+          state.profile.fixedExpense = expense;
+          state.profile.insuranceExpense = 0;
+          state.profile.loanExpense = loan;
+          state.profile.cashSavings = savings;
+          state.leadProfile.stockReason = reason;
+          state.leadProfile.stockDrop = drop;
+          state.leadProfile.stockHorizon = horizon;
+          state.leadProfile.stockMonthlyBudget = budget;
+          state.leadProfile.stockCount = count;
+          refreshReports();
+          return latestReport.stockSafety.level;
+        };
+        return {
+          green: setCase({ income: 60000, expense: 30000, savings: 180000 }),
+          yellow: setCase({ income: 60000, expense: 30000, savings: 180000, reason: 'friend' }),
+          red: setCase({ income: 60000, expense: 30000, savings: 30000 }),
+          black: setCase({ income: 30000, expense: 35000, savings: 10000 })
+        };
+      })()`
+    });
+
+    await send(ws, "Runtime.evaluate", {
+      expression: `(() => {
+        document.querySelector('[data-goto="landingView"]')?.click();
+        if (!document.querySelector('#landingView').classList.contains('is-active')) {
+          document.querySelector('.tab[data-view="landingView"]').click();
+        }
+        document.querySelector('[data-check-type="cashflow"]').click();
+      })()`
+    });
+    await send(ws, "Runtime.evaluate", {
+      expression: `(() => {
         document.querySelector('#quizIncome').value = '42000';
+        document.querySelector('#quizIncome').dispatchEvent(new Event('input', { bubbles: true }));
         document.querySelector('#quizExpense').value = '33000';
+        document.querySelector('#quizExpense').dispatchEvent(new Event('input', { bubbles: true }));
         document.querySelector('#quizSavings').value = '80000';
+        document.querySelector('#quizSavings').dispatchEvent(new Event('input', { bubbles: true }));
         document.querySelector('[data-capacity="5000to10000"]').click();
         document.querySelector('[data-concern="family"]').click();
         document.querySelector('#quickGenerateBtn').click();
@@ -240,6 +359,10 @@ async function main() {
       failedRequests: failures,
       badResponses,
       input: inputMetrics.result.value,
+      requiredValidation: validationMetrics.result.value,
+      detailedValidation: detailedValidationMetrics.result.value,
+      stockReport: stockReportMetrics.result.value,
+      stockLights: stockLightMatrix.result.value,
       freeReport: freeReportMetrics.result.value,
       database: databaseMetrics.result.value,
       passed: consoleErrors.length === 0
@@ -250,6 +373,29 @@ async function main() {
         && inputMetrics.result.value.quickCheckExists
         && inputMetrics.result.value.contactExists
         && inputMetrics.result.value.bodyOverflow === 0
+        && validationMetrics.result.value.activeView === "landingView"
+        && validationMetrics.result.value.quickErrorsVisible
+        && validationMetrics.result.value.quickErrorCount >= 4
+        && detailedValidationMetrics.result.value.activeView === "inputView"
+        && detailedValidationMetrics.result.value.errorsVisible
+        && detailedValidationMetrics.result.value.errorCount >= 4
+        && stockReportMetrics.result.value.activeView === "freeReportView"
+        && stockReportMetrics.result.value.hasStockConclusion
+        && stockReportMetrics.result.value.hasSingleStockLimit
+        && stockReportMetrics.result.value.hasAvoidOperations
+        && stockReportMetrics.result.value.hasRedLight
+        && stockReportMetrics.result.value.hasNoTipPositioning
+        && stockReportMetrics.result.value.hasStockCta
+        && stockReportMetrics.result.value.hasGeneratedAt
+        && stockReportMetrics.result.value.hasInputVersion
+        && stockReportMetrics.result.value.hasReportVersion
+        && stockReportMetrics.result.value.hasEncryptedSave
+        && stockReportMetrics.result.value.sensitiveDataExcludedFromLocalStorage
+        && stockReportMetrics.result.value.bodyOverflow === 0
+        && stockLightMatrix.result.value.green === "green"
+        && stockLightMatrix.result.value.yellow === "yellow"
+        && stockLightMatrix.result.value.red === "red"
+        && stockLightMatrix.result.value.black === "black"
         && freeReportMetrics.result.value.activeView === "freeReportView"
         && freeReportMetrics.result.value.hasPrescription
         && freeReportMetrics.result.value.hasFirstAction
@@ -266,6 +412,8 @@ async function main() {
   } finally {
     if (chromeProcess && !chromeProcess.killed) chromeProcess.kill();
     if (serverProcess && !serverProcess.killed) serverProcess.kill();
+    await wait(300);
+    if (customerDataDir) fs.rmSync(customerDataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   }
 }
 

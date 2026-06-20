@@ -269,7 +269,9 @@ async function main() {
         close: toNumber(row.close1),
         performance: {
           ...(existing.performance || {}),
-          date: snapshotDate,
+          date: null,
+          observedAt: new Date().toISOString(),
+          sourceDateStatus: "official_endpoint_does_not_provide_date",
           source: "twse-etfortune-products"
         },
         sourceUrl: `https://www.twse.com.tw/zh/ETFortune/etfInfo/${ticker}`,
@@ -285,7 +287,7 @@ async function main() {
   db.etfs = etfs;
   db.metadata = db.metadata || {};
   db.metadata.snapshotDate = snapshotDate;
-  db.metadata.officialPerformanceDate = snapshotDate;
+  db.metadata.refreshExecutedAt = new Date().toISOString();
   db.metadata.buildMode = "official_twse_etfortune_master_with_quality_flags";
   db.metadata.featuredTickers = db.metadata.featuredTickers || ["0056", "00878", "006208"];
   db.metadata.sources = (db.metadata.sources || []).filter((source) => source.id !== "twse-etfortune-products");

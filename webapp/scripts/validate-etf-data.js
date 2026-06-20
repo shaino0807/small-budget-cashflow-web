@@ -15,6 +15,10 @@ function warn(condition, message) {
   if (!condition) warnings.push(message);
 }
 
+function latestDate(values) {
+  return values.filter((value) => /^\d{4}-\d{2}-\d{2}$/.test(String(value || ""))).sort().at(-1) || null;
+}
+
 assert(Array.isArray(db.etfs) && db.etfs.length > 0, "ETF 主檔不可為空");
 assert(Array.isArray(db.distributions), "配息資料必須是陣列");
 assert(Array.isArray(db.holdings?.items), "ETF 成分股資料必須是陣列");
@@ -29,6 +33,34 @@ if (db.etfMaster) {
   }
 }
 assert(db.classificationRules?.source === "derived_from_official_twse_fields", "ETF 顯示分類規則來源必須標記為 derived_from_official_twse_fields");
+assert(db.metadata?.sourceFreshness?.referenceTradingDate, "缺少官方來源基準交易日");
+assert(db.metadata?.officialPerformanceDate === db.metadata?.sourceFreshness?.referenceTradingDate, "officialPerformanceDate 必須等於官方來源基準交易日");
+
+const requiredFreshnessSources = ["stockMaster", "tpexStockDaily", "priceSeries", "issuerHoldings", "issuerNav"];
+for (const sourceName of requiredFreshnessSources) {
+  const source = db.metadata?.sourceFreshness?.sources?.[sourceName];
+  assert(source, `缺少 ${sourceName} 來源新鮮度紀錄`);
+  assert(source?.sourceDataDate, `${sourceName} 缺真正來源日期`);
+  warn(source?.status === "current", `${sourceName} 來源狀態為 ${source?.status || "missing"}`);
+}
+assert(db.metadata?.sourceFreshness?.sources?.etfMaster?.status === "observed_without_source_date", "ETF master 必須明確標記官方端點未提供資料日期");
+assert(db.metadata?.sourceFreshness?.sources?.twseStockDaily?.status === "observed_without_source_date", "TWSE 全市場日行情必須明確標記官方端點未提供日期");
+assert(
+  db.metadata?.sourceFreshness?.sources?.stockMaster?.sourceDataDate === latestDate((db.stocks?.items || []).map((row) => row.latestPrice?.date)),
+  "股票來源日期必須等於股票行情資料列的真正最大日期"
+);
+assert(
+  db.metadata?.sourceFreshness?.sources?.priceSeries?.sourceDataDate === latestDate((db.priceSeries?.items || []).map((row) => row.date)),
+  "價格折線來源日期必須等於價格資料列的真正最大日期"
+);
+assert(
+  db.metadata?.sourceFreshness?.sources?.issuerHoldings?.sourceDataDate === latestDate((db.holdings?.items || []).map((row) => row.asOfDate)),
+  "成分股來源日期必須等於官方成分股資料列的真正最大日期"
+);
+assert(
+  db.metadata?.sourceFreshness?.sources?.issuerNav?.sourceDataDate === latestDate((db.navSeries?.items || []).map((row) => row.date)),
+  "NAV 來源日期必須等於官方 NAV 資料列的真正最大日期"
+);
 
 const tickers = new Set();
 for (const etf of db.etfs) {
@@ -41,9 +73,13 @@ for (const etf of db.etfs) {
   assert(etf.sourceUrl, `${etf.ticker} 缺來源 URL`);
   assert(etf.displayClassification?.primary, `${etf.ticker} 缺顯示分類`);
 
-  const perfDate = new Date(`${etf.performance?.date}T00:00:00+08:00`);
-  const ageDays = Number.isFinite(perfDate.getTime()) ? Math.round((today - perfDate) / 86400000) : 999;
-  warn(ageDays <= 3, `${etf.ticker} 績效資料日期 ${etf.performance?.date || "無"} 距今 ${ageDays} 天，需確認是否最新`);
+  if (etf.performance?.date) {
+    const perfDate = new Date(`${etf.performance.date}T00:00:00+08:00`);
+    const ageDays = Number.isFinite(perfDate.getTime()) ? Math.round((today - perfDate) / 86400000) : 999;
+    warn(ageDays <= 3, `${etf.ticker} 績效資料日期 ${etf.performance.date} 距今 ${ageDays} 天，需確認是否最新`);
+  } else {
+    assert(etf.performance?.sourceDateStatus === "official_endpoint_does_not_provide_date", `${etf.ticker} 缺日期時必須標記官方端點未提供日期`);
+  }
   warn(!etf.qualityFlags?.includes("holdings_missing"), `${etf.ticker} 成分股權重尚未接上官方資料`);
   warn(!etf.qualityFlags?.includes("holdings_partial"), `${etf.ticker} 成分股權重只接上官方可見列，尚非完整成分股資料`);
   warn(!etf.qualityFlags?.includes("price_series_missing"), `${etf.ticker} 價格折線尚未接上官方資料`);

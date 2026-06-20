@@ -1,0 +1,8 @@
+.env
+.env.*
+private-data
+reports
+screenshots
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal

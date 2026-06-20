@@ -1,4 +1,7 @@
 const storageKey = "cashflow-map-web-state";
+const inputVersion = "cashflow-input-v2";
+const reportVersion = "cashflow-report-v2";
+const apiBase = String(window.CASHFLOW_API_BASE || "").replace(/\/$/, "");
 const disclaimer = "本 App 僅供教育與財務規劃參考，不構成任何投資建議、買賣建議或保證報酬。所有投資皆有風險，使用者應自行判斷並承擔投資結果。";
 const monthLabels = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
 const monthFields = ["monthlyIncome", "fixedExpense", "insuranceExpense", "loanExpense", "monthlyInvestment"];
@@ -59,9 +62,27 @@ const defaultState = {
   simulationYears: 10,
   paidUnlocked: false,
   consultingUnlocked: false,
+  anonymousId: crypto.randomUUID(),
+  consent: {
+    accepted: false,
+    acceptedAt: null,
+    contactChannel: "none",
+    contactValue: ""
+  },
+  inputCompletion: {
+    profile: {},
+    stockAnswers: []
+  },
+  reportMeta: null,
   leadProfile: {
+    checkType: "cashflow",
     capacity: "5000to10000",
-    concern: "saving"
+    concern: "saving",
+    stockMonthlyBudget: 0,
+    stockReason: "price",
+    stockDrop: "unsure",
+    stockCount: "0",
+    stockHorizon: "1year"
   }
 };
 
@@ -85,9 +106,27 @@ const sampleState = {
   simulationYears: 10,
   paidUnlocked: false,
   consultingUnlocked: false,
+  anonymousId: crypto.randomUUID(),
+  consent: {
+    accepted: true,
+    acceptedAt: new Date().toISOString(),
+    contactChannel: "none",
+    contactValue: ""
+  },
+  inputCompletion: {
+    profile: { monthlyIncome: true, fixedExpense: true, cashSavings: true },
+    stockAnswers: ["stockReason", "stockDrop", "stockCount", "stockHorizon"]
+  },
+  reportMeta: null,
   leadProfile: {
+    checkType: "cashflow",
     capacity: "5000to10000",
-    concern: "investing"
+    concern: "investing",
+    stockMonthlyBudget: 8000,
+    stockReason: "learn",
+    stockDrop: "hold",
+    stockCount: "1to3",
+    stockHorizon: "3years"
   }
 };
 
@@ -142,6 +181,13 @@ function normalizeState(next) {
   next.simulationYears = simulationYearOptions.includes(Number(next.simulationYears)) ? Number(next.simulationYears) : 10;
   next.paidUnlocked = Boolean(next.paidUnlocked);
   next.consultingUnlocked = Boolean(next.consultingUnlocked);
+  next.anonymousId = String(next.anonymousId || crypto.randomUUID());
+  next.consent = { ...structuredClone(defaultState.consent), ...(next.consent || {}) };
+  next.inputCompletion = {
+    profile: { ...(next.inputCompletion?.profile || {}) },
+    stockAnswers: Array.isArray(next.inputCompletion?.stockAnswers) ? next.inputCompletion.stockAnswers : []
+  };
+  next.reportMeta = next.reportMeta || null;
   next.leadProfile = { ...structuredClone(defaultState.leadProfile), ...(next.leadProfile || {}) };
   return next;
 }
@@ -184,12 +230,52 @@ function normalizeMonthlyCashflows(saved, profile) {
 }
 
 function persist() {
-  localStorage.setItem(storageKey, JSON.stringify(state));
+  const safeState = structuredClone(state);
+  safeState.consent.contactValue = "";
+  if (safeState.reportMeta) safeState.reportMeta.accessCode = null;
+  localStorage.setItem(storageKey, JSON.stringify(safeState));
+}
+
+function backendAvailable() {
+  return Boolean(apiBase) || !location.hostname.endsWith("github.io");
+}
+
+function apiUrl(pathname) {
+  return `${apiBase}${pathname}`;
+}
+
+async function apiRequest(pathname, options = {}) {
+  const { headers = {}, ...rest } = options;
+  const response = await fetch(apiUrl(pathname), {
+    cache: "no-store",
+    headers: { "Content-Type": "application/json", ...headers },
+    ...rest
+  });
+  const payload = await response.json().catch(() => ({ ok: false, error: `HTTP ${response.status}` }));
+  if (!response.ok || payload.ok === false) throw new Error(payload.error || `HTTP ${response.status}`);
+  return payload;
+}
+
+function trackEvent(eventType, metadata = {}) {
+  if (!backendAvailable()) return;
+  apiRequest("/api/events", {
+    method: "POST",
+    body: JSON.stringify({
+      anonymousId: state.anonymousId,
+      reportId: state.reportMeta?.reportId || null,
+      eventType,
+      metadata
+    })
+  }).catch(() => {});
 }
 
 async function loadEtfDatabase() {
   try {
-    const response = await fetch("./data/etf-database.json", { cache: "no-store" });
+    const source = backendAvailable() ? apiUrl("/api/market/database") : "./data/etf-database.json";
+    let response = await fetch(source, { cache: "no-store" }).catch(() => null);
+    if ((!response || !response.ok) && source !== "./data/etf-database.json") {
+      response = await fetch("./data/etf-database.json", { cache: "no-store" });
+    }
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     etfDatabase = await response.json();
     etfDataQuality = validateEtfDatabase(etfDatabase);
@@ -206,12 +292,15 @@ async function loadEtfDatabase() {
 }
 
 async function refreshDatabaseFromServer(reason = "open") {
-  if (location.hostname.endsWith("github.io")) return false;
+  if (!backendAvailable()) return false;
   try {
-    const status = await fetch("./api/database-status", { cache: "no-store" });
+    const status = await fetch(apiUrl("/api/database-status"), { cache: "no-store" });
     if (!status.ok) return false;
     if (reason === "manual") showToast("正在更新官方資料庫");
-    const response = await fetch(`./api/update-database?reason=${encodeURIComponent(reason)}`, { cache: "no-store" });
+    const response = await fetch(`${apiUrl("/api/market/refresh")}?reason=${encodeURIComponent(reason)}`, {
+      method: "POST",
+      cache: "no-store"
+    });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const result = await response.json();
     if (!result.ok) throw new Error(result.error || "更新失敗");
@@ -253,7 +342,9 @@ function validateEtfDatabase(db) {
 
     const date = new Date(`${etf.performance?.date || ""}T00:00:00+08:00`);
     if (Number.isNaN(date.getTime())) {
-      warnings.push(`${etf.ticker} 缺績效資料日期`);
+      if (etf.performance?.sourceDateStatus !== "official_endpoint_does_not_provide_date") {
+        warnings.push(`${etf.ticker} 缺績效資料日期與來源日期狀態`);
+      }
     } else {
       const ageDays = Math.round((now - date) / 86400000);
       if (ageDays > 3) warnings.push(`${etf.ticker} 績效資料日期 ${etf.performance.date} 距今 ${ageDays} 天，需確認是否最新`);
@@ -988,6 +1079,81 @@ function beginnerPrescription(report) {
   };
 }
 
+function stockBudgetTier(value) {
+  const amount = Number(value || 0);
+  if (amount < 3000) return "未滿 3,000 級";
+  if (amount < 5000) return "3,000 級";
+  if (amount < 10000) return "5,000 級";
+  if (amount < 15000) return "10,000 級";
+  if (amount < 20000) return "15,000 級";
+  return "20,000 以上級";
+}
+
+function directStockHoldings() {
+  return state.holdings.filter((item) => item.type === "個股" && holdingAmount(item) > 0);
+}
+
+function stockSafetyReport(report) {
+  const profile = report.profile;
+  const lead = state.leadProfile;
+  const statedBudget = Math.max(0, Number(lead.stockMonthlyBudget || 0));
+  const expenses = monthlyTotalExpense(profile);
+  const hasCashflowData = Number(profile.monthlyIncome || 0) > 0 || expenses > 0;
+  const available = hasCashflowData ? Math.max(0, investableCashflow(profile)) : statedBudget;
+  const reserveMonths = expenses > 0 ? Number(profile.cashSavings || 0) / expenses : 0;
+  const total = totalInvested(report.holdings);
+  const stocks = directStockHoldings();
+  const declaredStockCount = {
+    "0": 0,
+    "1to3": 2,
+    "4to6": 5,
+    "7plus": 7
+  }[lead.stockCount] ?? stocks.length;
+  const stockCount = stocks.length || declaredStockCount;
+  const largestStock = stocks.length
+    ? Math.max(...stocks.map((item) => holdingAmount(item)))
+    : 0;
+  const largestStockRatio = total > 0 ? largestStock / total * 100 : 0;
+  const budgetBase = Math.min(statedBudget || available, available || statedBudget);
+  const monthlyStockMax = Math.max(0, Math.floor((budgetBase * (reserveMonths < 3 ? 0.25 : reserveMonths < 6 ? 0.35 : 0.4)) / 500) * 500);
+  const assetBase = Math.max(Number(profile.cashSavings || 0) + total, statedBudget * 6);
+  const singleStockMax = Math.max(0, Math.floor((assetBase * 0.1) / 1000) * 1000);
+  let level = "green";
+  if (hasCashflowData && (available <= 0 || Number(profile.loanExpense || 0) > Number(profile.monthlyIncome || 0) * 0.35)) level = "black";
+  else if (reserveMonths < 3 || lead.stockHorizon === "3months") level = "red";
+  else if (
+    reserveMonths < 6 ||
+    lead.stockDrop === "sell" ||
+    lead.stockDrop === "unsure" ||
+    lead.stockReason === "friend" ||
+    stockCount > 0 && stockCount <= 3 ||
+    largestStockRatio > 20 ||
+    statedBudget > available * 0.4
+  ) level = "yellow";
+  const copy = {
+    green: { label: "綠燈", title: "可以開始，但先小額" },
+    yellow: { label: "黃燈", title: "可以學，但不要買太多" },
+    red: { label: "紅燈", title: "先不要買股票，先補現金流" },
+    black: { label: "黑燈", title: "貸款或生活費壓力太高，不適合操作個股" }
+  }[level];
+  const avoid = level === "black" || level === "red"
+    ? "目前不適合買個股、融資、借錢投資或用生活費進場。"
+    : "目前不適合追高、融資、聽明牌或一次買滿。";
+  return {
+    level,
+    ...copy,
+    statedBudget,
+    budgetTier: stockBudgetTier(statedBudget),
+    available,
+    reserveMonths,
+    monthlyStockMax,
+    singleStockMax,
+    largestStockRatio,
+    stockCount,
+    avoid
+  };
+}
+
 function buildReport() {
   const profile = state.profile;
   const holdings = state.holdings;
@@ -1017,6 +1183,7 @@ function buildReport() {
   report.allocations = allocationRecommendations(report);
   report.actions = personalizedActions(report);
   report.prescription = beginnerPrescription(report);
+  report.stockSafety = stockSafetyReport(report);
   return report;
 }
 
@@ -1025,6 +1192,7 @@ function syncInputs() {
     q(`#${field}`).value = state.profile[field];
     q(`#${field}`).addEventListener("input", (event) => {
       state.profile[field] = Number(event.target.value || 0);
+      state.inputCompletion.profile[field] = true;
       refreshReports();
     });
   });
@@ -1125,7 +1293,7 @@ function renderHoldings() {
       ${officialEtf
         ? `<small class="data-note">ETF：${officialEtf.issuer} · 資料日 ${officialEtf.performance.date} · 殖利率 ${yieldLabel} ${pct(holding.dividendYield, 2)}</small>`
         : officialStock
-          ? `<small class="data-note">股票：${officialStock.market} · ${industryDisplayName(officialStock.industry)} · ${officialStock.latestPrice?.date || "無行情日"}</small>`
+          ? `<small class="data-note">股票：${officialStock.market} · ${industryDisplayName(officialStock.industry)} · ${officialStock.latestPrice?.date || "官方端點未提供交易日"}</small>`
           : `<small class="data-note warning">尚未對應官方 ETF 或股票主檔</small>`}
     `;
     root.append(row);
@@ -1252,15 +1420,160 @@ function syncQuizInputs() {
   if (income) income.value = state.profile.monthlyIncome || "";
   if (expense) expense.value = monthlyTotalExpense(state.profile) || "";
   if (savings) savings.value = state.profile.cashSavings || "";
+  const stockBudget = q("#stockMonthlyBudget");
+  if (stockBudget) stockBudget.value = state.leadProfile.stockMonthlyBudget || "";
+  q("#dataConsent").checked = state.consent.accepted;
+  q("#contactChannel").value = state.consent.contactChannel;
+  q("#contactValue").value = state.consent.contactValue;
+  const stockMode = state.leadProfile.checkType === "stock";
+  q("#cashflowQuiz").hidden = stockMode;
+  q("#stockQuiz").hidden = !stockMode;
+  q("#quickCheckTitle").textContent = stockMode ? "5 題股票安全健檢" : "5 題現金流健檢";
+  q("#quickGenerateBtn").textContent = stockMode ? "產生股票安全報告" : "產生免費報告";
+  document.querySelectorAll("[data-check-type]").forEach((button) => {
+    button.classList.toggle("is-selected", button.dataset.checkType === state.leadProfile.checkType);
+  });
   document.querySelectorAll("[data-capacity]").forEach((button) => {
     button.classList.toggle("is-selected", button.dataset.capacity === state.leadProfile.capacity);
   });
   document.querySelectorAll("[data-concern]").forEach((button) => {
     button.classList.toggle("is-selected", button.dataset.concern === state.leadProfile.concern);
   });
+  ["reason", "drop", "count", "horizon"].forEach((field) => {
+    document.querySelectorAll(`[data-stock-${field}]`).forEach((button) => {
+      button.classList.toggle("is-selected", button.dataset[`stock${field[0].toUpperCase()}${field.slice(1)}`] === state.leadProfile[`stock${field[0].toUpperCase()}${field.slice(1)}`]);
+    });
+  });
+}
+
+function showValidationErrors(selector, errors) {
+  const root = q(selector);
+  if (!root) return;
+  root.hidden = errors.length === 0;
+  root.innerHTML = errors.length
+    ? `<strong>請先完成以下資料</strong><ul>${errors.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
+    : "";
+}
+
+function quickValidationErrors() {
+  const errors = [];
+  if (!state.consent.accepted) errors.push("勾選報告保存與資料使用同意");
+  if (state.leadProfile.checkType === "cashflow") {
+    if (q("#quizIncome").value === "" || Number(q("#quizIncome").value) <= 0) errors.push("填寫每月收入");
+    if (q("#quizExpense").value === "" || Number(q("#quizExpense").value) < 0) errors.push("填寫每月固定支出");
+    if (q("#quizSavings").value === "" || Number(q("#quizSavings").value) < 0) errors.push("填寫目前存款");
+  } else {
+    if (q("#stockMonthlyBudget").value === "" || Number(q("#stockMonthlyBudget").value) <= 0) errors.push("填寫每月股票投入金額");
+    const answered = new Set(state.inputCompletion.stockAnswers);
+    const labels = {
+      stockReason: "選擇買股票的原因",
+      stockDrop: "選擇股票跌 20% 時的做法",
+      stockCount: "選擇目前個股檔數",
+      stockHorizon: "選擇資金不能動用的期間"
+    };
+    Object.entries(labels).forEach(([key, label]) => {
+      if (!answered.has(key)) errors.push(label);
+    });
+  }
+  return errors;
+}
+
+function detailedValidationErrors() {
+  const errors = [];
+  const completed = state.inputCompletion.profile;
+  if (!completed.monthlyIncome || Number(state.profile.monthlyIncome) <= 0) errors.push("填寫月收入");
+  if (!completed.fixedExpense || Number(state.profile.fixedExpense) < 0) errors.push("填寫固定支出");
+  if (!completed.cashSavings || Number(state.profile.cashSavings) < 0) errors.push("填寫現金存款");
+  if (!state.consent.accepted) errors.push("回到首頁勾選報告保存與資料使用同意");
+  return errors;
+}
+
+function reportSubmission() {
+  return {
+    anonymousId: state.anonymousId,
+    checkType: state.leadProfile.checkType,
+    consent: {
+      accepted: state.consent.accepted,
+      acceptedAt: state.consent.acceptedAt
+    },
+    contact: {
+      channel: state.consent.contactChannel,
+      value: state.consent.contactValue
+    },
+    input: {
+      inputVersion,
+      profile: structuredClone(state.profile),
+      holdings: structuredClone(state.holdings),
+      monthlyCashflows: structuredClone(state.monthlyCashflows),
+      leadProfile: structuredClone(state.leadProfile)
+    },
+    report: {
+      reportVersion,
+      generatedAt: state.reportMeta.generatedAt,
+      score: latestReport.score,
+      status: latestReport.status,
+      breakdown: latestReport.breakdown,
+      prescription: latestReport.prescription,
+      stockSafety: latestReport.stockSafety,
+      risks: latestReport.risks,
+      overlap: {
+        score: latestReport.overlap.score,
+        topStock: latestReport.overlap.topStock,
+        topSector: latestReport.overlap.topSector,
+        message: latestReport.overlap.message
+      }
+    }
+  };
+}
+
+async function saveGeneratedReport() {
+  state.reportMeta = {
+    generatedAt: new Date().toISOString(),
+    inputVersion,
+    reportVersion,
+    storageStatus: backendAvailable() ? "saving" : "local_only",
+    reportId: null,
+    accessCode: null,
+    expiresAt: null
+  };
+  refreshReports();
+  if (!backendAvailable()) {
+    persist();
+    return;
+  }
+  try {
+    const result = await apiRequest("/api/reports", {
+      method: "POST",
+      body: JSON.stringify(reportSubmission())
+    });
+    state.reportMeta = {
+      ...state.reportMeta,
+      storageStatus: "saved",
+      reportId: result.report.id,
+      accessCode: result.report.accessCode,
+      expiresAt: result.report.expiresAt
+    };
+    state.anonymousId = result.report.anonymousId;
+    persist();
+    refreshReports();
+    showToast("報告已加密保存");
+  } catch (error) {
+    state.reportMeta.storageStatus = "save_failed";
+    state.reportMeta.storageError = error.message;
+    persist();
+    refreshReports();
+    showToast(`報告已產生，但後臺保存失敗：${error.message}`);
+  }
 }
 
 function applyQuickCheck() {
+  if (state.leadProfile.checkType === "stock") {
+    state.leadProfile.stockMonthlyBudget = Number(q("#stockMonthlyBudget")?.value || 0);
+    state.profile.monthlyInvestment = Math.min(state.leadProfile.stockMonthlyBudget, Math.max(0, investableCashflow(state.profile)));
+    refreshReports();
+    persist();
+    return;
+  }
   const income = Number(q("#quizIncome")?.value || 0);
   const expense = Number(q("#quizExpense")?.value || 0);
   const savings = Number(q("#quizSavings")?.value || 0);
@@ -1290,6 +1603,16 @@ function applyQuickCheck() {
 function renderQuickResult() {
   const root = q("#quickResult");
   if (!root || !latestReport?.prescription) return;
+  if (state.leadProfile.checkType === "stock") {
+    const stock = latestReport.stockSafety;
+    root.innerHTML = `
+      <div class="quick-result-card stock-${stock.level}">
+        <span>${stock.label} · ${stock.budgetTier}</span>
+        <strong>${stock.title}。每月個股建議先控制在 ${formatMoney(stock.monthlyStockMax)} 內。</strong>
+      </div>
+    `;
+    return;
+  }
   const item = latestReport.prescription;
   root.innerHTML = `
     <div class="quick-result-card">
@@ -1472,6 +1795,28 @@ function beginnerPrescriptionHtml(report) {
   `;
 }
 
+function stockSafetyHtml(report) {
+  const item = report.stockSafety;
+  return `
+    <section class="panel stock-safety-panel stock-${item.level}">
+      <div class="stock-light-head">
+        <span class="stock-light" aria-hidden="true"></span>
+        <div>
+          <strong>股票能不能買 · ${item.label}</strong>
+          <h3>${item.title}</h3>
+        </div>
+      </div>
+      <p>你填寫的每月股票投入上限是 ${formatMoney(item.statedBudget)}，分級為 ${item.budgetTier}。依目前現金流與安全水位，個股部位建議先控制在每月 ${formatMoney(item.monthlyStockMax)} 內。</p>
+      <div class="stock-answer-grid">
+        <article><span>你現在每月最多只適合拿多少買股票</span><strong>${formatMoney(item.monthlyStockMax)}</strong></article>
+        <article><span>單一個股最多不要超過多少</span><strong>${formatMoney(item.singleStockMax)}</strong></article>
+        <article><span>你目前不適合做什麼操作</span><strong>${item.avoid}</strong></article>
+      </div>
+      <p class="panel-note">目前個股檔數判定為 ${item.stockCount} 檔，緊急預備金約 ${item.reserveMonths.toFixed(1)} 個月。單一個股原則上不超過可投資資產 10%，也不要用 3 個月內會用到的生活費買股票。資料庫只用來查核代號、產業與集中風險，不提供選股推薦。</p>
+    </section>
+  `;
+}
+
 function trustSourceHtml() {
   const quality = etfDataQuality;
   return `
@@ -1493,15 +1838,115 @@ function leadCtaHtml() {
   return `
     <section class="panel lead-cta-panel">
       <span class="eyebrow">下一步</span>
-      <h3>想把每月 5,000 到 10,000 排成自己的現金流表？</h3>
-      <p>先領完整報告，或直接從 LINE / IG / 表單留下問題。連結可替換成你的正式帳號。</p>
+      <h3>先確認這檔股票你能不能買，再決定投入多少</h3>
+      <p>我不報明牌，但可以幫你檢查這筆錢是否能承受個股波動。</p>
       <div class="cta-grid">
-        <a class="primary-button cta-link" href="#contactPanel">LINE 個人諮詢</a>
-        <a class="secondary-button cta-link" href="#contactPanel">IG 看案例</a>
-        <a class="secondary-button cta-link" href="#contactPanel">填表領配置表</a>
+        <a class="primary-button cta-link" href="#contactPanel">LINE 問我：這檔股票我能不能買？</a>
+        <a class="secondary-button cta-link" href="#contactPanel">IG 看小資買股常見錯誤</a>
+        <a class="secondary-button cta-link" href="#contactPanel">填表領「每月 5,000 股票配置表」</a>
+        <a class="secondary-button cta-link" href="#contactPanel">領取「單一個股上限試算」</a>
       </div>
     </section>
   `;
+}
+
+function reportRecordHtml() {
+  const meta = state.reportMeta;
+  if (!meta) return "";
+  const statusText = {
+    saving: "正在加密保存",
+    saved: "已加密保存",
+    local_only: "目前只保存在這台裝置",
+    save_failed: "後臺保存失敗"
+  }[meta.storageStatus] || "尚未保存";
+  return `
+    <section class="panel report-record-panel">
+      <h3>報告紀錄</h3>
+      <div class="metrics">
+        <div class="metric"><span>產生時間</span><strong>${new Date(meta.generatedAt).toLocaleString("zh-TW")}</strong></div>
+        <div class="metric"><span>輸入版本</span><strong>${meta.inputVersion}</strong></div>
+        <div class="metric"><span>報告版本</span><strong>${meta.reportVersion}</strong></div>
+        <div class="metric"><span>保存狀態</span><strong>${statusText}</strong></div>
+      </div>
+      ${meta.reportId ? `
+        <div class="access-code-box">
+          <p>跨裝置重新開啟需要以下兩項資料。請自行保存，後臺不會顯示原始存取碼。</p>
+          <code>報告編號：${meta.reportId}</code>
+          <code>存取碼：${meta.accessCode}</code>
+          <p class="panel-note">保存期限：${new Date(meta.expiresAt).toLocaleDateString("zh-TW")}</p>
+        </div>
+      ` : ""}
+      ${meta.storageError ? `<p class="data-note warning">${escapeHtml(meta.storageError)}</p>` : ""}
+      <div class="report-tools">
+        <label>報告編號<input id="restoreReportId" type="text" /></label>
+        <label>存取碼<input id="restoreAccessCode" type="password" /></label>
+        <button class="secondary-button" id="restoreReportBtn" type="button">重新開啟報告</button>
+        <button class="secondary-button" id="downloadReportBtn" type="button">下載報告 JSON</button>
+        ${meta.reportId ? `<button class="secondary-button danger-button" id="deleteReportBtn" type="button">刪除後臺報告</button>` : ""}
+      </div>
+    </section>
+  `;
+}
+
+function downloadCurrentReport() {
+  if (!state.reportMeta) return;
+  const blob = new Blob([JSON.stringify(reportSubmission(), null, 2)], { type: "application/json" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `cashflow-report-${state.reportMeta.generatedAt.slice(0, 10)}.json`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+async function restoreSavedReport() {
+  const id = q("#restoreReportId")?.value.trim();
+  const code = q("#restoreAccessCode")?.value.trim();
+  if (!id || !code) return showToast("請輸入報告編號與存取碼");
+  try {
+    const result = await apiRequest(`/api/reports/${encodeURIComponent(id)}`, {
+      headers: { "X-Report-Access-Code": code }
+    });
+    const payload = result.report.payload;
+    state.profile = { ...state.profile, ...payload.input.profile };
+    state.holdings = (payload.input.holdings || []).map(normalizeHolding);
+    state.monthlyCashflows = normalizeMonthlyCashflows(payload.input.monthlyCashflows, state.profile);
+    state.leadProfile = { ...state.leadProfile, ...payload.input.leadProfile };
+    state.reportMeta = {
+      generatedAt: result.report.createdAt,
+      inputVersion: result.report.inputVersion,
+      reportVersion: result.report.reportVersion,
+      storageStatus: "saved",
+      reportId: result.report.id,
+      accessCode: code,
+      expiresAt: result.report.expiresAt
+    };
+    updateProfileInputs();
+    syncQuizInputs();
+    renderMonthlyCashflows();
+    renderHoldings();
+    refreshReports();
+    persist();
+    showToast("已重新開啟保存的報告");
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function deleteSavedReport() {
+  const meta = state.reportMeta;
+  if (!meta?.reportId || !meta.accessCode) return;
+  try {
+    await apiRequest(`/api/reports/${encodeURIComponent(meta.reportId)}`, {
+      method: "DELETE",
+      headers: { "X-Report-Access-Code": meta.accessCode }
+    });
+    state.reportMeta = { ...meta, storageStatus: "deleted", reportId: null, accessCode: null };
+    persist();
+    refreshReports();
+    showToast("後臺報告已刪除");
+  } catch (error) {
+    showToast(error.message);
+  }
 }
 
 function renderFreeReport() {
@@ -1509,6 +1954,8 @@ function renderFreeReport() {
   q("#freeReport").innerHTML = `
     ${scoreHtml(report)}
     <div class="stack">
+      ${reportRecordHtml()}
+      ${state.leadProfile.checkType === "stock" ? stockSafetyHtml(report) : ""}
       ${beginnerPrescriptionHtml(report)}
       ${breakdownHtml(report)}
       ${risksHtml(report, false)}
@@ -1525,6 +1972,9 @@ function renderFreeReport() {
     </div>
   `;
   bindGotoButtons();
+  q("#restoreReportBtn")?.addEventListener("click", restoreSavedReport);
+  q("#downloadReportBtn")?.addEventListener("click", downloadCurrentReport);
+  q("#deleteReportBtn")?.addEventListener("click", deleteSavedReport);
 }
 
 function renderUpgrade() {
@@ -1579,6 +2029,7 @@ function renderDatabaseView() {
   }[quality.status] || quality.status;
   const classifiedCount = db?.etfs?.filter((etf) => etf.displayClassification?.confidence === "rule_based").length || 0;
   const officialAssetTypesCount = db?.etfs?.filter((etf) => etf.assetTypes?.length).length || 0;
+  const freshnessSources = Object.entries(db?.metadata?.sourceFreshness?.sources || {});
 
   q("#dataQuality").innerHTML = `
     <section class="score-panel">
@@ -1591,6 +2042,20 @@ function renderDatabaseView() {
         <div class="metric"><span>配息資料</span><strong>${quality.counts.distributions}</strong></div>
         <div class="metric"><span>成分股</span><strong>${quality.counts.holdings}</strong></div>
         <div class="metric"><span>NAV/價格</span><strong>${quality.counts.navSeries + quality.counts.priceSeries}</strong></div>
+      </div>
+    </section>
+    <section class="panel">
+      <h3>官方來源真正資料日期</h3>
+      <p class="panel-note">更新執行時間與官方資料日期分開記錄。官方端點沒有日期時會明確標示，不使用今天日期代替。</p>
+      <div class="source-freshness-list">
+        ${freshnessSources.map(([name, source]) => `
+          <article>
+            <strong>${name}</strong>
+            <span>${source.sourceDataDate || "官方端點未提供日期"}</span>
+            <span class="badge">${source.status}</span>
+            <small>${source.evidence}</small>
+          </article>
+        `).join("")}
       </div>
     </section>
     <section class="panel">
@@ -1993,6 +2458,111 @@ function renderCalendar() {
   `).join("");
 }
 
+async function loadAdminDashboard() {
+  const key = q("#adminApiKey").value;
+  const status = q("#adminStatus");
+  status.textContent = "正在載入客戶資料";
+  try {
+    const headers = { Authorization: `Bearer ${key}` };
+    const [reportsResult, analyticsResult] = await Promise.all([
+      apiRequest("/api/admin/reports?limit=200", { headers }),
+      apiRequest("/api/admin/analytics", { headers })
+    ]);
+    const analytics = analyticsResult.analytics;
+    const eventMap = Object.fromEntries(analytics.eventCounts.map((row) => [row.eventType, row.count]));
+    const conversionMap = Object.fromEntries(analytics.conversions.map((row) => [row.status, row.count]));
+    const generated = Number(eventMap.report_generated || 0);
+    const started = Number(eventMap.quiz_started || 0);
+    const ctaClicks = Number(eventMap.cta_clicked || 0);
+    const converted = Number(conversionMap.converted || 0);
+    q("#adminAnalytics").innerHTML = `
+      <div class="metric"><span>完成健檢</span><strong>${generated}</strong></div>
+      <div class="metric"><span>健檢完成率</span><strong>${started ? pct(generated / started * 100) : "0.0%"}</strong></div>
+      <div class="metric"><span>重新開啟</span><strong>${eventMap.report_reopened || 0}</strong></div>
+      <div class="metric"><span>導流點擊</span><strong>${ctaClicks}</strong></div>
+      <div class="metric"><span>已聯絡</span><strong>${conversionMap.contacted || 0}</strong></div>
+      <div class="metric"><span>已轉換</span><strong>${converted}</strong></div>
+      <div class="metric"><span>轉換率</span><strong>${generated ? pct(converted / generated * 100) : "0.0%"}</strong></div>
+    `;
+    q("#adminReports").innerHTML = `
+      <div class="table-title"><h3>客戶報告</h3><span>${reportsResult.reports.length} 筆</span></div>
+      <table>
+        <thead><tr><th>建立時間</th><th>匿名編號</th><th>類型</th><th>狀態</th><th>聯絡方式</th><th>追蹤</th><th>查看</th></tr></thead>
+        <tbody>${reportsResult.reports.map((row) => `
+          <tr>
+            <td>${new Date(row.createdAt).toLocaleString("zh-TW")}</td>
+            <td>${escapeHtml(row.anonymousId)}</td>
+            <td>${row.checkType === "stock" ? "股票" : "現金流"}</td>
+            <td>${escapeHtml(row.status)}</td>
+            <td>${escapeHtml(row.contactChannel)}</td>
+            <td>
+              <select data-followup-id="${row.id}">
+                ${["new", "contacted", "converted", "closed"].map((item) => `<option value="${item}" ${row.followupStatus === item ? "selected" : ""}>${item}</option>`).join("")}
+              </select>
+            </td>
+            <td><button class="secondary-button mini-button" data-admin-report="${row.id}" type="button">查看</button></td>
+          </tr>
+        `).join("")}</tbody>
+      </table>
+    `;
+    q("#adminReports").querySelectorAll("[data-admin-report]").forEach((button) => {
+      button.addEventListener("click", () => loadAdminReport(key, button.dataset.adminReport));
+    });
+    q("#adminReports").querySelectorAll("[data-followup-id]").forEach((select) => {
+      select.addEventListener("change", async () => {
+        try {
+          await apiRequest(`/api/admin/reports/${select.dataset.followupId}`, {
+            method: "PATCH",
+            headers,
+            body: JSON.stringify({ followupStatus: select.value })
+          });
+          status.textContent = "追蹤狀態已更新";
+        } catch (error) {
+          status.textContent = error.message;
+        }
+      });
+    });
+    status.textContent = `已載入 ${reportsResult.reports.length} 筆客戶報告`;
+  } catch (error) {
+    status.textContent = error.message;
+    q("#adminAnalytics").innerHTML = "";
+    q("#adminReports").innerHTML = "";
+  }
+}
+
+async function loadAdminReport(key, id) {
+  const detail = q("#adminReportDetail");
+  try {
+    const result = await apiRequest(`/api/admin/reports/${id}`, {
+      headers: { Authorization: `Bearer ${key}` }
+    });
+    const report = result.report;
+    detail.hidden = false;
+    detail.innerHTML = `
+      <h3>客戶報告明細</h3>
+      <div class="metrics">
+        <div class="metric"><span>報告編號</span><strong>${report.id}</strong></div>
+        <div class="metric"><span>匿名編號</span><strong>${escapeHtml(report.anonymousId)}</strong></div>
+        <div class="metric"><span>建立時間</span><strong>${new Date(report.createdAt).toLocaleString("zh-TW")}</strong></div>
+        <div class="metric"><span>聯絡資料</span><strong>${escapeHtml(report.contact?.value || "未提供")}</strong></div>
+      </div>
+      <button class="secondary-button" id="downloadAdminReportBtn" type="button">下載此報告</button>
+      <pre class="admin-json">${escapeHtml(JSON.stringify(report.payload, null, 2))}</pre>
+    `;
+    q("#downloadAdminReportBtn").addEventListener("click", () => {
+      const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `customer-report-${report.id}.json`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    });
+  } catch (error) {
+    detail.hidden = false;
+    detail.textContent = error.message;
+  }
+}
+
 function goTo(viewId) {
   if (["paidReportView", "simulationView", "calendarView"].includes(viewId) && !state.paidUnlocked) {
     viewId = "upgradeView";
@@ -2020,6 +2590,14 @@ function bindEvents() {
       q(`#${button.dataset.scrollTarget}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   });
+  document.querySelectorAll("[data-check-type]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.leadProfile.checkType = button.dataset.checkType;
+      syncQuizInputs();
+      renderQuickResult();
+      trackEvent("quiz_started", { checkType: state.leadProfile.checkType });
+    });
+  });
   document.querySelectorAll("[data-capacity]").forEach((button) => {
     button.addEventListener("click", () => {
       state.leadProfile.capacity = button.dataset.capacity;
@@ -2034,14 +2612,49 @@ function bindEvents() {
       refreshReports();
     });
   });
-  q("#quickGenerateBtn").addEventListener("click", () => {
+  const stockBudget = q("#stockMonthlyBudget");
+  stockBudget.addEventListener("input", (event) => {
+    state.leadProfile.stockMonthlyBudget = Number(event.target.value || 0);
+    refreshReports();
+  });
+  ["reason", "drop", "count", "horizon"].forEach((field) => {
+    document.querySelectorAll(`[data-stock-${field}]`).forEach((button) => {
+      button.addEventListener("click", () => {
+        const key = `stock${field[0].toUpperCase()}${field.slice(1)}`;
+        state.leadProfile[key] = button.dataset[key];
+        if (!state.inputCompletion.stockAnswers.includes(key)) state.inputCompletion.stockAnswers.push(key);
+        syncQuizInputs();
+        refreshReports();
+      });
+    });
+  });
+  q("#dataConsent").addEventListener("change", (event) => {
+    state.consent.accepted = event.target.checked;
+    state.consent.acceptedAt = event.target.checked ? new Date().toISOString() : null;
+    persist();
+  });
+  q("#contactChannel").addEventListener("change", (event) => {
+    state.consent.contactChannel = event.target.value;
+  });
+  q("#contactValue").addEventListener("input", (event) => {
+    state.consent.contactValue = event.target.value;
+  });
+  q("#quickGenerateBtn").addEventListener("click", async () => {
+    const errors = quickValidationErrors();
+    showValidationErrors("#quickValidationErrors", errors);
+    if (errors.length) return;
     applyQuickCheck();
     goTo("freeReportView");
+    await saveGeneratedReport();
   });
-  q("#generateBtn").addEventListener("click", () => {
+  q("#generateBtn").addEventListener("click", async () => {
+    const errors = detailedValidationErrors();
+    showValidationErrors("#profileValidationErrors", errors);
+    if (errors.length) return;
     refreshReports();
     persist();
     goTo("freeReportView");
+    await saveGeneratedReport();
   });
   q("#saveBtn").addEventListener("click", () => {
     persist();
@@ -2082,6 +2695,10 @@ function bindEvents() {
     if (!state.paidUnlocked) return goTo("upgradeView");
     window.print();
   });
+  q("#loadAdminBtn").addEventListener("click", loadAdminDashboard);
+  ["line-contact", "ig-contact", "form-contact"].forEach((id) => {
+    q(`#${id}`)?.addEventListener("click", () => trackEvent("cta_clicked", { target: id }));
+  });
   window.addEventListener("resize", () => {
     if (activeView === "simulationView") drawSimulationChart(latestReport.simulation);
     if (activeView === "databaseView") drawOfficialPriceChart();
@@ -2096,11 +2713,15 @@ function registerServiceWorker() {
 }
 
 async function init() {
+  if (new URLSearchParams(location.search).get("admin") === "1") {
+    q(".admin-tab").hidden = false;
+  }
   await loadEtfDatabase();
   syncInputs();
   bindEvents();
   refreshReports();
   registerServiceWorker();
+  trackEvent("page_opened", { path: location.pathname });
   refreshDatabaseFromServer("open");
 }
 

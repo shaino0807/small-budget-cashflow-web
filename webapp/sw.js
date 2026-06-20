@@ -1,9 +1,10 @@
-const cacheName = "cashflow-map-v9";
+const cacheName = "cashflow-map-v11";
 const assets = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
+  "./runtime-config.js",
   "./data/etf-database.json",
   "./manifest.webmanifest",
   "./icon.svg"
