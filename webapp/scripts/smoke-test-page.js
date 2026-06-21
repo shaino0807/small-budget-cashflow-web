@@ -176,6 +176,7 @@ async function main() {
     const inputMetrics = await send(ws, "Runtime.evaluate", {
       returnByValue: true,
       expression: `(() => ({
+        currentUrl: location.href,
         title: document.title,
         activeView: document.querySelector('.view.is-active')?.id,
         header: document.querySelector('h1')?.textContent,
