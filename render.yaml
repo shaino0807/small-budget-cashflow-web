@@ -7,7 +7,6 @@ services:
     dockerfilePath: ./webapp/Dockerfile
     dockerContext: ./webapp
     healthCheckPath: /api/health
-    maxShutdownDelaySeconds: 30
     envVars:
       - key: CUSTOMER_DATA_KEY
         generateValue: true
