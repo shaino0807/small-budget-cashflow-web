@@ -37,11 +37,16 @@ jobs:
           node-version: "22"
 
       - name: Update official ETF database
+        continue-on-error: true
         run: |
           node webapp/scripts/update-etf-master.js
           node webapp/scripts/update-price-series.js
           node webapp/scripts/update-issuer-official-data.js
           node webapp/scripts/update-stock-master.js
+          node webapp/scripts/finalize-data-quality.js
+
+      - name: Validate available ETF database
+        run: |
           node webapp/scripts/finalize-data-quality.js
           node webapp/scripts/validate-etf-data.js
 
