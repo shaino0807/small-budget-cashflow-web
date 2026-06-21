@@ -207,11 +207,19 @@ async function main() {
   const items = [...byTicker.values()].sort((a, b) => a.ticker.localeCompare(b.ticker));
   const derivedCount = items.filter((item) => item.source === "derived-from-etf-holdings").length;
   const hasOfficialRows = sourceAttempts.some((item) => item.status === "loaded");
+  const hasDatedOfficialRows = items.some((item) => item.latestPrice?.date);
+  const previousHasDatedOfficialRows = previousStocks?.items?.some((item) => item.latestPrice?.date);
+  const shouldPreservePrevious = previousStocks && (
+    !hasOfficialRows ||
+    (!hasDatedOfficialRows && previousHasDatedOfficialRows)
+  );
 
-  if (!hasOfficialRows && previousStocks) {
+  if (shouldPreservePrevious) {
     db.stocks = {
       ...previousStocks,
-      status: "preserved_previous_snapshot_after_failed_refresh",
+      status: hasOfficialRows
+        ? "preserved_previous_snapshot_after_undated_refresh"
+        : "preserved_previous_snapshot_after_failed_refresh",
       sourceAttempts
     };
   } else {
