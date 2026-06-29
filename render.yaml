@@ -24,6 +24,10 @@ services:
         value: "15"
       - key: ALLOWED_ORIGINS
         value: https://shaino0807.github.io
+      - key: SITE_PUBLIC_BASE_URL
+        value: https://shaino0807.github.io/small-budget-cashflow-web
+      - key: API_PUBLIC_BASE_URL
+        value: https://small-budget-cashflow-api.onrender.com
       - key: GITHUB_REPOSITORY
         value: shaino0807/small-budget-cashflow-web
       - key: GITHUB_WORKFLOW_FILE
@@ -31,6 +35,26 @@ services:
       - key: GITHUB_WORKFLOW_REF
         value: main
       - key: GITHUB_ACTIONS_TOKEN
+        sync: false
+      - key: ECPAY_ENV
+        value: stage
+      - key: ECPAY_USE_STAGE_DEFAULTS
+        value: "1"
+      - key: ECPAY_MERCHANT_ID
+        sync: false
+      - key: ECPAY_HASH_KEY
+        sync: false
+      - key: ECPAY_HASH_IV
+        sync: false
+      - key: FULL_REPORT_PRICE_TWD
+        value: "499"
+      - key: CONSULTATION_DEPOSIT_TWD
+        value: "200"
+      - key: CONSULTATION_FEE_TWD
+        value: "1500"
+      - key: CONSULTATION_IG_URL
+        value: https://www.instagram.com/chendino080077/
+      - key: CONSULTATION_LINE_URL
         sync: false
     disk:
       name: customer-data

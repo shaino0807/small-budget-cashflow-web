@@ -1067,6 +1067,26 @@ a {
   box-shadow: 0 16px 42px rgba(17, 128, 111, 0.16);
 }
 
+.payment-status-panel {
+  grid-column: 1 / -1;
+}
+
+.consultation-booking-panel {
+  grid-column: 1 / -1;
+}
+
+.payment-status-panel p {
+  margin: 8px 0 0;
+  color: var(--muted);
+}
+
+.contact-card.is-disabled,
+.cta-link.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.66;
+  pointer-events: none;
+}
+
 .price {
   font-size: 30px;
   font-weight: 900;

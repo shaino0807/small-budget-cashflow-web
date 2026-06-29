@@ -63,6 +63,11 @@ jobs:
       - name: Build runtime API configuration
         env:
           BACKEND_API_BASE: ${{ secrets.BACKEND_API_BASE }}
+          CONSULTATION_IG_URL: ${{ vars.CONSULTATION_IG_URL }}
+          CONSULTATION_LINE_URL: ${{ vars.CONSULTATION_LINE_URL }}
+          FULL_REPORT_PRICE_TWD: ${{ vars.FULL_REPORT_PRICE_TWD }}
+          CONSULTATION_DEPOSIT_TWD: ${{ vars.CONSULTATION_DEPOSIT_TWD }}
+          CONSULTATION_FEE_TWD: ${{ vars.CONSULTATION_FEE_TWD }}
         run: node webapp/scripts/build-runtime-config.js
 
       - name: Upload Pages artifact

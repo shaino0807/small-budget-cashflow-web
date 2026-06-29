@@ -18,7 +18,7 @@
 - 對外網址：`https://shaino0807.github.io/small-budget-cashflow-web/`
 - 手機測試：電腦與手機連同一個網路後，用手機瀏覽 `http://<電腦區網IP>:5188`
 
-ETF / 股票資料庫透過 `fetch()` 載入，正式測試請使用本地伺服器，不建議直接用 `file://` 開啟。本地 server 會提供 `/api/update-database`，網頁開啟後會嘗試背景更新官方資料；若更新失敗，App 會沿用最後通過驗證的快照。此版本不串真實金流；升級流程是本地 mock purchase。
+ETF / 股票資料庫透過 `fetch()` 載入，正式測試請使用本地伺服器，不建議直接用 `file://` 開啟。本地 server 會提供 `/api/update-database`，網頁開啟後會嘗試背景更新官方資料；若更新失敗，App 會沿用最後通過驗證的快照。完整報告與諮詢訂金使用綠界導轉式金流；前端只負責導轉，真正解鎖以後端付款通知與簽章驗證結果為準。
 
 GitHub Pages 由 `.github/workflows/pages.yml` 部署，排程為每日台灣時間 08:30 左右更新官方資料並重新部署。公開頁若在 `webapp/runtime-config.js` 設定後臺 API 網址，每次開啟會呼叫 `/api/market/refresh` 執行新鮮度判斷與必要更新；後臺預設 15 分鐘內共用同一份已驗證快照，避免訪客增加後重複壓迫官方來源。GitHub Actions 保留為每日備援。瀏覽器不能直接安全觸發具有寫入權限的 GitHub Action。
 
@@ -81,6 +81,22 @@ ETF 主檔會保留 TWSE 官方篩選器可讀分類：`managerType`、`rewardTy
 正式部署後臺時，將 `webapp/runtime-config.js` 的 `window.CASHFLOW_API_BASE` 設為 HTTPS API 網址。GitHub Pages 只負責靜態前端，SQLite 與密鑰必須部署在有持久磁碟與環境變數保護的後臺主機。
 
 正式部署建議在 GitHub repository secret 新增 `BACKEND_API_BASE`。Pages workflow 會在部署時執行 `build-runtime-config.js`，把 HTTPS 後臺網址寫入部署產物，不需要再修改或提交 `runtime-config.js`。
+
+綠界 stage 測試部署前可先執行：
+
+```powershell
+node webapp\scripts\validate-payment-config.js --stage
+```
+
+正式 production 部署前再執行：
+
+```powershell
+node webapp\scripts\validate-payment-config.js --production
+```
+
+stage 模式可使用綠界公開測試參數，正式 production 才要求綠界 `MerchantID`、`HashKey`、`HashIV`、公開前後端 HTTPS 網址、完整報告 NT$499、諮詢訂金 NT$200、諮詢費 NT$1,500，以及 IG / LINE 諮詢連結。真實金鑰只放 Render 或 GitHub Secrets，不提交到 Git。
+
+GitHub Pages runtime 設定使用 repository variables：`CONSULTATION_IG_URL`、`CONSULTATION_LINE_URL`、`FULL_REPORT_PRICE_TWD`、`CONSULTATION_DEPOSIT_TWD`、`CONSULTATION_FEE_TWD`。Render 後臺另外使用環境變數保存綠界金流設定。
 
 管理端入口使用 `?admin=1`，例如 `http://localhost:5188/?admin=1`。公開首頁預設不顯示管理端分頁。
 

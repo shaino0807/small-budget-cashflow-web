@@ -3,6 +3,7 @@ const { execFile } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 const { createStore } = require("./customer-store");
+const { buildCheckout, createMerchantTradeNo, ecpayConfig, productCatalog, productFor, verifyNotification } = require("./ecpay");
 
 const root = __dirname;
 const port = Number(process.env.PORT || 5188);
@@ -15,6 +16,37 @@ let lastActionDispatchAt = 0;
 let customerStore = null;
 let customerStoreError = null;
 const rateBuckets = new Map();
+
+function cleanBaseUrl(value, fallback) {
+  return String(value || fallback).replace(/\/$/, "");
+}
+
+function sitePublicBaseUrl() {
+  return cleanBaseUrl(process.env.SITE_PUBLIC_BASE_URL || process.env.PUBLIC_SITE_BASE_URL, `http://localhost:${port}`);
+}
+
+function apiPublicBaseUrl() {
+  return cleanBaseUrl(process.env.API_PUBLIC_BASE_URL || process.env.BACKEND_PUBLIC_BASE_URL || process.env.RENDER_EXTERNAL_URL, `http://localhost:${port}`);
+}
+
+function paymentReadiness() {
+  const config = ecpayConfig();
+  const catalog = productCatalog();
+  return {
+    ecpayConfigured: Boolean(config.merchantId && config.hashKey && config.hashIv),
+    ecpayEnvironment: config.isProduction ? "production" : "stage",
+    checkoutHost: new URL(config.checkoutUrl).host,
+    sitePublicBaseConfigured: Boolean(process.env.SITE_PUBLIC_BASE_URL || process.env.PUBLIC_SITE_BASE_URL),
+    apiPublicBaseConfigured: Boolean(process.env.API_PUBLIC_BASE_URL || process.env.BACKEND_PUBLIC_BASE_URL || process.env.RENDER_EXTERNAL_URL),
+    consultationIgConfigured: Boolean(process.env.CONSULTATION_IG_URL || "https://www.instagram.com/chendino080077/"),
+    consultationLineConfigured: Boolean(process.env.CONSULTATION_LINE_URL),
+    prices: {
+      fullReport: catalog.full_report.amount,
+      consultationDeposit: catalog.consultation_deposit.amount,
+      consultationFee: Math.max(1, Math.round(Number(process.env.CONSULTATION_FEE_TWD || 1500)))
+    }
+  };
+}
 
 const types = {
   ".html": "text/html; charset=utf-8",
@@ -32,6 +64,15 @@ function sendJson(res, status, payload) {
     "X-Content-Type-Options": "nosniff"
   });
   res.end(JSON.stringify(payload, null, 2));
+}
+
+function sendText(res, status, body) {
+  res.writeHead(status, {
+    "Content-Type": "text/plain; charset=utf-8",
+    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff"
+  });
+  res.end(body);
 }
 
 function getCustomerStore() {
@@ -95,6 +136,29 @@ function readJson(req, maxBytes = 600000) {
   });
 }
 
+function readForm(req, maxBytes = 200000) {
+  return new Promise((resolve, reject) => {
+    let body = "";
+    req.setEncoding("utf8");
+    req.on("data", (chunk) => {
+      body += chunk;
+      if (Buffer.byteLength(body, "utf8") > maxBytes) {
+        const error = new Error("form body too large");
+        error.statusCode = 413;
+        reject(error);
+        req.destroy();
+      }
+    });
+    req.on("end", () => {
+      const params = new URLSearchParams(body);
+      const result = {};
+      for (const [key, value] of params.entries()) result[key] = value;
+      resolve(result);
+    });
+    req.on("error", reject);
+  });
+}
+
 function adminKey(req) {
   return String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
 }
@@ -114,7 +178,7 @@ function setSecurityHeaders(req, res) {
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
-  res.setHeader("Content-Security-Policy", "default-src 'self'; connect-src 'self' https:; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-ancestors 'none'");
+  res.setHeader("Content-Security-Policy", "default-src 'self'; connect-src 'self' https:; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; form-action 'self' https://payment-stage.ecpay.com.tw https://payment.ecpay.com.tw; frame-ancestors 'none'");
 }
 
 function databaseFreshness() {
@@ -220,7 +284,8 @@ const server = http.createServer((req, res) => {
       ok: true,
       service: "small-budget-cashflow-api",
       time: new Date().toISOString(),
-      customerStoreConfigured: Boolean(process.env.CUSTOMER_DATA_KEY && process.env.ACCESS_CODE_PEPPER && process.env.ADMIN_API_KEY)
+      customerStoreConfigured: Boolean(process.env.CUSTOMER_DATA_KEY && process.env.ACCESS_CODE_PEPPER && process.env.ADMIN_API_KEY),
+      payment: paymentReadiness()
     });
     return;
   }
@@ -281,6 +346,86 @@ const server = http.createServer((req, res) => {
         sendJson(res, 201, { ok: true });
       })
       .catch((error) => sendJson(res, error.statusCode || 400, { ok: false, error: publicStoreError(error) }));
+    return;
+  }
+
+  if (urlPath === "/api/payments/checkout" && req.method === "POST") {
+    if (!rateLimit(req, 12, 60000)) return sendJson(res, 429, { ok: false, error: "付款建立次數過多，請稍後再試" });
+    readJson(req, 20000)
+      .then((body) => {
+        const product = productFor(body.productType || "full_report");
+        const order = getCustomerStore().createOrder({
+          id: createMerchantTradeNo(),
+          reportId: body.reportId,
+          accessCode: body.accessCode,
+          productType: product.productType,
+          amount: product.amount,
+          currency: "TWD",
+          provider: "ecpay"
+        });
+        const checkout = buildCheckout({
+          order,
+          product,
+          siteBaseUrl: sitePublicBaseUrl(),
+          apiBaseUrl: apiPublicBaseUrl()
+        });
+        sendJson(res, 201, { ok: true, order, checkout });
+      })
+      .catch((error) => sendJson(res, error.statusCode || 400, { ok: false, error: publicStoreError(error) }));
+    return;
+  }
+
+  const paymentStatusMatch = urlPath.match(/^\/api\/payments\/([A-Z0-9]+)\/status$/i);
+  if (paymentStatusMatch && req.method === "GET") {
+    try {
+      const order = getCustomerStore().getOrderStatus({
+        id: paymentStatusMatch[1],
+        reportId: url.searchParams.get("reportId"),
+        accessCode: accessCode(req, url),
+        statusToken: String(req.headers["x-payment-status-token"] || url.searchParams.get("statusToken") || "")
+      });
+      sendJson(res, order ? 200 : 404, order ? { ok: true, order } : { ok: false, error: "找不到付款訂單" });
+    } catch (error) {
+      sendJson(res, error.statusCode || 500, { ok: false, error: publicStoreError(error) });
+    }
+    return;
+  }
+
+  if (urlPath === "/api/payments/ecpay/notify" && req.method === "POST") {
+    readForm(req)
+      .then((body) => {
+        const validMac = verifyNotification(body);
+        const product = productFor(body.CustomField2 || "full_report");
+        getCustomerStore().applyPaymentNotification({
+          orderId: body.MerchantTradeNo,
+          provider: "ecpay",
+          providerTradeNo: body.TradeNo,
+          amount: body.TradeAmt,
+          rtnCode: body.RtnCode,
+          rtnMsg: body.RtnMsg,
+          paidAt: body.PaymentDate,
+          validMac,
+          payload: body,
+          entitlement: product.entitlement
+        });
+        sendText(res, validMac ? 200 : 400, validMac ? "1|OK" : "0|INVALID");
+      })
+      .catch((error) => sendText(res, error.statusCode || 400, `0|${error.message}`));
+    return;
+  }
+
+  if (urlPath === "/api/payments/ecpay/result" && req.method === "POST") {
+    readForm(req)
+      .then((body) => {
+        const status = String(body.RtnCode) === "1" ? "success" : "failed";
+        const redirect = new URL(sitePublicBaseUrl() + "/");
+        redirect.searchParams.set("payment", status);
+        if (body.MerchantTradeNo) redirect.searchParams.set("orderId", body.MerchantTradeNo);
+        if (body.CustomField1) redirect.searchParams.set("reportId", body.CustomField1);
+        res.writeHead(303, { Location: redirect.toString(), "Cache-Control": "no-store" });
+        res.end();
+      })
+      .catch((error) => sendText(res, error.statusCode || 400, error.message));
     return;
   }
 

@@ -190,6 +190,35 @@ async function main() {
       }))()`
     });
     await send(ws, "Runtime.evaluate", {
+      expression: `localStorage.setItem('cashflow-map-web-state', JSON.stringify({
+        paidUnlocked: true,
+        consultingUnlocked: true,
+        reportMeta: { entitlements: [] },
+        anonymousId: crypto.randomUUID(),
+        consent: { accepted: false, acceptedAt: null, contactChannel: 'none', contactValue: '' },
+        profile: {},
+        holdings: [],
+        monthlyCashflows: {},
+        inputCompletion: { profile: {}, stockAnswers: [] },
+        leadProfile: {}
+      }))`
+    });
+    await send(ws, "Page.navigate", { url: targetUrl });
+    await wait(1800);
+    const entitlementGuardMetrics = await send(ws, "Runtime.evaluate", {
+      returnByValue: true,
+      expression: `(() => ({
+        paidUnlocked: typeof state !== 'undefined' ? Boolean(state.paidUnlocked) : true,
+        consultingUnlocked: typeof state !== 'undefined' ? Boolean(state.consultingUnlocked) : true,
+        paidTabLocked: document.querySelector('.paid-tab')?.classList.contains('is-locked')
+      }))()`
+    });
+    await send(ws, "Runtime.evaluate", {
+      expression: `localStorage.removeItem('cashflow-map-web-state')`
+    });
+    await send(ws, "Page.navigate", { url: targetUrl });
+    await wait(1800);
+    await send(ws, "Runtime.evaluate", {
       expression: `document.querySelector('#quickGenerateBtn').click()`
     });
     await wait(200);
@@ -331,6 +360,32 @@ async function main() {
     });
 
     await send(ws, "Runtime.evaluate", {
+      expression: `window.goTo ? window.goTo("upgradeView") : document.querySelector('.tab[data-view="upgradeView"]').click()`
+    });
+    await wait(300);
+    const upgradeMetrics = await send(ws, "Runtime.evaluate", {
+      returnByValue: true,
+      expression: `(() => {
+        const text = document.querySelector('#upgradeView')?.innerText || '';
+        const ig = document.querySelector('.consultation-booking-panel a[href*="instagram.com"]');
+        const lineDisabled = document.querySelector('.consultation-booking-panel [aria-disabled="true"]');
+        return {
+          activeView: document.querySelector('.view.is-active')?.id,
+          hasFullReport: text.includes('完整報告'),
+          hasFullReportPrice: text.includes('499'),
+          hasConsultationDeposit: text.includes('諮詢訂金') && text.includes('200'),
+          hasConsultationFee: text.includes('諮詢費') && text.includes('1,500'),
+          hasPaidButton: Boolean(document.querySelector('[data-plan="paid"]')),
+          hasConsultingButton: Boolean(document.querySelector('[data-plan="consulting"]')),
+          igHref: ig?.href || '',
+          lineDisabled: Boolean(lineDisabled),
+          noMockCopy: !/mock purchase|Mock/i.test(text),
+          bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
+        };
+      })()`
+    });
+
+    await send(ws, "Runtime.evaluate", {
       expression: `window.goTo ? window.goTo("databaseView") : document.querySelector('[data-goto="databaseView"]')?.click()`
     });
     for (let i = 0; i < 12; i++) {
@@ -360,11 +415,13 @@ async function main() {
       failedRequests: failures,
       badResponses,
       input: inputMetrics.result.value,
+      entitlementGuard: entitlementGuardMetrics.result.value,
       requiredValidation: validationMetrics.result.value,
       detailedValidation: detailedValidationMetrics.result.value,
       stockReport: stockReportMetrics.result.value,
       stockLights: stockLightMatrix.result.value,
       freeReport: freeReportMetrics.result.value,
+      upgrade: upgradeMetrics.result.value,
       database: databaseMetrics.result.value,
       passed: consoleErrors.length === 0
         && runtimeErrors.length === 0
@@ -374,6 +431,9 @@ async function main() {
         && inputMetrics.result.value.quickCheckExists
         && inputMetrics.result.value.contactExists
         && inputMetrics.result.value.bodyOverflow === 0
+        && entitlementGuardMetrics.result.value.paidUnlocked === false
+        && entitlementGuardMetrics.result.value.consultingUnlocked === false
+        && entitlementGuardMetrics.result.value.paidTabLocked === true
         && validationMetrics.result.value.activeView === "landingView"
         && validationMetrics.result.value.quickErrorsVisible
         && validationMetrics.result.value.quickErrorCount >= 4
@@ -404,6 +464,17 @@ async function main() {
         && freeReportMetrics.result.value.hasAvoid
         && freeReportMetrics.result.value.hasNumbers
         && freeReportMetrics.result.value.bodyOverflow === 0
+        && upgradeMetrics.result.value.activeView === "upgradeView"
+        && upgradeMetrics.result.value.hasFullReport
+        && upgradeMetrics.result.value.hasFullReportPrice
+        && upgradeMetrics.result.value.hasConsultationDeposit
+        && upgradeMetrics.result.value.hasConsultationFee
+        && upgradeMetrics.result.value.hasPaidButton
+        && upgradeMetrics.result.value.hasConsultingButton
+        && upgradeMetrics.result.value.igHref === "https://www.instagram.com/chendino080077/"
+        && upgradeMetrics.result.value.lineDisabled
+        && upgradeMetrics.result.value.noMockCopy
+        && upgradeMetrics.result.value.bodyOverflow === 0
         && databaseMetrics.result.value.activeView === "databaseView"
         && databaseMetrics.result.value.bodyOverflow === 0
         && databaseMetrics.result.value.etfRows > 0

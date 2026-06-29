@@ -2,6 +2,11 @@ const storageKey = "cashflow-map-web-state";
 const inputVersion = "cashflow-input-v2";
 const reportVersion = "cashflow-report-v2";
 const apiBase = String(window.CASHFLOW_API_BASE || "").replace(/\/$/, "");
+const consultationIgUrl = String(window.CONSULTATION_IG_URL || "https://www.instagram.com/chendino080077/");
+const consultationLineUrl = String(window.CONSULTATION_LINE_URL || "");
+const fullReportPriceTwd = Math.max(1, Math.round(Number(window.FULL_REPORT_PRICE_TWD || 499)));
+const consultationDepositTwd = Math.max(1, Math.round(Number(window.CONSULTATION_DEPOSIT_TWD || 200)));
+const consultationFeeTwd = Math.max(1, Math.round(Number(window.CONSULTATION_FEE_TWD || 1500)));
 const disclaimer = "本 App 僅供教育與財務規劃參考，不構成任何投資建議、買賣建議或保證報酬。所有投資皆有風險，使用者應自行判斷並承擔投資結果。";
 const monthLabels = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
 const monthFields = ["monthlyIncome", "fixedExpense", "insuranceExpense", "loanExpense", "monthlyInvestment"];
@@ -74,6 +79,13 @@ const defaultState = {
     stockAnswers: []
   },
   reportMeta: null,
+  payment: {
+    lastOrderId: null,
+    lastProductType: null,
+    lastStatus: null,
+    statusToken: null,
+    message: ""
+  },
   leadProfile: {
     checkType: "cashflow",
     capacity: "5000to10000",
@@ -118,6 +130,13 @@ const sampleState = {
     stockAnswers: ["stockReason", "stockDrop", "stockCount", "stockHorizon"]
   },
   reportMeta: null,
+  payment: {
+    lastOrderId: null,
+    lastProductType: null,
+    lastStatus: null,
+    statusToken: null,
+    message: ""
+  },
   leadProfile: {
     checkType: "cashflow",
     capacity: "5000to10000",
@@ -179,8 +198,6 @@ function normalizeState(next) {
   next.holdings = Array.isArray(next.holdings) ? next.holdings.map(normalizeHolding) : structuredClone(defaultState.holdings);
   next.monthlyCashflows = normalizeMonthlyCashflows(next.monthlyCashflows, next.profile);
   next.simulationYears = simulationYearOptions.includes(Number(next.simulationYears)) ? Number(next.simulationYears) : 10;
-  next.paidUnlocked = Boolean(next.paidUnlocked);
-  next.consultingUnlocked = Boolean(next.consultingUnlocked);
   next.anonymousId = String(next.anonymousId || crypto.randomUUID());
   next.consent = { ...structuredClone(defaultState.consent), ...(next.consent || {}) };
   next.inputCompletion = {
@@ -188,6 +205,9 @@ function normalizeState(next) {
     stockAnswers: Array.isArray(next.inputCompletion?.stockAnswers) ? next.inputCompletion.stockAnswers : []
   };
   next.reportMeta = next.reportMeta || null;
+  next.payment = { ...structuredClone(defaultState.payment), ...(next.payment || {}) };
+  next.paidUnlocked = Array.isArray(next.reportMeta?.entitlements) && next.reportMeta.entitlements.includes("full_report");
+  next.consultingUnlocked = Array.isArray(next.reportMeta?.entitlements) && next.reportMeta.entitlements.includes("consultation_deposit");
   next.leadProfile = { ...structuredClone(defaultState.leadProfile), ...(next.leadProfile || {}) };
   return next;
 }
@@ -254,6 +274,120 @@ async function apiRequest(pathname, options = {}) {
   const payload = await response.json().catch(() => ({ ok: false, error: `HTTP ${response.status}` }));
   if (!response.ok || payload.ok === false) throw new Error(payload.error || `HTTP ${response.status}`);
   return payload;
+}
+
+function hasEntitlement(entitlement) {
+  return Array.isArray(state.reportMeta?.entitlements) && state.reportMeta.entitlements.includes(entitlement);
+}
+
+function applyEntitlements(entitlements = []) {
+  const unique = Array.from(new Set(entitlements.filter(Boolean)));
+  if (!state.reportMeta) state.reportMeta = {};
+  state.reportMeta.entitlements = unique;
+  state.paidUnlocked = unique.includes("full_report");
+  state.consultingUnlocked = unique.includes("consultation_deposit");
+}
+
+function submitCheckoutForm(checkout) {
+  const form = document.createElement("form");
+  form.method = checkout.method || "POST";
+  form.action = checkout.action;
+  form.hidden = true;
+  Object.entries(checkout.fields || {}).forEach(([name, value]) => {
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.name = name;
+    input.value = value;
+    form.appendChild(input);
+  });
+  document.body.appendChild(form);
+  form.submit();
+}
+
+async function startCheckout(productType) {
+  if (!backendAvailable()) {
+    showToast("付款需要後端服務，請使用正式網站或本地 server。");
+    return;
+  }
+  if (!state.reportMeta?.reportId || !state.reportMeta?.accessCode) {
+    showToast("請先產生或重新讀回報告，再進行付款。");
+    goTo("freeReportView");
+    return;
+  }
+  try {
+    const result = await apiRequest("/api/payments/checkout", {
+      method: "POST",
+      body: JSON.stringify({
+        reportId: state.reportMeta.reportId,
+        accessCode: state.reportMeta.accessCode,
+        productType
+      })
+    });
+    state.payment = {
+      lastOrderId: result.order.id,
+      lastProductType: productType,
+      lastStatus: result.order.status,
+      statusToken: result.order.statusToken,
+      message: "已建立付款訂單，正在前往綠界付款頁。"
+    };
+    persist();
+    submitCheckoutForm(result.checkout);
+  } catch (error) {
+    state.payment = { ...state.payment, lastProductType: productType, lastStatus: "failed", message: error.message };
+    refreshReports();
+    showToast(error.message);
+  }
+}
+
+async function checkPaymentStatus(orderId = state.payment?.lastOrderId) {
+  if (!orderId || !state.reportMeta?.reportId) return null;
+  const headers = {};
+  if (state.reportMeta?.accessCode) headers["X-Report-Access-Code"] = state.reportMeta.accessCode;
+  if (state.payment?.statusToken) headers["X-Payment-Status-Token"] = state.payment.statusToken;
+  if (!headers["X-Report-Access-Code"] && !headers["X-Payment-Status-Token"]) return null;
+  const result = await apiRequest(`/api/payments/${encodeURIComponent(orderId)}/status?reportId=${encodeURIComponent(state.reportMeta.reportId)}`, { headers });
+  state.payment = {
+    lastOrderId: result.order.id,
+    lastProductType: result.order.productType,
+    lastStatus: result.order.status,
+    statusToken: state.payment?.statusToken || null,
+    message: result.order.status === "paid" ? "付款成功，完整權限已更新。" : result.order.failureReason || "付款尚未完成。"
+  };
+  applyEntitlements(result.order.entitlements);
+  persist();
+  refreshReports();
+  return result.order;
+}
+
+async function handlePaymentReturn() {
+  const params = new URLSearchParams(location.search);
+  const status = params.get("payment");
+  const orderId = params.get("orderId");
+  if (!status) return;
+  state.payment = {
+    lastOrderId: orderId || state.payment.lastOrderId,
+    lastProductType: state.payment.lastProductType,
+    lastStatus: status,
+    statusToken: state.payment.statusToken,
+    message: status === "success" ? "付款結果已返回，正在向後端確認入帳。" : "付款未完成或付款失敗。"
+  };
+  if (orderId) {
+    try {
+      const order = await checkPaymentStatus(orderId);
+      if (order?.status === "paid" && order.productType === "full_report") goTo("paidReportView");
+      if (order?.status === "paid" && order.productType === "consultation_deposit") goTo("upgradeView");
+      showToast(order?.status === "paid" ? "付款成功，已更新權限。" : "尚未收到後端付款確認。");
+    } catch (error) {
+      showToast(`付款狀態確認失敗：${error.message}`);
+    }
+  } else {
+    refreshReports();
+  }
+  params.delete("payment");
+  params.delete("orderId");
+  params.delete("reportId");
+  const clean = `${location.pathname}${params.toString() ? `?${params.toString()}` : ""}${location.hash}`;
+  history.replaceState(null, "", clean);
 }
 
 function trackEvent(eventType, metadata = {}) {
@@ -1534,8 +1668,10 @@ async function saveGeneratedReport() {
     storageStatus: backendAvailable() ? "saving" : "local_only",
     reportId: null,
     accessCode: null,
-    expiresAt: null
+    expiresAt: null,
+    entitlements: []
   };
+  applyEntitlements([]);
   refreshReports();
   if (!backendAvailable()) {
     persist();
@@ -1551,8 +1687,10 @@ async function saveGeneratedReport() {
       storageStatus: "saved",
       reportId: result.report.id,
       accessCode: result.report.accessCode,
-      expiresAt: result.report.expiresAt
+      expiresAt: result.report.expiresAt,
+      entitlements: result.report.entitlements || []
     };
+    applyEntitlements(result.report.entitlements || []);
     state.anonymousId = result.report.anonymousId;
     persist();
     refreshReports();
@@ -1918,8 +2056,10 @@ async function restoreSavedReport() {
       storageStatus: "saved",
       reportId: result.report.id,
       accessCode: code,
-      expiresAt: result.report.expiresAt
+      expiresAt: result.report.expiresAt,
+      entitlements: result.report.entitlements || []
     };
+    applyEntitlements(result.report.entitlements || []);
     updateProfileInputs();
     syncQuizInputs();
     renderMonthlyCashflows();
@@ -1978,37 +2118,59 @@ function renderFreeReport() {
 }
 
 function renderUpgrade() {
+  {
   const plans = [
-    { name: "免費版", price: "NT$0", action: "保留免費版", key: "free", features: ["財務體質分數", "分數拆解摘要", "3 大風險提示"] },
-    { name: "完整報告版", price: "NT$299", action: state.paidUnlocked ? "已解鎖" : "Mock 解鎖", key: "paid", highlight: true, features: ["整體股票重疊度分析", "高股息依賴與壓力測試", "資產模擬與月份月曆", "PDF/列印匯出"] },
-    { name: "一對一健檢版", price: "NT$2,980", action: state.consultingUnlocked ? "已登記" : "Mock 登記", key: "consulting", features: ["完整報告版內容", "預約諮詢 CTA", "個人化調整建議整理"] }
+    { name: "免費報告", price: "NT$0", action: "保留免費版", key: "free", features: ["財務體質分數", "現金流摘要", "3 個優先風險"] },
+    { name: "完整報告", price: formatMoney(fullReportPriceTwd), action: state.paidUnlocked ? "已解鎖" : "前往付款", key: "paid", highlight: true, features: ["整體股票重疊度分析", "高股息依賴與壓力測試", "資產模擬與月份月曆", "PDF/列印匯出"] },
+    { name: "一對一諮詢訂金", price: formatMoney(consultationDepositTwd), action: state.consultingUnlocked ? "已付款" : "支付訂金", key: "consulting", features: [`諮詢費 ${formatMoney(consultationFeeTwd)}`, "IG 或 LINE 預約", "人工檢視 ETF、股票與現金流"] }
   ];
-  q("#plans").innerHTML = plans.map((plan) => `
+  const paymentNotice = state.payment?.message ? `
+    <section class="panel payment-status-panel">
+      <span class="badge">${escapeHtml(state.payment.lastStatus || "payment")}</span>
+      <p>${escapeHtml(state.payment.message)}</p>
+      ${state.payment.lastOrderId ? `<button class="secondary-button" id="refreshPaymentStatusBtn" type="button">重新確認付款狀態</button>` : ""}
+    </section>
+  ` : "";
+  const consultationLinks = `
+    <section class="panel consultation-booking-panel">
+      <span class="eyebrow">諮詢預約</span>
+      <h3>訂金 ${formatMoney(consultationDepositTwd)}，諮詢費 ${formatMoney(consultationFeeTwd)}</h3>
+      <p class="panel-note">完成訂金後，可用 IG 或 LINE 接續預約時間。LINE 連結正式提供後，會由 runtime 設定啟用。</p>
+      <div class="cta-grid">
+        <a class="primary-button cta-link" href="${escapeHtml(consultationIgUrl)}" target="_blank" rel="noopener noreferrer">IG 諮詢</a>
+        ${consultationLineUrl
+          ? `<a class="secondary-button cta-link" href="${escapeHtml(consultationLineUrl)}" target="_blank" rel="noopener noreferrer">LINE 諮詢</a>`
+          : `<span class="secondary-button cta-link is-disabled" aria-disabled="true">LINE 尚未設定</span>`}
+      </div>
+    </section>
+  `;
+  q("#plans").innerHTML = paymentNotice + plans.map((plan) => `
     <article class="plan-card ${plan.highlight ? "highlight" : ""}">
       <h3>${plan.name}</h3>
       <div class="price">${plan.price}</div>
       <ul class="feature-list">${plan.features.map((item) => `<li>${item}</li>`).join("")}</ul>
       <button class="${plan.highlight ? "primary-button" : "secondary-button"}" data-plan="${plan.key}" type="button">${plan.action}</button>
     </article>
-  `).join("");
+  `).join("") + consultationLinks;
 
   q("#plans").querySelectorAll("[data-plan]").forEach((button) => {
-    button.addEventListener("click", () => {
+    button.addEventListener("click", async () => {
       if (button.dataset.plan === "paid") {
-        state.paidUnlocked = true;
-        showToast("完整報告已用 mock purchase 解鎖");
-        goTo("paidReportView");
+        if (state.paidUnlocked) return goTo("paidReportView");
+        await startCheckout("full_report");
       }
       if (button.dataset.plan === "consulting") {
-        state.paidUnlocked = true;
-        state.consultingUnlocked = true;
-        showToast("一對一健檢方案已用 mock purchase 登記");
-        goTo("paidReportView");
+        if (state.consultingUnlocked) return showToast("諮詢訂金已付款，可用下方 IG 或 LINE 預約。");
+        await startCheckout("consultation_deposit");
       }
       persist();
       refreshReports();
     });
   });
+  q("#refreshPaymentStatusBtn")?.addEventListener("click", () => {
+    checkPaymentStatus().catch((error) => showToast(error.message));
+  });
+  }
 }
 
 function renderDatabaseView() {
@@ -2311,8 +2473,9 @@ function renderPaidReport() {
     q("#paidReport").innerHTML = `
       <section class="panel">
         <h3>完整報告尚未解鎖</h3>
-        <p>請先到升級頁使用 mock purchase 解鎖完整報告。</p>
-        <button class="primary-button" data-goto="upgradeView" type="button">前往升級</button>
+        <p>請先完成完整報告付款。付款成功後，系統會向後端確認入帳，再開啟完整報告。</p>
+        ${state.payment?.message ? `<p class="panel-note">${escapeHtml(state.payment.message)}</p>` : ""}
+        <button class="primary-button" data-goto="upgradeView" type="button">前往付款</button>
       </section>
     `;
     bindGotoButtons();
@@ -2712,6 +2875,30 @@ function registerServiceWorker() {
   }
 }
 
+function configureConsultationLinks() {
+  const ig = q("#ig-contact");
+  if (ig) {
+    ig.href = consultationIgUrl;
+    ig.target = "_blank";
+    ig.rel = "noopener noreferrer";
+  }
+  const line = q("#line-contact");
+  if (line) {
+    if (consultationLineUrl) {
+      line.href = consultationLineUrl;
+      line.target = "_blank";
+      line.rel = "noopener noreferrer";
+      line.classList.remove("is-disabled");
+    } else {
+      line.href = "#contactPanel";
+      line.removeAttribute("target");
+      line.removeAttribute("rel");
+      line.classList.add("is-disabled");
+      line.setAttribute("aria-disabled", "true");
+    }
+  }
+}
+
 async function init() {
   if (new URLSearchParams(location.search).get("admin") === "1") {
     q(".admin-tab").hidden = false;
@@ -2719,7 +2906,9 @@ async function init() {
   await loadEtfDatabase();
   syncInputs();
   bindEvents();
+  configureConsultationLinks();
   refreshReports();
+  await handlePaymentReturn();
   registerServiceWorker();
   trackEvent("page_opened", { path: location.pathname });
   refreshDatabaseFromServer("open");

@@ -4,6 +4,7 @@ const fs = require("fs");
 const http = require("http");
 const os = require("os");
 const path = require("path");
+const { computeCheckMacValue } = require("../ecpay");
 
 const port = 5600 + Math.floor(Math.random() * 300);
 const githubPort = port + 400;
@@ -32,7 +33,14 @@ const env = {
   ,
   GITHUB_ACTIONS_TOKEN: "test-server-only-token",
   GITHUB_API_BASE: `http://127.0.0.1:${githubPort}`,
-  ACTION_DISPATCH_MINUTES: "15"
+  ACTION_DISPATCH_MINUTES: "15",
+  SITE_PUBLIC_BASE_URL: baseUrl,
+  API_PUBLIC_BASE_URL: baseUrl,
+  ECPAY_USE_STAGE_DEFAULTS: "1",
+  FULL_REPORT_PRICE_TWD: "499",
+  CONSULTATION_DEPOSIT_TWD: "200",
+  CONSULTATION_FEE_TWD: "1500",
+  CONSULTATION_IG_URL: "https://www.instagram.com/chendino080077/"
 };
 
 function wait(ms) {
@@ -47,6 +55,19 @@ async function request(pathname, options = {}) {
   });
   const body = await response.json();
   return { status: response.status, body };
+}
+
+async function requestText(pathname, options = {}) {
+  const { headers = {}, ...rest } = options;
+  const response = await fetch(`${baseUrl}${pathname}`, {
+    headers: { "Content-Type": "application/json", ...headers },
+    ...rest
+  });
+  return { status: response.status, body: await response.text(), headers: response.headers };
+}
+
+function formBody(params) {
+  return new URLSearchParams(params).toString();
 }
 
 async function waitForServer() {
@@ -71,6 +92,14 @@ async function main() {
   });
   try {
     await waitForServer();
+    const health = await request("/api/health");
+    if (health.status !== 200 || !health.body.payment?.ecpayConfigured || health.body.payment.prices.fullReport !== 499) {
+      throw new Error("Payment readiness health check failed");
+    }
+    const healthRaw = JSON.stringify(health.body);
+    if (healthRaw.includes("pwFHCqoQZGmho4w6") || healthRaw.includes("EkRm7iFT261dpevs")) {
+      throw new Error("Health endpoint leaked ECPay secrets");
+    }
     const firstRefresh = await request("/api/market/refresh", { method: "POST" });
     const secondRefresh = await request("/api/market/refresh", { method: "POST" });
     if (!firstRefresh.body.githubAction?.dispatched || secondRefresh.body.githubAction?.reason !== "recent_dispatch_available" || githubDispatchCount !== 1) {
@@ -129,6 +158,202 @@ async function main() {
     });
     if (reopened.status !== 200 || reopened.body.report.payload.input.profile.monthlyIncome !== 50000) {
       throw new Error("Report reopen failed");
+    }
+
+    const checkout = await request("/api/payments/checkout", {
+      method: "POST",
+      body: JSON.stringify({
+        reportId: report.id,
+        accessCode: report.accessCode,
+        productType: "full_report"
+      })
+    });
+    if (checkout.status !== 201 || checkout.body.order.status !== "pending" || checkout.body.order.amount !== 499 || !checkout.body.order.statusToken) {
+      throw new Error("Payment checkout creation failed");
+    }
+    if (!checkout.body.checkout?.fields?.CheckMacValue || !checkout.body.checkout.action.includes("ecpay")) {
+      throw new Error("ECPay checkout form was not generated");
+    }
+
+    const unauthorizedPaymentStatus = await request(`/api/payments/${checkout.body.order.id}/status?reportId=${report.id}`, {
+      headers: { "X-Report-Access-Code": "wrong-code" }
+    });
+    if (unauthorizedPaymentStatus.status !== 404) throw new Error("Payment status accepted a wrong access code");
+
+    const wrongPaymentToken = await request(`/api/payments/${checkout.body.order.id}/status?reportId=${report.id}`, {
+      headers: { "X-Payment-Status-Token": "wrong-token" }
+    });
+    if (wrongPaymentToken.status !== 404) throw new Error("Payment status accepted a wrong status token");
+
+    const notifyPayload = {
+      MerchantID: "3002607",
+      MerchantTradeNo: checkout.body.order.id,
+      StoreID: "",
+      RtnCode: "1",
+      RtnMsg: "Succeeded",
+      TradeNo: "stage-test-trade-no",
+      TradeAmt: "499",
+      PaymentDate: "2026/06/29 12:00:00",
+      PaymentType: "Credit_CreditCard",
+      PaymentTypeChargeFee: "0",
+      TradeDate: "2026/06/29 11:59:00",
+      SimulatePaid: "1",
+      CustomField1: report.id,
+      CustomField2: "full_report",
+      CustomField3: "",
+      CustomField4: ""
+    };
+
+    const invalidMacPayload = { ...notifyPayload, CheckMacValue: "INVALID" };
+    const invalidMacNotify = await requestText("/api/payments/ecpay/notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: formBody(invalidMacPayload)
+    });
+    if (invalidMacNotify.status !== 400 || invalidMacNotify.body !== "0|INVALID") {
+      throw new Error("Invalid ECPay CheckMacValue was not rejected");
+    }
+    const statusAfterInvalidMac = await request(`/api/payments/${checkout.body.order.id}/status?reportId=${report.id}`, {
+      headers: { "X-Payment-Status-Token": checkout.body.order.statusToken }
+    });
+    if (statusAfterInvalidMac.status !== 200 || statusAfterInvalidMac.body.order.status !== "pending") {
+      throw new Error("Invalid ECPay notification changed the order status");
+    }
+
+    const mismatchCheckout = await request("/api/payments/checkout", {
+      method: "POST",
+      body: JSON.stringify({
+        reportId: report.id,
+        accessCode: report.accessCode,
+        productType: "full_report"
+      })
+    });
+    if (mismatchCheckout.status !== 201 || mismatchCheckout.body.order.status !== "pending") {
+      throw new Error("Amount mismatch checkout creation failed");
+    }
+    const mismatchNotifyPayload = {
+      ...notifyPayload,
+      MerchantTradeNo: mismatchCheckout.body.order.id,
+      TradeNo: "stage-test-mismatch-trade-no",
+      TradeAmt: "1"
+    };
+    mismatchNotifyPayload.CheckMacValue = computeCheckMacValue(mismatchNotifyPayload, "pwFHCqoQZGmho4w6", "EkRm7iFT261dpevs");
+    const mismatchNotify = await requestText("/api/payments/ecpay/notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: formBody(mismatchNotifyPayload)
+    });
+    if (mismatchNotify.status !== 200 || mismatchNotify.body !== "1|OK") {
+      throw new Error("Valid amount-mismatch callback was not acknowledged");
+    }
+    const mismatchStatus = await request(`/api/payments/${mismatchCheckout.body.order.id}/status?reportId=${report.id}`, {
+      headers: { "X-Payment-Status-Token": mismatchCheckout.body.order.statusToken }
+    });
+    if (mismatchStatus.status !== 200 || mismatchStatus.body.order.status !== "failed" || mismatchStatus.body.order.entitlements.includes("full_report")) {
+      throw new Error("Amount mismatch did not fail the order without entitlement");
+    }
+
+    notifyPayload.CheckMacValue = computeCheckMacValue(notifyPayload, "pwFHCqoQZGmho4w6", "EkRm7iFT261dpevs");
+    const notify = await requestText("/api/payments/ecpay/notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: formBody(notifyPayload)
+    });
+    if (notify.status !== 200 || notify.body !== "1|OK") throw new Error("ECPay notify was not accepted");
+
+    const paymentStatus = await request(`/api/payments/${checkout.body.order.id}/status?reportId=${report.id}`, {
+      headers: { "X-Report-Access-Code": report.accessCode }
+    });
+    if (paymentStatus.status !== 200 || paymentStatus.body.order.status !== "paid" || !paymentStatus.body.order.entitlements.includes("full_report")) {
+      throw new Error("Paid order did not unlock full report entitlement");
+    }
+
+    const duplicateNotify = await requestText("/api/payments/ecpay/notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: formBody(notifyPayload)
+    });
+    if (duplicateNotify.status !== 200 || duplicateNotify.body !== "1|OK") {
+      throw new Error("Duplicate ECPay notify was not idempotent");
+    }
+    const duplicateStatus = await request(`/api/payments/${checkout.body.order.id}/status?reportId=${report.id}`, {
+      headers: { "X-Payment-Status-Token": checkout.body.order.statusToken }
+    });
+    const duplicateFullReportEntitlements = duplicateStatus.body.order.entitlements.filter((entitlement) => entitlement === "full_report");
+    if (duplicateStatus.status !== 200 || duplicateStatus.body.order.status !== "paid" || duplicateFullReportEntitlements.length !== 1) {
+      throw new Error("Duplicate ECPay notify duplicated or damaged the entitlement");
+    }
+
+    const tokenPaymentStatus = await request(`/api/payments/${checkout.body.order.id}/status?reportId=${report.id}`, {
+      headers: { "X-Payment-Status-Token": checkout.body.order.statusToken }
+    });
+    if (tokenPaymentStatus.status !== 200 || tokenPaymentStatus.body.order.status !== "paid" || !tokenPaymentStatus.body.order.entitlements.includes("full_report")) {
+      throw new Error("Payment status token did not survive redirect-style lookup");
+    }
+
+    const reopenedAfterPayment = await request(`/api/reports/${report.id}`, {
+      headers: { "X-Report-Access-Code": report.accessCode }
+    });
+    if (!reopenedAfterPayment.body.report.entitlements.includes("full_report")) {
+      throw new Error("Report entitlement was not returned after payment");
+    }
+
+    const consultationCheckout = await request("/api/payments/checkout", {
+      method: "POST",
+      body: JSON.stringify({
+        reportId: report.id,
+        accessCode: report.accessCode,
+        productType: "consultation_deposit"
+      })
+    });
+    if (consultationCheckout.status !== 201 || consultationCheckout.body.order.status !== "pending" || consultationCheckout.body.order.amount !== 200) {
+      throw new Error("Consultation deposit checkout creation failed");
+    }
+
+    const consultationNotifyPayload = {
+      ...notifyPayload,
+      MerchantTradeNo: consultationCheckout.body.order.id,
+      TradeNo: "stage-test-consultation-trade-no",
+      TradeAmt: "200",
+      CustomField2: "consultation_deposit"
+    };
+    consultationNotifyPayload.CheckMacValue = computeCheckMacValue(consultationNotifyPayload, "pwFHCqoQZGmho4w6", "EkRm7iFT261dpevs");
+    const consultationNotify = await requestText("/api/payments/ecpay/notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: formBody(consultationNotifyPayload)
+    });
+    if (consultationNotify.status !== 200 || consultationNotify.body !== "1|OK") {
+      throw new Error("Consultation deposit notify was not accepted");
+    }
+
+    const consultationStatus = await request(`/api/payments/${consultationCheckout.body.order.id}/status?reportId=${report.id}`, {
+      headers: { "X-Payment-Status-Token": consultationCheckout.body.order.statusToken }
+    });
+    if (consultationStatus.status !== 200 || consultationStatus.body.order.status !== "paid" || !consultationStatus.body.order.entitlements.includes("consultation_deposit")) {
+      throw new Error("Paid consultation deposit did not unlock consultation entitlement");
+    }
+
+    const resultRedirect = await requestText("/api/payments/ecpay/result", {
+      method: "POST",
+      redirect: "manual",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: formBody(notifyPayload)
+    });
+    if (resultRedirect.status !== 303 || !resultRedirect.headers.get("location")?.includes("payment=success")) {
+      throw new Error("Payment result did not redirect to the success page");
+    }
+
+    const failedResultPayload = { ...notifyPayload, RtnCode: "0", RtnMsg: "Failed" };
+    failedResultPayload.CheckMacValue = computeCheckMacValue(failedResultPayload, "pwFHCqoQZGmho4w6", "EkRm7iFT261dpevs");
+    const failedResultRedirect = await requestText("/api/payments/ecpay/result", {
+      method: "POST",
+      redirect: "manual",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: formBody(failedResultPayload)
+    });
+    if (failedResultRedirect.status !== 303 || !failedResultRedirect.headers.get("location")?.includes("payment=failed")) {
+      throw new Error("Payment result did not redirect to the failed page");
     }
 
     const adminHeaders = { Authorization: `Bearer ${adminKey}` };

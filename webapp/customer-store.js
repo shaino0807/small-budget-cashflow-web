@@ -89,7 +89,50 @@ function initialize() {
       FOREIGN KEY(report_id) REFERENCES reports(id) ON DELETE CASCADE
     );
     CREATE INDEX IF NOT EXISTS idx_events_type_created ON events(event_type, created_at DESC);
+    CREATE TABLE IF NOT EXISTS orders (
+      id TEXT PRIMARY KEY,
+      report_id TEXT NOT NULL,
+      product_type TEXT NOT NULL,
+      amount INTEGER NOT NULL,
+      currency TEXT NOT NULL,
+      provider TEXT NOT NULL,
+      status_token_hash TEXT,
+      provider_trade_no TEXT,
+      status TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      paid_at TEXT,
+      failed_at TEXT,
+      failure_reason TEXT,
+      FOREIGN KEY(report_id) REFERENCES reports(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_orders_report_id ON orders(report_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status, created_at DESC);
+    CREATE TABLE IF NOT EXISTS payment_events (
+      id TEXT PRIMARY KEY,
+      order_id TEXT,
+      provider TEXT NOT NULL,
+      event_type TEXT NOT NULL,
+      valid_mac INTEGER NOT NULL,
+      created_at TEXT NOT NULL,
+      raw_cipher TEXT NOT NULL,
+      FOREIGN KEY(order_id) REFERENCES orders(id) ON DELETE SET NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_payment_events_order_id ON payment_events(order_id, created_at DESC);
+    CREATE TABLE IF NOT EXISTS report_entitlements (
+      report_id TEXT NOT NULL,
+      entitlement TEXT NOT NULL,
+      source_order_id TEXT NOT NULL,
+      granted_at TEXT NOT NULL,
+      PRIMARY KEY(report_id, entitlement),
+      FOREIGN KEY(report_id) REFERENCES reports(id) ON DELETE CASCADE,
+      FOREIGN KEY(source_order_id) REFERENCES orders(id) ON DELETE CASCADE
+    );
   `);
+  const orderColumns = db.prepare("PRAGMA table_info(orders)").all().map((row) => row.name);
+  if (!orderColumns.includes("status_token_hash")) {
+    db.exec("ALTER TABLE orders ADD COLUMN status_token_hash TEXT");
+  }
   return db;
 }
 
@@ -123,7 +166,7 @@ function validateSubmission(body) {
   return body;
 }
 
-function publicReport(row) {
+function publicReport(row, entitlements = []) {
   const payload = decrypt(row.payload_cipher);
   return {
     id: row.id,
@@ -134,6 +177,7 @@ function publicReport(row) {
     reportVersion: row.report_version,
     createdAt: row.created_at,
     expiresAt: row.expires_at,
+    entitlements,
     payload
   };
 }
@@ -150,9 +194,63 @@ function createStore() {
     INSERT INTO events (id, anonymous_id, report_id, event_type, created_at, metadata_cipher)
     VALUES (?, ?, ?, ?, ?, ?)
   `);
+  const insertOrder = db.prepare(`
+    INSERT INTO orders (
+      id, report_id, product_type, amount, currency, provider, status_token_hash, status, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  const insertPaymentEvent = db.prepare(`
+    INSERT INTO payment_events (id, order_id, provider, event_type, valid_mac, created_at, raw_cipher)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  function listEntitlements(reportId) {
+    return db.prepare("SELECT entitlement FROM report_entitlements WHERE report_id = ? ORDER BY granted_at")
+      .all(reportId)
+      .map((row) => row.entitlement);
+  }
+
+  function assertReportAccess(reportId, code) {
+    const row = db.prepare("SELECT * FROM reports WHERE id = ?").get(reportId);
+    if (!row || !safeEqual(row.access_hash, accessHash(code)) || new Date(row.expires_at) < new Date()) {
+      const error = new Error("找不到報告或存取碼不正確");
+      error.statusCode = 404;
+      throw error;
+    }
+    return row;
+  }
+
+  function publicOrder(row) {
+    if (!row) return null;
+    return {
+      id: row.id,
+      reportId: row.report_id,
+      productType: row.product_type,
+      amount: row.amount,
+      currency: row.currency,
+      provider: row.provider,
+      status: row.status,
+      providerTradeNo: row.provider_trade_no,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      paidAt: row.paid_at,
+      failedAt: row.failed_at,
+      failureReason: row.failure_reason,
+      entitlements: listEntitlements(row.report_id)
+    };
+  }
 
   function addEvent({ anonymousId, reportId = null, eventType, metadata = {} }) {
-    const allowedEvents = ["page_opened", "quiz_started", "report_generated", "report_reopened", "cta_clicked"];
+    const allowedEvents = [
+      "page_opened",
+      "quiz_started",
+      "report_generated",
+      "report_reopened",
+      "cta_clicked",
+      "payment_checkout_started",
+      "payment_paid",
+      "payment_failed"
+    ];
     if (!allowedEvents.includes(eventType)) throw new Error("事件類型不正確");
     insertEvent.run(
       crypto.randomUUID(),
@@ -192,7 +290,7 @@ function createStore() {
       encrypt(body)
     );
     addEvent({ anonymousId, reportId: id, eventType: "report_generated", metadata: { checkType: body.checkType, channel } });
-    return { id, accessCode, anonymousId, createdAt: now.toISOString(), expiresAt: expires.toISOString(), inputVersion, reportVersion };
+    return { id, accessCode, anonymousId, createdAt: now.toISOString(), expiresAt: expires.toISOString(), inputVersion, reportVersion, entitlements: [] };
   }
 
   function getReport(id, code) {
@@ -200,7 +298,7 @@ function createStore() {
     if (!row || !safeEqual(row.access_hash, accessHash(code))) return null;
     if (new Date(row.expires_at) < new Date()) return null;
     addEvent({ anonymousId: row.anonymous_id, reportId: id, eventType: "report_reopened" });
-    return publicReport(row);
+    return publicReport(row, listEntitlements(id));
   }
 
   function deleteReport(id, code) {
@@ -226,7 +324,7 @@ function createStore() {
     const row = db.prepare("SELECT * FROM reports WHERE id = ?").get(id);
     if (!row) return null;
     return {
-      ...publicReport(row),
+      ...publicReport(row, listEntitlements(id)),
       contact: row.contact_cipher ? decrypt(row.contact_cipher) : null,
       followupStatus: row.followup_status
     };
@@ -248,11 +346,128 @@ function createStore() {
     return { eventCounts, reportCounts, conversions };
   }
 
+  function createOrder({ id, reportId, accessCode, productType, amount, currency = "TWD", provider = "ecpay" }) {
+    const report = assertReportAccess(reportId, accessCode);
+    const now = new Date().toISOString();
+    const numericAmount = Math.round(Number(amount));
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) throw new Error("付款金額不正確");
+    const statusToken = crypto.randomBytes(18).toString("base64url");
+    insertOrder.run(
+      id,
+      reportId,
+      String(productType).slice(0, 80),
+      numericAmount,
+      String(currency).slice(0, 8),
+      String(provider).slice(0, 40),
+      accessHash(statusToken),
+      "pending",
+      now,
+      now
+    );
+    addEvent({
+      anonymousId: report.anonymous_id,
+      reportId,
+      eventType: "payment_checkout_started",
+      metadata: { orderId: id, productType, amount: numericAmount, currency, provider }
+    });
+    return { ...publicOrder(db.prepare("SELECT * FROM orders WHERE id = ?").get(id)), statusToken };
+  }
+
+  function getOrderStatus({ id, reportId, accessCode, statusToken }) {
+    const row = db.prepare("SELECT * FROM orders WHERE id = ? AND report_id = ?").get(id, reportId);
+    if (!row) return null;
+    if (statusToken) {
+      if (!row.status_token_hash || !safeEqual(row.status_token_hash, accessHash(statusToken))) {
+        const error = new Error("找不到付款訂單或付款查詢碼不正確");
+        error.statusCode = 404;
+        throw error;
+      }
+      return publicOrder(row);
+    }
+    assertReportAccess(reportId, accessCode);
+    return publicOrder(row);
+  }
+
+  function recordPaymentEvent({ orderId = null, provider = "ecpay", eventType, validMac, payload = {} }) {
+    insertPaymentEvent.run(
+      crypto.randomUUID(),
+      orderId,
+      String(provider).slice(0, 40),
+      String(eventType).slice(0, 80),
+      validMac ? 1 : 0,
+      new Date().toISOString(),
+      encrypt(payload)
+    );
+  }
+
+  function applyPaymentNotification({ orderId, provider = "ecpay", providerTradeNo = null, amount, rtnCode, rtnMsg = "", paidAt = null, validMac, payload = {}, entitlement = null }) {
+    const row = db.prepare("SELECT * FROM orders WHERE id = ?").get(orderId);
+    recordPaymentEvent({
+      orderId: row ? orderId : null,
+      provider,
+      eventType: validMac ? `rtn_${rtnCode}` : "invalid_mac",
+      validMac,
+      payload
+    });
+    if (!row || !validMac) return { ok: false, order: row ? publicOrder(row) : null };
+    if (row.status === "paid") return { ok: true, order: publicOrder(row), idempotent: true };
+
+    const now = new Date().toISOString();
+    const numericAmount = Math.round(Number(amount));
+    if (numericAmount !== Number(row.amount)) {
+      db.prepare(`
+        UPDATE orders
+        SET status = 'failed', provider_trade_no = ?, updated_at = ?, failed_at = ?, failure_reason = ?
+        WHERE id = ?
+      `).run(providerTradeNo, now, now, "amount_mismatch", orderId);
+      return { ok: false, order: publicOrder(db.prepare("SELECT * FROM orders WHERE id = ?").get(orderId)) };
+    }
+
+    if (String(rtnCode) !== "1") {
+      db.prepare(`
+        UPDATE orders
+        SET status = 'failed', provider_trade_no = ?, updated_at = ?, failed_at = ?, failure_reason = ?
+        WHERE id = ?
+      `).run(providerTradeNo, now, now, String(rtnMsg || "payment_failed").slice(0, 200), orderId);
+      const report = db.prepare("SELECT anonymous_id FROM reports WHERE id = ?").get(row.report_id);
+      addEvent({ anonymousId: report?.anonymous_id || row.report_id, reportId: row.report_id, eventType: "payment_failed", metadata: { orderId, rtnCode, rtnMsg } });
+      return { ok: false, order: publicOrder(db.prepare("SELECT * FROM orders WHERE id = ?").get(orderId)) };
+    }
+
+    db.prepare(`
+      UPDATE orders
+      SET status = 'paid', provider_trade_no = ?, updated_at = ?, paid_at = ?, failure_reason = NULL
+      WHERE id = ?
+    `).run(providerTradeNo, now, paidAt || now, orderId);
+    if (entitlement) {
+      db.prepare(`
+        INSERT OR IGNORE INTO report_entitlements (report_id, entitlement, source_order_id, granted_at)
+        VALUES (?, ?, ?, ?)
+      `).run(row.report_id, entitlement, orderId, now);
+    }
+    const report = db.prepare("SELECT anonymous_id FROM reports WHERE id = ?").get(row.report_id);
+    addEvent({ anonymousId: report?.anonymous_id || row.report_id, reportId: row.report_id, eventType: "payment_paid", metadata: { orderId, provider, providerTradeNo } });
+    return { ok: true, order: publicOrder(db.prepare("SELECT * FROM orders WHERE id = ?").get(orderId)) };
+  }
+
   function purgeExpired() {
     return db.prepare("DELETE FROM reports WHERE expires_at < ?").run(new Date().toISOString()).changes;
   }
 
-  return { addEvent, analytics, createReport, deleteReport, getAdminReport, getReport, listReports, purgeExpired, setFollowupStatus };
+  return {
+    addEvent,
+    analytics,
+    applyPaymentNotification,
+    createOrder,
+    createReport,
+    deleteReport,
+    getAdminReport,
+    getOrderStatus,
+    getReport,
+    listReports,
+    purgeExpired,
+    setFollowupStatus
+  };
 }
 
 module.exports = { createStore, inputVersion, reportVersion };
