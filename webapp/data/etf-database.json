@@ -1,7 +1,7 @@
 {
   "metadata": {
     "name": "小資現金流地圖 ETF 官方資料庫",
-    "snapshotDate": "2026-06-28",
+    "snapshotDate": "2026-06-29",
     "officialPerformanceDate": "2026-06-26",
     "buildMode": "official_twse_etfortune_master_with_quality_flags",
     "sources": [
@@ -34,6 +34,24 @@
         "name": "TWSE OpenAPI 上市個股日成交資訊",
         "url": "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL",
         "usage": "ETF 每日開高低收、成交量與成交金額"
+      },
+      {
+        "id": "twse-company-basic",
+        "name": "TWSE OpenAPI 上市公司基本資料",
+        "url": "https://openapi.twse.com.tw/v1/opendata/t187ap03_L",
+        "usage": "股票主檔、公司簡稱、產業別與上市日期"
+      },
+      {
+        "id": "twse-stock-day-all",
+        "name": "TWSE OpenAPI 上市個股日成交資訊",
+        "url": "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL",
+        "usage": "股票每日開高低收、成交量與最新價格"
+      },
+      {
+        "id": "tpex-mainboard-daily-close-quotes",
+        "name": "TPEx OpenAPI 上櫃股票行情",
+        "url": "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes",
+        "usage": "上櫃股票代號、名稱、每日開高低收、成交量、成交金額與發行股數"
       },
       {
         "id": "twse-etfortune-products",
@@ -77,24 +95,6 @@
         "name": "富邦投信 ETF 基金資產",
         "url": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
         "usage": "006208 官方基金資產、完整可見持股列與 NAV"
-      },
-      {
-        "id": "twse-company-basic",
-        "name": "TWSE OpenAPI 上市公司基本資料",
-        "url": "https://openapi.twse.com.tw/v1/opendata/t187ap03_L",
-        "usage": "股票主檔、公司簡稱、產業別與上市日期"
-      },
-      {
-        "id": "twse-stock-day-all",
-        "name": "TWSE OpenAPI 上市個股日成交資訊",
-        "url": "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL",
-        "usage": "股票每日開高低收、成交量與最新價格"
-      },
-      {
-        "id": "tpex-mainboard-daily-close-quotes",
-        "name": "TPEx OpenAPI 上櫃股票行情",
-        "url": "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes",
-        "usage": "上櫃股票代號、名稱、每日開高低收、成交量、成交金額與發行股數"
       }
     ],
     "limitations": [
@@ -110,13 +110,13 @@
       "00878",
       "006208"
     ],
-    "refreshExecutedAt": "2026-06-28T04:59:43.960Z",
+    "refreshExecutedAt": "2026-06-29T05:12:12.595Z",
     "sourceFreshness": {
       "referenceTradingDate": "2026-06-26",
-      "checkedAt": "2026-06-28T04:59:43.960Z",
+      "checkedAt": "2026-06-29T05:12:12.595Z",
       "sources": {
         "etfMaster": {
-          "observedAt": "2026-06-28T04:59:43.960Z",
+          "observedAt": "2026-06-29T05:12:12.595Z",
           "sourceDataDate": null,
           "status": "observed_without_source_date",
           "evidence": "TWSE ETF e添富商品篩選器回應沒有提供資料日期，不得以執行日冒充交易日"
@@ -140,19 +140,19 @@
           "evidence": "官方 Date 欄位"
         },
         "priceSeries": {
-          "observedAt": "2026-06-28T04:59:20.664Z",
+          "observedAt": "2026-06-29T05:11:16.802Z",
           "sourceDataDate": "2026-06-26",
           "status": "current",
           "evidence": "TWSE STOCK_DAY 回傳資料列 date 最大值"
         },
         "issuerHoldings": {
-          "observedAt": "2026-06-28T04:59:43.960Z",
+          "observedAt": "2026-06-29T05:12:12.595Z",
           "sourceDataDate": "2026-06-26",
           "status": "current",
           "evidence": "投信官方成分股 asOfDate 最大值"
         },
         "issuerNav": {
-          "observedAt": "2026-06-28T04:59:43.960Z",
+          "observedAt": "2026-06-29T05:12:12.595Z",
           "sourceDataDate": "2026-06-26",
           "status": "current",
           "evidence": "投信官方 NAV date 最大值"
@@ -185,7 +185,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.086Z",
+        "observedAt": "2026-06-29T05:11:14.651Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00400A",
@@ -236,7 +236,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.087Z",
+        "observedAt": "2026-06-29T05:11:14.651Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00401A",
@@ -292,7 +292,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.087Z",
+        "observedAt": "2026-06-29T05:11:14.651Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00402A",
@@ -347,7 +347,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.087Z",
+        "observedAt": "2026-06-29T05:11:14.651Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00403A",
@@ -400,7 +400,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.087Z",
+        "observedAt": "2026-06-29T05:11:14.651Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00404A",
@@ -448,7 +448,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.087Z",
+        "observedAt": "2026-06-29T05:11:14.651Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00405A",
@@ -503,7 +503,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.087Z",
+        "observedAt": "2026-06-29T05:11:14.651Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00406A",
@@ -558,7 +558,7 @@
       "close": 9.47,
       "performance": {
         "date": null,
-        "observedAt": "2026-06-28T04:59:19.087Z",
+        "observedAt": "2026-06-29T05:11:14.651Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date",
         "source": "twse-etfortune-products"
       },
@@ -614,7 +614,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.087Z",
+        "observedAt": "2026-06-29T05:11:14.651Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/0050",
@@ -669,7 +669,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.087Z",
+        "observedAt": "2026-06-29T05:11:14.651Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/0051",
@@ -720,7 +720,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.087Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/0052",
@@ -771,7 +771,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.087Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/0053",
@@ -822,7 +822,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.087Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/0055",
@@ -873,7 +873,7 @@
         "fiveYears": 124.67,
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.087Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/0056",
@@ -942,7 +942,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.087Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/0057",
@@ -997,7 +997,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.087Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/0061",
@@ -1052,7 +1052,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.087Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/006203",
@@ -1107,7 +1107,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.087Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/006204",
@@ -1160,7 +1160,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.087Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/006205",
@@ -1207,7 +1207,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.087Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/006206",
@@ -1262,7 +1262,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.087Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/006207",
@@ -1317,7 +1317,7 @@
         "fiveYears": 239.5,
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.087Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/006208",
@@ -1384,7 +1384,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.087Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00625K",
@@ -1431,7 +1431,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.087Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00631L",
@@ -1486,7 +1486,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.087Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00632R",
@@ -1542,7 +1542,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.087Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00633L",
@@ -1594,7 +1594,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.087Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00634R",
@@ -1643,7 +1643,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.087Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00635U",
@@ -1692,7 +1692,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.087Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00636",
@@ -1741,7 +1741,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.087Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00636K",
@@ -1792,7 +1792,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.087Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00637L",
@@ -1847,7 +1847,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.087Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00638R",
@@ -1904,7 +1904,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.087Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00639",
@@ -1955,7 +1955,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00640L",
@@ -2010,7 +2010,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00641R",
@@ -2063,7 +2063,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00642U",
@@ -2112,7 +2112,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00643",
@@ -2157,7 +2157,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00643K",
@@ -2204,7 +2204,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00645",
@@ -2259,7 +2259,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00646",
@@ -2314,7 +2314,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00647L",
@@ -2369,7 +2369,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00648R",
@@ -2424,7 +2424,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00650L",
@@ -2479,7 +2479,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00651R",
@@ -2534,7 +2534,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00652",
@@ -2589,7 +2589,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00653L",
@@ -2644,7 +2644,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00654R",
@@ -2699,7 +2699,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00655L",
@@ -2754,7 +2754,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00656R",
@@ -2807,7 +2807,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00657",
@@ -2856,7 +2856,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00657K",
@@ -2907,7 +2907,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00660",
@@ -2958,7 +2958,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00661",
@@ -3013,7 +3013,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00662",
@@ -3068,7 +3068,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00663L",
@@ -3123,7 +3123,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00664R",
@@ -3179,7 +3179,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00665L",
@@ -3235,7 +3235,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00666R",
@@ -3288,7 +3288,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00668",
@@ -3337,7 +3337,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00668K",
@@ -3388,7 +3388,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00669R",
@@ -3443,7 +3443,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00670L",
@@ -3498,7 +3498,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00671R",
@@ -3551,7 +3551,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00673R",
@@ -3604,7 +3604,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00674R",
@@ -3659,7 +3659,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00675L",
@@ -3714,7 +3714,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00676R",
@@ -3769,7 +3769,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00678",
@@ -3820,7 +3820,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00680L",
@@ -3875,7 +3875,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00681R",
@@ -3928,7 +3928,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00682U",
@@ -3977,7 +3977,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00683L",
@@ -4030,7 +4030,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00684R",
@@ -4083,7 +4083,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00685L",
@@ -4136,7 +4136,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00686R",
@@ -4191,7 +4191,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00688L",
@@ -4246,7 +4246,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00689R",
@@ -4301,7 +4301,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00690",
@@ -4353,7 +4353,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00692",
@@ -4406,7 +4406,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00693U",
@@ -4458,7 +4458,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00700",
@@ -4515,7 +4515,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00701",
@@ -4572,7 +4572,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.652Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00702",
@@ -4627,7 +4627,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00703",
@@ -4680,7 +4680,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00706L",
@@ -4733,7 +4733,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00707R",
@@ -4786,7 +4786,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00708L",
@@ -4841,7 +4841,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00709",
@@ -4890,7 +4890,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00710B",
@@ -4943,7 +4943,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00711B",
@@ -4994,7 +4994,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00712",
@@ -5046,7 +5046,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00713",
@@ -5099,7 +5099,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00714",
@@ -5148,7 +5148,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00715L",
@@ -5203,7 +5203,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00717",
@@ -5258,7 +5258,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00728",
@@ -5313,7 +5313,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00730",
@@ -5369,7 +5369,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00731",
@@ -5425,7 +5425,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00733",
@@ -5476,7 +5476,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00735",
@@ -5523,7 +5523,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00736",
@@ -5578,7 +5578,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00737",
@@ -5627,7 +5627,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00738U",
@@ -5679,7 +5679,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00739",
@@ -5734,7 +5734,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.088Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00752",
@@ -5789,7 +5789,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00753L",
@@ -5846,7 +5846,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00757",
@@ -5902,7 +5902,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00762",
@@ -5955,7 +5955,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00763U",
@@ -6006,7 +6006,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00770",
@@ -6057,7 +6057,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00771",
@@ -6112,7 +6112,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00775B",
@@ -6164,7 +6164,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00783",
@@ -6216,7 +6216,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00830",
@@ -6271,7 +6271,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00850",
@@ -6322,7 +6322,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00851",
@@ -6373,7 +6373,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00852L",
@@ -6429,7 +6429,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00861",
@@ -6484,7 +6484,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00865B",
@@ -6539,7 +6539,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00875",
@@ -6591,7 +6591,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00876",
@@ -6647,7 +6647,7 @@
         "fiveYears": 147.1,
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00878",
@@ -6716,7 +6716,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00881",
@@ -6767,7 +6767,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00882",
@@ -6823,7 +6823,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00885",
@@ -6879,7 +6879,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00891",
@@ -6930,7 +6930,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00892",
@@ -6981,7 +6981,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00893",
@@ -7034,7 +7034,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00894",
@@ -7089,7 +7089,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00895",
@@ -7136,7 +7136,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00896",
@@ -7187,7 +7187,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00897",
@@ -7238,7 +7238,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00898",
@@ -7289,7 +7289,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.653Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00899",
@@ -7340,7 +7340,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00900",
@@ -7397,7 +7397,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00901",
@@ -7452,7 +7452,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00902",
@@ -7503,7 +7503,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00903",
@@ -7550,7 +7550,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00904",
@@ -7601,7 +7601,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00905",
@@ -7654,7 +7654,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00907",
@@ -7709,7 +7709,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00908",
@@ -7764,7 +7764,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00909",
@@ -7816,7 +7816,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00910",
@@ -7863,7 +7863,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00911",
@@ -7911,7 +7911,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00912",
@@ -7966,7 +7966,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00913",
@@ -8019,7 +8019,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00915",
@@ -8074,7 +8074,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00916",
@@ -8129,7 +8129,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00917",
@@ -8182,7 +8182,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00918",
@@ -8237,7 +8237,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00919",
@@ -8293,7 +8293,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00920",
@@ -8344,7 +8344,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00921",
@@ -8395,7 +8395,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00922",
@@ -8450,7 +8450,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00923",
@@ -8502,7 +8502,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00924",
@@ -8557,7 +8557,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00926",
@@ -8606,7 +8606,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00927",
@@ -8662,7 +8662,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00929",
@@ -8719,7 +8719,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00930",
@@ -8776,7 +8776,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00932",
@@ -8831,7 +8831,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00934",
@@ -8887,7 +8887,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00935",
@@ -8944,7 +8944,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00936",
@@ -8999,7 +8999,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00938",
@@ -9051,7 +9051,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00939",
@@ -9107,7 +9107,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00940",
@@ -9162,7 +9162,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00941",
@@ -9215,7 +9215,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00943",
@@ -9271,7 +9271,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00944",
@@ -9324,7 +9324,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00945B",
@@ -9376,7 +9376,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00946",
@@ -9431,7 +9431,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00947",
@@ -9482,7 +9482,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00949",
@@ -9537,7 +9537,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00951",
@@ -9589,7 +9589,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00952",
@@ -9638,7 +9638,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00953B",
@@ -9685,7 +9685,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00954",
@@ -9736,7 +9736,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00956",
@@ -9791,7 +9791,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00960",
@@ -9847,7 +9847,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00961",
@@ -9903,7 +9903,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00962",
@@ -9958,7 +9958,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00963",
@@ -10013,7 +10013,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00964",
@@ -10069,7 +10069,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00965",
@@ -10125,7 +10125,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00971",
@@ -10181,7 +10181,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00972",
@@ -10237,7 +10237,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009800",
@@ -10292,7 +10292,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009801",
@@ -10344,7 +10344,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009802",
@@ -10400,7 +10400,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009803",
@@ -10455,7 +10455,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.089Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009804",
@@ -10510,7 +10510,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009805",
@@ -10562,7 +10562,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009808",
@@ -10618,7 +10618,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009809",
@@ -10673,7 +10673,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00980A",
@@ -10728,7 +10728,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009810",
@@ -10783,7 +10783,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009811",
@@ -10838,7 +10838,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009812",
@@ -10893,7 +10893,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009813",
@@ -10946,7 +10946,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009816",
@@ -10997,7 +10997,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009817",
@@ -11053,7 +11053,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009818",
@@ -11108,7 +11108,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009819",
@@ -11159,7 +11159,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00981A",
@@ -11212,7 +11212,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00981T",
@@ -11265,7 +11265,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009820",
@@ -11314,7 +11314,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009821",
@@ -11364,7 +11364,7 @@
       "close": 9.87,
       "performance": {
         "date": null,
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date",
         "source": "twse-etfortune-products"
       },
@@ -11417,7 +11417,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00982A",
@@ -11470,7 +11470,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00982D",
@@ -11512,7 +11512,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00982T",
@@ -11564,7 +11564,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00983A",
@@ -11609,7 +11609,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00983D",
@@ -11658,7 +11658,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00984A",
@@ -11711,7 +11711,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00984D",
@@ -11758,7 +11758,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00985A",
@@ -11813,7 +11813,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00985B",
@@ -11860,7 +11860,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00986A",
@@ -11911,7 +11911,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00987A",
@@ -11960,7 +11960,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00988A",
@@ -12015,7 +12015,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00989A",
@@ -12066,7 +12066,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00990A",
@@ -12113,7 +12113,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00991A",
@@ -12168,7 +12168,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.654Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00992A",
@@ -12216,7 +12216,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.655Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00993A",
@@ -12273,7 +12273,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.655Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00994A",
@@ -12329,7 +12329,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.655Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00995A",
@@ -12385,7 +12385,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.656Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00996A",
@@ -12441,7 +12441,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.656Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00997A",
@@ -12492,7 +12492,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-06-28T04:59:19.090Z",
+        "observedAt": "2026-06-29T05:11:14.656Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00999A",
@@ -13902,7 +13902,7 @@
         "change": 1.7,
         "transaction": 33203,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -13916,7 +13916,7 @@
         "change": 0.9,
         "transaction": 35090,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -13930,7 +13930,7 @@
         "change": 1,
         "transaction": 28518,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -13944,7 +13944,7 @@
         "change": -1.15,
         "transaction": 53136,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -13958,7 +13958,7 @@
         "change": -0.85,
         "transaction": 55432,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -13972,7 +13972,7 @@
         "change": -2.35,
         "transaction": 106806,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -13986,7 +13986,7 @@
         "change": 1.8,
         "transaction": 29383,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14000,7 +14000,7 @@
         "change": -1.63,
         "transaction": 70471,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14014,7 +14014,7 @@
         "change": -0.03,
         "transaction": 53662,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14028,7 +14028,7 @@
         "change": 1.01,
         "transaction": 21856,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14042,7 +14042,7 @@
         "change": 0.9,
         "transaction": 23398,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14056,7 +14056,7 @@
         "change": 0.05,
         "transaction": 20589,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14070,7 +14070,7 @@
         "change": 0.4,
         "transaction": 20297,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14084,7 +14084,7 @@
         "change": 0.85,
         "transaction": 21723,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14098,7 +14098,7 @@
         "change": 1.25,
         "transaction": 31503,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14112,7 +14112,7 @@
         "change": -0.45,
         "transaction": 40818,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14126,7 +14126,7 @@
         "change": -0.45,
         "transaction": 46078,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14140,7 +14140,7 @@
         "change": 0.05,
         "transaction": 20459,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14154,7 +14154,7 @@
         "change": -1.75,
         "transaction": 82870,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=0056"
       },
       {
         "ticker": "006208",
@@ -14168,7 +14168,7 @@
         "change": 2.65,
         "transaction": 13575,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -14182,7 +14182,7 @@
         "change": 0.65,
         "transaction": 12757,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -14196,7 +14196,7 @@
         "change": 4.25,
         "transaction": 9527,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -14210,7 +14210,7 @@
         "change": -2.85,
         "transaction": 16268,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -14224,7 +14224,7 @@
         "change": -4.9,
         "transaction": 29215,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -14238,7 +14238,7 @@
         "change": -7.2,
         "transaction": 43067,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -14252,7 +14252,7 @@
         "change": 5.7,
         "transaction": 9374,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -14266,7 +14266,7 @@
         "change": -7.5,
         "transaction": 29576,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -14280,7 +14280,7 @@
         "change": -1.05,
         "transaction": 21734,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -14294,7 +14294,7 @@
         "change": 5.1,
         "transaction": 7542,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -14308,7 +14308,7 @@
         "change": 8,
         "transaction": 11428,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -14322,7 +14322,7 @@
         "change": 1.25,
         "transaction": 9115,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -14336,7 +14336,7 @@
         "change": 0.95,
         "transaction": 10497,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -14350,7 +14350,7 @@
         "change": 2.8,
         "transaction": 9047,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -14364,7 +14364,7 @@
         "change": 8.35,
         "transaction": 13828,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -14378,7 +14378,7 @@
         "change": -3.1,
         "transaction": 13425,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -14392,7 +14392,7 @@
         "change": -6.4,
         "transaction": 27596,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -14406,7 +14406,7 @@
         "change": 0.15,
         "transaction": 8902,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -14420,7 +14420,7 @@
         "change": -9.4,
         "transaction": 39362,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=006208"
       },
       {
         "ticker": "00878",
@@ -14434,7 +14434,7 @@
         "change": 1.23,
         "transaction": 38345,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -14448,7 +14448,7 @@
         "change": 0.5,
         "transaction": 33206,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -14462,7 +14462,7 @@
         "change": 0.81,
         "transaction": 33199,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -14476,7 +14476,7 @@
         "change": -0.62,
         "transaction": 44311,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -14490,7 +14490,7 @@
         "change": -0.36,
         "transaction": 45282,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -14504,7 +14504,7 @@
         "change": -1.21,
         "transaction": 70992,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -14518,7 +14518,7 @@
         "change": 1.2,
         "transaction": 23165,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -14532,7 +14532,7 @@
         "change": -0.71,
         "transaction": 43094,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -14546,7 +14546,7 @@
         "change": 0,
         "transaction": 27822,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -14560,7 +14560,7 @@
         "change": 0.45,
         "transaction": 21320,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -14574,7 +14574,7 @@
         "change": 0.56,
         "transaction": 24940,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -14588,7 +14588,7 @@
         "change": 0.3,
         "transaction": 29883,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -14602,7 +14602,7 @@
         "change": 0.36,
         "transaction": 22126,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -14616,7 +14616,7 @@
         "change": 0.4,
         "transaction": 21268,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -14630,7 +14630,7 @@
         "change": 0.45,
         "transaction": 26684,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -14644,7 +14644,7 @@
         "change": -0.14,
         "transaction": 27419,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -14658,7 +14658,7 @@
         "change": -0.32,
         "transaction": 37346,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -14672,7 +14672,7 @@
         "change": 0.09,
         "transaction": 19582,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -14686,11 +14686,11 @@
         "change": -1.04,
         "transaction": 58215,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260628&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260629&stockNo=00878"
       }
     ],
-    "queryDate": "20260628",
-    "updatedAt": "2026-06-28T04:59:20.664Z",
+    "queryDate": "20260629",
+    "updatedAt": "2026-06-29T05:11:16.802Z",
     "source": "twse-stock-day"
   },
   "navSeries": {
