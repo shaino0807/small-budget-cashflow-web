@@ -253,69 +253,27 @@ async function main() {
       fs.writeFileSync(screenshotPath, Buffer.from(shot.data, "base64"));
     }
 
-    await send(ws, "Runtime.evaluate", {
-      expression: `(() => {
-        document.querySelector('[data-check-type="stock"]').click();
-        const consent = document.querySelector('#dataConsent');
-        if (!consent.checked) consent.click();
-        document.querySelector('#contactChannel').value = 'line';
-        document.querySelector('#contactChannel').dispatchEvent(new Event('change', { bubbles: true }));
-        document.querySelector('#contactValue').value = 'test-secret-contact';
-        document.querySelector('#contactValue').dispatchEvent(new Event('input', { bubbles: true }));
-        document.querySelector('#stockMonthlyBudget').value = '8000';
-        document.querySelector('#stockMonthlyBudget').dispatchEvent(new Event('input', { bubbles: true }));
-        document.querySelector('[data-stock-reason="friend"]').click();
-        document.querySelector('[data-stock-drop="unsure"]').click();
-        document.querySelector('[data-stock-count="1to3"]').click();
-        document.querySelector('[data-stock-horizon="3months"]').click();
-        document.querySelector('#quickGenerateBtn').click();
-      })()`
-    });
-    await wait(800);
-    const stockReportMetrics = await send(ws, "Runtime.evaluate", {
+    const landingLeadMetrics = await send(ws, "Runtime.evaluate", {
       returnByValue: true,
       expression: `(() => {
-        const text = document.querySelector('#freeReport')?.innerText || '';
-        const localState = localStorage.getItem('cashflow-map-web-state') || '';
+        const text = document.body.innerText || '';
         return {
           activeView: document.querySelector('.view.is-active')?.id,
-          hasStockConclusion: text.includes('你現在每月最多只適合拿多少買股票'),
-          hasSingleStockLimit: text.includes('單一個股最多不要超過多少'),
-          hasAvoidOperations: text.includes('你目前不適合做什麼操作'),
-          hasRedLight: text.includes('紅燈') && text.includes('先不要買股票，先補現金流'),
-          hasNoTipPositioning: text.includes('不提供選股推薦'),
-          hasStockCta: text.includes('這檔股票我能不能買'),
-          hasGeneratedAt: text.includes('產生時間'),
-          hasInputVersion: text.includes('cashflow-input-v2'),
-          hasReportVersion: text.includes('cashflow-report-v2'),
-          hasEncryptedSave: text.includes('已加密保存') && text.includes('報告編號') && text.includes('存取碼'),
-          sensitiveDataExcludedFromLocalStorage: !localState.includes('test-secret-contact') && !localState.includes(state.reportMeta?.accessCode || '__missing__'),
+          hasIncomeQuestion: text.includes('1. 每月收入'),
+          hasExpenseQuestion: text.includes('2. 每月必要支出'),
+          hasSavingsQuestion: text.includes('3. 現在存款'),
+          hasPressureQuestion: text.includes('4. 有沒有貸款 / 保險壓力'),
+          hasConcernQuestion: text.includes('5. 最想解決什麼'),
+          hasAllocationConcern: text.includes('錢不知道怎麼分'),
+          hasRiskConcern: text.includes('怕亂投資'),
+          hasLineCta: text.includes('LINE 傳我你的健檢結果，我幫你看第一步'),
+          hasAllocationCta: text.includes('領「每月 5,000 / 10,000 分配表」'),
+          hasConsultCta: text.includes('預約 30 分鐘現金流健檢'),
+          hasDecisionCta: text.includes('我想知道我的錢該先存、先還，還是能投資'),
+          keepsIgCta: text.includes('IG 看小資買股常見錯誤'),
+          hidesStockRoute: !text.includes('做股票安全健檢'),
+          noOldStockCta: !text.includes('這檔股票我能不能買') && !text.includes('每月 5,000 股票配置表') && !text.includes('單一個股上限試算'),
           bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
-        };
-      })()`
-    });
-    const stockLightMatrix = await send(ws, "Runtime.evaluate", {
-      returnByValue: true,
-      expression: `(() => {
-        const setCase = ({ income, expense, savings, loan = 0, reason = 'learn', drop = 'hold', horizon = '3years', budget = 8000, count = '0' }) => {
-          state.profile.monthlyIncome = income;
-          state.profile.fixedExpense = expense;
-          state.profile.insuranceExpense = 0;
-          state.profile.loanExpense = loan;
-          state.profile.cashSavings = savings;
-          state.leadProfile.stockReason = reason;
-          state.leadProfile.stockDrop = drop;
-          state.leadProfile.stockHorizon = horizon;
-          state.leadProfile.stockMonthlyBudget = budget;
-          state.leadProfile.stockCount = count;
-          refreshReports();
-          return latestReport.stockSafety.level;
-        };
-        return {
-          green: setCase({ income: 60000, expense: 30000, savings: 180000 }),
-          yellow: setCase({ income: 60000, expense: 30000, savings: 180000, reason: 'friend' }),
-          red: setCase({ income: 60000, expense: 30000, savings: 30000 }),
-          black: setCase({ income: 30000, expense: 35000, savings: 10000 })
         };
       })()`
     });
@@ -331,14 +289,17 @@ async function main() {
     });
     await send(ws, "Runtime.evaluate", {
       expression: `(() => {
+        document.querySelector('[data-pressure="some"]').click();
+        document.querySelector('[data-concern="family"]').click();
         document.querySelector('#quizIncome').value = '42000';
         document.querySelector('#quizIncome').dispatchEvent(new Event('input', { bubbles: true }));
         document.querySelector('#quizExpense').value = '33000';
         document.querySelector('#quizExpense').dispatchEvent(new Event('input', { bubbles: true }));
         document.querySelector('#quizSavings').value = '80000';
         document.querySelector('#quizSavings').dispatchEvent(new Event('input', { bubbles: true }));
-        document.querySelector('[data-capacity="5000to10000"]').click();
-        document.querySelector('[data-concern="family"]').click();
+        const consent = document.querySelector('#dataConsent');
+        consent.checked = true;
+        consent.dispatchEvent(new Event('change', { bubbles: true }));
         document.querySelector('#quickGenerateBtn').click();
       })()`
     });
@@ -349,6 +310,11 @@ async function main() {
         const text = document.querySelector('#freeReport')?.innerText || '';
         return {
           activeView: document.querySelector('.view.is-active')?.id,
+          consentAccepted: Boolean(state.consent.accepted),
+          incomeValue: document.querySelector('#quizIncome')?.value || '',
+          expenseValue: document.querySelector('#quizExpense')?.value || '',
+          savingsValue: document.querySelector('#quizSavings')?.value || '',
+          validationText: document.querySelector('#quickValidationErrors')?.innerText || '',
           hasPrescription: text.includes('本月最該做的 3 件事'),
           hasFirstAction: text.includes('先處理'),
           hasAllocation: text.includes('月投入配置'),
@@ -418,8 +384,7 @@ async function main() {
       entitlementGuard: entitlementGuardMetrics.result.value,
       requiredValidation: validationMetrics.result.value,
       detailedValidation: detailedValidationMetrics.result.value,
-      stockReport: stockReportMetrics.result.value,
-      stockLights: stockLightMatrix.result.value,
+      landingLead: landingLeadMetrics.result.value,
       freeReport: freeReportMetrics.result.value,
       upgrade: upgradeMetrics.result.value,
       database: databaseMetrics.result.value,
@@ -440,23 +405,22 @@ async function main() {
         && detailedValidationMetrics.result.value.activeView === "inputView"
         && detailedValidationMetrics.result.value.errorsVisible
         && detailedValidationMetrics.result.value.errorCount >= 4
-        && stockReportMetrics.result.value.activeView === "freeReportView"
-        && stockReportMetrics.result.value.hasStockConclusion
-        && stockReportMetrics.result.value.hasSingleStockLimit
-        && stockReportMetrics.result.value.hasAvoidOperations
-        && stockReportMetrics.result.value.hasRedLight
-        && stockReportMetrics.result.value.hasNoTipPositioning
-        && stockReportMetrics.result.value.hasStockCta
-        && stockReportMetrics.result.value.hasGeneratedAt
-        && stockReportMetrics.result.value.hasInputVersion
-        && stockReportMetrics.result.value.hasReportVersion
-        && stockReportMetrics.result.value.hasEncryptedSave
-        && stockReportMetrics.result.value.sensitiveDataExcludedFromLocalStorage
-        && stockReportMetrics.result.value.bodyOverflow === 0
-        && stockLightMatrix.result.value.green === "green"
-        && stockLightMatrix.result.value.yellow === "yellow"
-        && stockLightMatrix.result.value.red === "red"
-        && stockLightMatrix.result.value.black === "black"
+        && landingLeadMetrics.result.value.activeView === "landingView"
+        && landingLeadMetrics.result.value.hasIncomeQuestion
+        && landingLeadMetrics.result.value.hasExpenseQuestion
+        && landingLeadMetrics.result.value.hasSavingsQuestion
+        && landingLeadMetrics.result.value.hasPressureQuestion
+        && landingLeadMetrics.result.value.hasConcernQuestion
+        && landingLeadMetrics.result.value.hasAllocationConcern
+        && landingLeadMetrics.result.value.hasRiskConcern
+        && landingLeadMetrics.result.value.hasLineCta
+        && landingLeadMetrics.result.value.hasAllocationCta
+        && landingLeadMetrics.result.value.hasConsultCta
+        && landingLeadMetrics.result.value.hasDecisionCta
+        && landingLeadMetrics.result.value.keepsIgCta
+        && landingLeadMetrics.result.value.hidesStockRoute
+        && landingLeadMetrics.result.value.noOldStockCta
+        && landingLeadMetrics.result.value.bodyOverflow === 0
         && freeReportMetrics.result.value.activeView === "freeReportView"
         && freeReportMetrics.result.value.hasPrescription
         && freeReportMetrics.result.value.hasFirstAction

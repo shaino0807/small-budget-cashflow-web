@@ -89,6 +89,7 @@ const defaultState = {
   leadProfile: {
     checkType: "cashflow",
     capacity: "5000to10000",
+    debtInsurancePressure: "none",
     concern: "saving",
     stockMonthlyBudget: 0,
     stockReason: "price",
@@ -140,7 +141,8 @@ const sampleState = {
   leadProfile: {
     checkType: "cashflow",
     capacity: "5000to10000",
-    concern: "investing",
+    debtInsurancePressure: "some",
+    concern: "allocation",
     stockMonthlyBudget: 8000,
     stockReason: "learn",
     stockDrop: "hold",
@@ -1165,10 +1167,20 @@ function capacityLabel(capacity) {
 function concernLabel(concern) {
   return {
     saving: "存不到錢",
-    investing: "不會投資",
-    loss: "怕賠錢",
+    allocation: "錢不知道怎麼分",
+    investing: "錢不知道怎麼分",
+    risk: "怕亂投資",
+    loss: "怕亂投資",
     family: "家用壓力"
   }[concern] || "存不到錢";
+}
+
+function pressureLabel(pressure) {
+  return {
+    none: "沒有明顯貸款 / 保險壓力",
+    some: "有一點貸款 / 保險壓力",
+    heavy: "貸款 / 保險壓力大"
+  }[pressure] || "沒有明顯貸款 / 保險壓力";
 }
 
 function monthlyPlanBudget(report) {
@@ -1548,6 +1560,10 @@ function updateProfileInputs() {
 }
 
 function syncQuizInputs() {
+  const hasStockRoute = Boolean(document.querySelector("[data-check-type='stock']"));
+  if (state.leadProfile.checkType === "stock" && !hasStockRoute) {
+    state.leadProfile.checkType = "cashflow";
+  }
   const income = q("#quizIncome");
   const expense = q("#quizExpense");
   const savings = q("#quizSavings");
@@ -1572,6 +1588,9 @@ function syncQuizInputs() {
   });
   document.querySelectorAll("[data-concern]").forEach((button) => {
     button.classList.toggle("is-selected", button.dataset.concern === state.leadProfile.concern);
+  });
+  document.querySelectorAll("[data-pressure]").forEach((button) => {
+    button.classList.toggle("is-selected", button.dataset.pressure === state.leadProfile.debtInsurancePressure);
   });
   ["reason", "drop", "count", "horizon"].forEach((field) => {
     document.querySelectorAll(`[data-stock-${field}]`).forEach((button) => {
@@ -1928,7 +1947,7 @@ function beginnerPrescriptionHtml(report) {
           <strong>${item.avoid}</strong>
         </article>
       </div>
-      <p class="panel-note">你選的投入區間是 ${capacityLabel(state.leadProfile?.capacity)}，最擔心的是「${item.concern}」。完整報告會把 ETF 重疊、配息壓力與月份現金流一起排進去。</p>
+      <p class="panel-note">你選的壓力狀態是「${pressureLabel(state.leadProfile?.debtInsurancePressure)}」，最想解決的是「${item.concern}」。完整報告會把安全水位、還款壓力、每月分配與月份現金流一起排進去。</p>
     </section>
   `;
 }
@@ -1960,10 +1979,10 @@ function trustSourceHtml() {
   return `
     <section class="panel trust-panel">
       <span class="eyebrow">資料來源</span>
-      <h3>本工具使用公開官方 ETF / 股票資料，不用網路謠言或手動亂填。</h3>
+      <h3>本工具先用你的現金流資料產生健康報告，有持股時才輔助查核官方資料。</h3>
       <div class="metrics">
+        <div class="metric"><span>現金流題目</span><strong>5 題</strong></div>
         <div class="metric"><span>ETF 主檔</span><strong>${quality.counts.etfs || 0} 檔</strong></div>
-        <div class="metric"><span>股票主檔</span><strong>${quality.counts.stocks || 0} 檔</strong></div>
         <div class="metric"><span>配息資料</span><strong>${quality.counts.distributions || 0} 筆</strong></div>
         <div class="metric"><span>資料狀態</span><strong>${quality.status === "failed" ? "需檢查" : "可查核"}</strong></div>
       </div>
@@ -1976,13 +1995,14 @@ function leadCtaHtml() {
   return `
     <section class="panel lead-cta-panel">
       <span class="eyebrow">下一步</span>
-      <h3>先確認這檔股票你能不能買，再決定投入多少</h3>
-      <p>我不報明牌，但可以幫你檢查這筆錢是否能承受個股波動。</p>
+      <h3>把健檢結果留下來，先判斷這個月的第一步</h3>
+      <p>先看這筆錢該存、該還，還是能開始投資；不需要先懂 ETF 或股票名詞。</p>
       <div class="cta-grid">
-        <a class="primary-button cta-link" href="#contactPanel">LINE 問我：這檔股票我能不能買？</a>
+        <a class="primary-button cta-link" href="#contactPanel">LINE 傳我你的健檢結果，我幫你看第一步</a>
+        <a class="secondary-button cta-link" href="#contactPanel">領「每月 5,000 / 10,000 分配表」</a>
+        <a class="secondary-button cta-link" href="#contactPanel">預約 30 分鐘現金流健檢</a>
+        <a class="secondary-button cta-link" href="#contactPanel">我想知道我的錢該先存、先還，還是能投資</a>
         <a class="secondary-button cta-link" href="#contactPanel">IG 看小資買股常見錯誤</a>
-        <a class="secondary-button cta-link" href="#contactPanel">填表領「每月 5,000 股票配置表」</a>
-        <a class="secondary-button cta-link" href="#contactPanel">領取「單一個股上限試算」</a>
       </div>
     </section>
   `;
@@ -2775,6 +2795,13 @@ function bindEvents() {
       refreshReports();
     });
   });
+  document.querySelectorAll("[data-pressure]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.leadProfile.debtInsurancePressure = button.dataset.pressure;
+      syncQuizInputs();
+      refreshReports();
+    });
+  });
   const stockBudget = q("#stockMonthlyBudget");
   stockBudget.addEventListener("input", (event) => {
     state.leadProfile.stockMonthlyBudget = Number(event.target.value || 0);
@@ -2859,7 +2886,7 @@ function bindEvents() {
     window.print();
   });
   q("#loadAdminBtn").addEventListener("click", loadAdminDashboard);
-  ["line-contact", "ig-contact", "form-contact"].forEach((id) => {
+  ["line-contact", "ig-contact", "form-contact", "consult-contact"].forEach((id) => {
     q(`#${id}`)?.addEventListener("click", () => trackEvent("cta_clicked", { target: id }));
   });
   window.addEventListener("resize", () => {

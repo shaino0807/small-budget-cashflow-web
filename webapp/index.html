@@ -47,10 +47,10 @@
           <div class="hero-copy">
             <span class="eyebrow">給每月只剩 5,000 到 10,000 的你</span>
             <h2 id="landingTitle">先知道錢該存、該還，還是可以開始投資</h2>
-            <p>先選現金流或股票安全健檢。已經有股票的人可以輸入代號看集中風險，還沒買的人先算每月適合投入多少。</p>
+            <p>不用看懂投資術語，先把每月收入、必要支出、存款與壓力整理清楚，再判斷這筆錢該存、該還，還是可以開始投資。</p>
             <div class="hero-actions">
               <button class="primary-button" data-check-type="cashflow" data-scroll-target="quickCheckPanel" type="button">做現金流健檢</button>
-              <button class="secondary-button" data-check-type="stock" data-scroll-target="quickCheckPanel" type="button">做股票安全健檢</button>
+              <button class="secondary-button" data-scroll-target="contactPanel" type="button">預約 30 分鐘健檢</button>
               <button class="secondary-button" data-goto="freeReportView" type="button">先看目前報告</button>
             </div>
             <div class="pain-points" aria-label="常見痛點">
@@ -73,11 +73,7 @@
         <section class="check-router" aria-label="選擇健檢">
           <button class="check-route is-selected" data-check-type="cashflow" type="button">
             <strong>做現金流健檢</strong>
-            <span>先看每月剩多少、預備金夠不夠</span>
-          </button>
-          <button class="check-route" data-check-type="stock" type="button">
-            <strong>做股票安全健檢</strong>
-            <span>先看這筆錢能不能承受個股波動</span>
+            <span>先看每月剩多少、預備金夠不夠、這筆錢能不能投資</span>
           </button>
         </section>
 
@@ -91,30 +87,30 @@
           </div>
           <div id="cashflowQuiz">
             <div class="quiz-grid">
-              <label>1. 你每月收入大約多少？
+              <label>1. 每月收入
                 <input id="quizIncome" type="number" min="0" step="1000" placeholder="例如 42000" />
               </label>
-              <label>2. 每月固定支出大約多少？
-                <input id="quizExpense" type="number" min="0" step="1000" placeholder="房租、家用、保險、貸款合計" />
+              <label>2. 每月必要支出
+                <input id="quizExpense" type="number" min="0" step="1000" placeholder="房租、家用、吃飯、交通等" />
               </label>
-              <label>3. 目前存款大約多少？
+              <label>3. 現在存款
                 <input id="quizSavings" type="number" min="0" step="10000" placeholder="例如 80000" />
               </label>
             </div>
             <div class="choice-block">
-              <span>4. 每月最多可投入多少？</span>
-              <div class="choice-row" id="quizCapacity">
-                <button class="choice-button" data-capacity="under5000" type="button">5,000 以下</button>
-                <button class="choice-button is-selected" data-capacity="5000to10000" type="button">5,000 到 10,000</button>
-                <button class="choice-button" data-capacity="over10000" type="button">10,000 以上</button>
+              <span>4. 有沒有貸款 / 保險壓力？</span>
+              <div class="choice-row" id="quizDebtInsurancePressure">
+                <button class="choice-button is-selected" data-pressure="none" type="button">沒有，先想把錢分好</button>
+                <button class="choice-button" data-pressure="some" type="button">有一點，每月繳完會緊</button>
+                <button class="choice-button" data-pressure="heavy" type="button">壓力大，常覺得快不夠用</button>
               </div>
             </div>
             <div class="choice-block">
-              <span>5. 你現在最擔心什麼？</span>
+              <span>5. 最想解決什麼？</span>
               <div class="choice-row" id="quizConcern">
                 <button class="choice-button is-selected" data-concern="saving" type="button">存不到錢</button>
-                <button class="choice-button" data-concern="investing" type="button">不會投資</button>
-                <button class="choice-button" data-concern="loss" type="button">怕賠錢</button>
+                <button class="choice-button" data-concern="allocation" type="button">錢不知道怎麼分</button>
+                <button class="choice-button" data-concern="risk" type="button">怕亂投資</button>
                 <button class="choice-button" data-concern="family" type="button">家用壓力</button>
               </div>
             </div>
@@ -195,27 +191,31 @@
         <section class="trust-strip" aria-label="資料來源信任背書">
           <div>
             <strong>資料不是亂猜</strong>
-            <p>本工具使用公開官方 ETF / 股票資料，不用網路謠言或手動亂填。</p>
+            <p>先用你的收入、支出、存款與壓力做財務健檢；有持股資料時才輔助查核，不用網路謠言或手動亂填。</p>
           </div>
           <button class="secondary-button" data-goto="databaseView" type="button">查看資料後台</button>
         </section>
 
         <section class="contact-panel panel" id="contactPanel" aria-labelledby="contactTitle">
           <span class="eyebrow">需要人幫你看</span>
-          <h3 id="contactTitle">我不報明牌，但我幫你判斷個股是否適合投資，以及這筆錢能不能承受個股波動。</h3>
+          <h3 id="contactTitle">把健檢結果傳給我，我幫你看第一步：先存、先還，還是可以開始投資。</h3>
           <p class="panel-note">下方連結先保留為導流入口，正式上線前替換成你的 LINE 個人帳號、IG 與表單網址。</p>
           <div class="contact-grid">
             <a id="line-contact" class="contact-card" href="#" aria-label="LINE 個人諮詢">
-              <strong>LINE 問我：這檔股票我能不能買？</strong>
-              <span>傳股票代號與健檢結果，先看風險是否超過承受範圍</span>
+              <strong>LINE 傳我你的健檢結果，我幫你看第一步</strong>
+              <span>先判斷這個月該存、該還，還是可以開始投資</span>
             </a>
             <a id="ig-contact" class="contact-card" href="#" aria-label="IG 看案例">
               <strong>IG 看小資買股常見錯誤</strong>
               <span>先避開追高、融資、聽明牌與一次買滿</span>
             </a>
             <a id="form-contact" class="contact-card" href="#" aria-label="填表領配置表">
-              <strong>填表領「每月 5,000 股票配置表」</strong>
-              <span>再領取「單一個股上限試算」</span>
+              <strong>領「每月 5,000 / 10,000 分配表」</strong>
+              <span>把安全水位、還款與可投資金額先分清楚</span>
+            </a>
+            <a id="consult-contact" class="contact-card" href="#" aria-label="預約現金流健檢">
+              <strong>預約 30 分鐘現金流健檢</strong>
+              <span>我想知道我的錢該先存、先還，還是能投資</span>
             </a>
           </div>
         </section>
