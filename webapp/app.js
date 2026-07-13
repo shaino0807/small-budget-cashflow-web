@@ -1599,6 +1599,122 @@ function syncQuizInputs() {
   });
 }
 
+function currentFlowStep() {
+  return Number(document.querySelector(".flow-step.is-active")?.dataset.flowStep || 1);
+}
+
+function setFlowStep(step) {
+  const nextStep = Math.min(6, Math.max(1, Number(step) || 1));
+  document.querySelectorAll(".flow-step").forEach((item) => {
+    item.classList.toggle("is-active", Number(item.dataset.flowStep) === nextStep);
+  });
+  const bar = q("#flowProgressBar");
+  if (bar) bar.style.width = `${(nextStep / 6) * 100}%`;
+  const text = q("#flowProgressText");
+  if (text) text.textContent = `第 ${nextStep} 步，共 6 步`;
+  showValidationErrors("#quickValidationErrors", []);
+}
+
+function flowStepErrors(step) {
+  const errors = [];
+  if (step === 1 && (q("#quizIncome").value === "" || Number(q("#quizIncome").value) <= 0)) errors.push("填寫每月收入");
+  if (step === 2 && (q("#quizExpense").value === "" || Number(q("#quizExpense").value) < 0)) errors.push("填寫每月必要支出");
+  if (step === 3 && (q("#quizSavings").value === "" || Number(q("#quizSavings").value) < 0)) errors.push("填寫目前存款");
+  return errors;
+}
+
+function syncFlowFromInputs() {
+  const income = Number(q("#quizIncome")?.value || 0);
+  const expense = Number(q("#quizExpense")?.value || 0);
+  const savings = Number(q("#quizSavings")?.value || 0);
+  if (income > 0) state.profile.monthlyIncome = income;
+  if (expense >= 0 && q("#quizExpense")?.value !== "") {
+    state.profile.fixedExpense = expense;
+    state.profile.insuranceExpense = 0;
+    state.profile.loanExpense = 0;
+    state.profile.retirementMonthlyNeed = Math.max(30000, Math.round(expense / 1000) * 1000);
+  }
+  if (savings >= 0 && q("#quizSavings")?.value !== "") state.profile.cashSavings = savings;
+  const monthlyInvestment = Math.min(capacityAmount(state.leadProfile.capacity || "5000to10000"), Math.max(0, income - expense));
+  if (income > 0 && q("#quizExpense")?.value !== "") state.profile.monthlyInvestment = monthlyInvestment;
+  refreshReports();
+}
+
+function bindFlowSteps() {
+  document.querySelectorAll("[data-flow-next]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const step = currentFlowStep();
+      const errors = flowStepErrors(step);
+      showValidationErrors("#quickValidationErrors", errors);
+      if (errors.length) return;
+      syncFlowFromInputs();
+      setFlowStep(button.dataset.flowNext);
+    });
+  });
+  document.querySelectorAll("[data-flow-back]").forEach((button) => {
+    button.addEventListener("click", () => setFlowStep(button.dataset.flowBack));
+  });
+  ["quizIncome", "quizExpense", "quizSavings"].forEach((id) => {
+    q(`#${id}`)?.addEventListener("input", () => {
+      syncFlowFromInputs();
+      renderQuickResult();
+    });
+  });
+  setFlowStep(1);
+}
+
+function initTypewriter() {
+  const target = document.querySelector("[data-typewriter]");
+  if (!target) return;
+  const fullText = target.dataset.typewriter || target.textContent;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    target.textContent = fullText;
+    return;
+  }
+  target.textContent = "";
+  let index = 0;
+  const tick = () => {
+    target.textContent = fullText.slice(0, index);
+    index += 1;
+    if (index <= fullText.length) window.setTimeout(tick, 42);
+  };
+  tick();
+}
+
+function initScrollAnimations() {
+  const animated = document.querySelectorAll("[data-animate]");
+  if (!animated.length) return;
+  if (!("IntersectionObserver" in window)) {
+    animated.forEach((item) => item.classList.add("is-visible"));
+    return;
+  }
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add("is-visible");
+      observer.unobserve(entry.target);
+    });
+  }, { threshold: 0.18 });
+  animated.forEach((item) => observer.observe(item));
+}
+
+function initStickyNav() {
+  const header = q(".app-header");
+  if (!header) return;
+  const sync = () => header.classList.toggle("is-scrolled", window.scrollY > 24);
+  sync();
+  window.addEventListener("scroll", sync, { passive: true });
+}
+
+function loadBrandFonts() {
+  if (document.querySelector("link[data-brand-fonts]")) return;
+  const link = document.createElement("link");
+  link.dataset.brandFonts = "true";
+  link.rel = "stylesheet";
+  link.href = "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&family=DM+Serif+Display&family=Syne:wght@600;700;800&display=swap";
+  document.head.appendChild(link);
+}
+
 function showValidationErrors(selector, errors) {
   const root = q(selector);
   if (!root) return;
@@ -2803,10 +2919,12 @@ function bindEvents() {
     });
   });
   const stockBudget = q("#stockMonthlyBudget");
-  stockBudget.addEventListener("input", (event) => {
-    state.leadProfile.stockMonthlyBudget = Number(event.target.value || 0);
-    refreshReports();
-  });
+  if (stockBudget) {
+    stockBudget.addEventListener("input", (event) => {
+      state.leadProfile.stockMonthlyBudget = Number(event.target.value || 0);
+      refreshReports();
+    });
+  }
   ["reason", "drop", "count", "horizon"].forEach((field) => {
     document.querySelectorAll(`[data-stock-${field}]`).forEach((button) => {
       button.addEventListener("click", () => {
@@ -2894,6 +3012,10 @@ function bindEvents() {
     if (activeView === "databaseView") drawOfficialPriceChart();
   });
   bindGotoButtons();
+  bindFlowSteps();
+  initTypewriter();
+  initScrollAnimations();
+  initStickyNav();
 }
 
 function registerServiceWorker() {
@@ -2933,6 +3055,8 @@ async function init() {
   await loadEtfDatabase();
   syncInputs();
   bindEvents();
+  document.body.dataset.appReady = "true";
+  loadBrandFonts();
   configureConsultationLinks();
   refreshReports();
   await handlePaymentReturn();

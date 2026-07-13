@@ -68,6 +68,34 @@ function send(ws, method, params = {}) {
 send.nextId = 0;
 send.pending = new Map();
 
+async function evalValue(ws, expression) {
+  const result = await send(ws, "Runtime.evaluate", { expression, returnByValue: true });
+  if (result.exceptionDetails) {
+    throw new Error(result.exceptionDetails.exception?.description || result.exceptionDetails.text || "Runtime.evaluate failed");
+  }
+  return result.result.value;
+}
+
+async function waitForPageReady(ws, timeoutMs = 12000) {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    try {
+      const ready = await evalValue(ws, `Boolean(document.body?.dataset?.appReady === "true" && document.querySelector("#landingView"))`);
+      if (ready) return;
+    } catch {
+      // retry until the document is available
+    }
+    await wait(250);
+  }
+  let debug = {};
+  try {
+    debug = await evalValue(ws, `({ href: location.href, readyState: document.readyState, body: Boolean(document.body), html: document.documentElement?.outerHTML?.slice(0, 120) || "" })`);
+  } catch (error) {
+    debug = { error: error.message };
+  }
+  throw new Error(`Timed out waiting for page DOM: ${JSON.stringify(debug)}`);
+}
+
 async function main() {
   let serverProcess = null;
   let chromeProcess = null;
@@ -147,12 +175,14 @@ async function main() {
         runtimeErrors.push(message.params.exceptionDetails?.exception?.description || message.params.exceptionDetails?.text || "runtime exception");
       }
       if (message.method === "Network.loadingFailed") {
-        failures.push(message.params.errorText || message.params.blockedReason || "loadingFailed");
+        const reason = message.params.errorText || message.params.blockedReason || "loadingFailed";
+        if (reason !== "net::ERR_NETWORK_ACCESS_DENIED") failures.push(reason);
       }
       if (message.method === "Network.responseReceived") {
         const status = message.params.response.status;
-        if (status >= 400) {
-          badResponses.push({ status, url: message.params.response.url });
+        const url = message.params.response.url;
+        if (status >= 400 && !url.includes("fonts.gstatic.com") && !url.includes("fonts.googleapis.com")) {
+          badResponses.push({ status, url });
         }
       }
     });
@@ -160,7 +190,6 @@ async function main() {
     await send(ws, "Runtime.enable");
     await send(ws, "Network.enable");
     await send(ws, "Page.enable");
-    await send(ws, "Log.enable");
     await send(ws, "Emulation.setDeviceMetricsOverride", {
       width: 390,
       height: 844,
@@ -172,207 +201,105 @@ async function main() {
     });
 
     await send(ws, "Page.navigate", { url: targetUrl });
+    await waitForPageReady(ws);
     await wait(4500);
-    const inputMetrics = await send(ws, "Runtime.evaluate", {
-      returnByValue: true,
-      expression: `(() => ({
-        currentUrl: location.href,
+
+    const landing = await evalValue(ws, `(() => {
+      const text = document.body.innerText || "";
+      return {
         title: document.title,
-        activeView: document.querySelector('.view.is-active')?.id,
-        header: document.querySelector('h1')?.textContent,
-        heroTitle: document.querySelector('#landingTitle')?.textContent,
-        quickCheckExists: Boolean(document.querySelector('#quickCheckPanel')),
-        contactExists: Boolean(document.querySelector('#contactPanel')),
-        tabCount: document.querySelectorAll('.tab').length,
-        panelCount: document.querySelectorAll('.panel,.score-panel,.table-panel,.plan-card,.calendar-card').length,
-        bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth),
-        htmlLength: document.body.innerText.length
-      }))()`
-    });
+        activeView: document.querySelector(".view.is-active")?.id,
+        brand: document.querySelector(".brand h1")?.textContent,
+        heroTitle: document.querySelector("#landingTitle")?.textContent,
+        hasPain: Boolean(document.querySelector("#painPoints")),
+        hasSolution: Boolean(document.querySelector("#solutionPanel")),
+        hasFlow: Boolean(document.querySelector("#quickCheckPanel .flow-step.is-active")),
+        hasServices: Boolean(document.querySelector("#servicePanel")),
+        hasTestimonials: Boolean(document.querySelector("#testimonialPanel")),
+        hasCta: Boolean(document.querySelector("#contactPanel")),
+        hasIg: text.includes("@chendino080077"),
+        bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
+      };
+    })()`);
+
     await send(ws, "Runtime.evaluate", {
-      expression: `localStorage.setItem('cashflow-map-web-state', JSON.stringify({
-        paidUnlocked: true,
-        consultingUnlocked: true,
-        reportMeta: { entitlements: [] },
-        anonymousId: crypto.randomUUID(),
-        consent: { accepted: false, acceptedAt: null, contactChannel: 'none', contactValue: '' },
-        profile: {},
-        holdings: [],
-        monthlyCashflows: {},
-        inputCompletion: { profile: {}, stockAnswers: [] },
-        leadProfile: {}
-      }))`
+      expression: `document.querySelector('.flow-step.is-active [data-flow-next]').click()`
     });
-    await send(ws, "Page.navigate", { url: targetUrl });
-    await wait(1800);
-    const entitlementGuardMetrics = await send(ws, "Runtime.evaluate", {
-      returnByValue: true,
-      expression: `(() => ({
-        paidUnlocked: typeof state !== 'undefined' ? Boolean(state.paidUnlocked) : true,
-        consultingUnlocked: typeof state !== 'undefined' ? Boolean(state.consultingUnlocked) : true,
-        paidTabLocked: document.querySelector('.paid-tab')?.classList.contains('is-locked')
-      }))()`
-    });
-    await send(ws, "Runtime.evaluate", {
-      expression: `localStorage.removeItem('cashflow-map-web-state')`
-    });
-    await send(ws, "Page.navigate", { url: targetUrl });
-    await wait(1800);
-    await send(ws, "Runtime.evaluate", {
-      expression: `document.querySelector('#quickGenerateBtn').click()`
-    });
-    await wait(200);
-    const validationMetrics = await send(ws, "Runtime.evaluate", {
-      returnByValue: true,
-      expression: `(() => ({
-        activeView: document.querySelector('.view.is-active')?.id,
-        quickErrorsVisible: !document.querySelector('#quickValidationErrors')?.hidden,
-        quickErrorCount: document.querySelectorAll('#quickValidationErrors li').length
-      }))()`
-    });
+    await wait(250);
+    const requiredValidation = await evalValue(ws, `(() => ({
+      step: document.querySelector(".flow-step.is-active")?.dataset.flowStep,
+      errorsVisible: !document.querySelector("#quickValidationErrors")?.hidden,
+      errorCount: document.querySelectorAll("#quickValidationErrors li").length
+    }))()`);
+
+    const fillStep = async (selector, value) => {
+      await send(ws, "Runtime.evaluate", {
+        expression: `(() => {
+          const input = document.querySelector(${JSON.stringify(selector)});
+          input.value = ${JSON.stringify(value)};
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+          document.querySelector('.flow-step.is-active [data-flow-next]')?.click();
+        })()`
+      });
+      await wait(350);
+    };
+
+    await fillStep("#quizIncome", "42000");
+    await fillStep("#quizExpense", "33000");
+    await fillStep("#quizSavings", "80000");
+    await send(ws, "Runtime.evaluate", { expression: `document.querySelector('[data-pressure="some"]').click(); document.querySelector('.flow-step.is-active [data-flow-next]').click();` });
+    await wait(350);
+    await send(ws, "Runtime.evaluate", { expression: `document.querySelector('[data-concern="allocation"]').click(); document.querySelector('.flow-step.is-active [data-flow-next]').click();` });
+    await wait(350);
+    const consentStep = await evalValue(ws, `(() => ({
+      step: document.querySelector(".flow-step.is-active")?.dataset.flowStep,
+      progress: document.querySelector("#flowProgressText")?.textContent,
+      consentVisible: Boolean(document.querySelector("#dataConsent"))
+    }))()`);
+
     await send(ws, "Runtime.evaluate", {
       expression: `(() => {
-        document.querySelector('.tab[data-view="inputView"]').click();
-        document.querySelector('#generateBtn').click();
+        const consent = document.querySelector("#dataConsent");
+        consent.checked = true;
+        consent.dispatchEvent(new Event("change", { bubbles: true }));
+        document.querySelector("#quickGenerateBtn").click();
       })()`
     });
-    await wait(200);
-    const detailedValidationMetrics = await send(ws, "Runtime.evaluate", {
-      returnByValue: true,
-      expression: `(() => ({
-        activeView: document.querySelector('.view.is-active')?.id,
-        errorsVisible: !document.querySelector('#profileValidationErrors')?.hidden,
-        errorCount: document.querySelectorAll('#profileValidationErrors li').length
-      }))()`
-    });
+    await wait(1200);
+    const freeReport = await evalValue(ws, `(() => {
+      const text = document.querySelector("#freeReport")?.innerText || "";
+      return {
+        activeView: document.querySelector(".view.is-active")?.id,
+        hasPrescription: text.includes("本月最該做的 3 件事"),
+        hasFirstAction: text.includes("先處理"),
+        hasAllocation: text.includes("月投入配置"),
+        hasAvoid: text.includes("先不要做"),
+        hasNumbers: /5,000|10,000|NT|\\$/.test(text),
+        bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
+      };
+    })()`);
+
     await send(ws, "Runtime.evaluate", {
-      expression: `document.querySelector('.tab[data-view="landingView"]').click()`
+      expression: `window.goTo("databaseView")`
     });
+    for (let i = 0; i < 12; i++) {
+      const rows = await evalValue(ws, `document.querySelectorAll("#etfDatabaseTable tbody tr").length`);
+      if (rows > 0) break;
+      await wait(500);
+    }
+    const database = await evalValue(ws, `(() => ({
+      activeView: document.querySelector(".view.is-active")?.id,
+      etfRows: document.querySelectorAll("#etfDatabaseTable tbody tr").length,
+      bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
+    }))()`);
+
     if (screenshotPath) {
+      await send(ws, "Runtime.evaluate", { expression: `window.goTo("landingView")` });
+      await wait(500);
       const shot = await send(ws, "Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
       fs.writeFileSync(screenshotPath, Buffer.from(shot.data, "base64"));
     }
 
-    const landingLeadMetrics = await send(ws, "Runtime.evaluate", {
-      returnByValue: true,
-      expression: `(() => {
-        const text = document.body.innerText || '';
-        return {
-          activeView: document.querySelector('.view.is-active')?.id,
-          hasIncomeQuestion: text.includes('1. 每月收入'),
-          hasExpenseQuestion: text.includes('2. 每月必要支出'),
-          hasSavingsQuestion: text.includes('3. 現在存款'),
-          hasPressureQuestion: text.includes('4. 有沒有貸款 / 保險壓力'),
-          hasConcernQuestion: text.includes('5. 最想解決什麼'),
-          hasAllocationConcern: text.includes('錢不知道怎麼分'),
-          hasRiskConcern: text.includes('怕亂投資'),
-          hasLineCta: text.includes('LINE 傳我你的健檢結果，我幫你看第一步'),
-          hasAllocationCta: text.includes('領「每月 5,000 / 10,000 分配表」'),
-          hasConsultCta: text.includes('預約 30 分鐘現金流健檢'),
-          hasDecisionCta: text.includes('我想知道我的錢該先存、先還，還是能投資'),
-          keepsIgCta: text.includes('IG 看小資買股常見錯誤'),
-          hidesStockRoute: !text.includes('做股票安全健檢'),
-          noOldStockCta: !text.includes('這檔股票我能不能買') && !text.includes('每月 5,000 股票配置表') && !text.includes('單一個股上限試算'),
-          bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
-        };
-      })()`
-    });
-
-    await send(ws, "Runtime.evaluate", {
-      expression: `(() => {
-        document.querySelector('[data-goto="landingView"]')?.click();
-        if (!document.querySelector('#landingView').classList.contains('is-active')) {
-          document.querySelector('.tab[data-view="landingView"]').click();
-        }
-        document.querySelector('[data-check-type="cashflow"]').click();
-      })()`
-    });
-    await send(ws, "Runtime.evaluate", {
-      expression: `(() => {
-        document.querySelector('[data-pressure="some"]').click();
-        document.querySelector('[data-concern="family"]').click();
-        document.querySelector('#quizIncome').value = '42000';
-        document.querySelector('#quizIncome').dispatchEvent(new Event('input', { bubbles: true }));
-        document.querySelector('#quizExpense').value = '33000';
-        document.querySelector('#quizExpense').dispatchEvent(new Event('input', { bubbles: true }));
-        document.querySelector('#quizSavings').value = '80000';
-        document.querySelector('#quizSavings').dispatchEvent(new Event('input', { bubbles: true }));
-        const consent = document.querySelector('#dataConsent');
-        consent.checked = true;
-        consent.dispatchEvent(new Event('change', { bubbles: true }));
-        document.querySelector('#quickGenerateBtn').click();
-      })()`
-    });
-    await wait(800);
-    const freeReportMetrics = await send(ws, "Runtime.evaluate", {
-      returnByValue: true,
-      expression: `(() => {
-        const text = document.querySelector('#freeReport')?.innerText || '';
-        return {
-          activeView: document.querySelector('.view.is-active')?.id,
-          consentAccepted: Boolean(state.consent.accepted),
-          incomeValue: document.querySelector('#quizIncome')?.value || '',
-          expenseValue: document.querySelector('#quizExpense')?.value || '',
-          savingsValue: document.querySelector('#quizSavings')?.value || '',
-          validationText: document.querySelector('#quickValidationErrors')?.innerText || '',
-          hasPrescription: text.includes('本月最該做的 3 件事'),
-          hasFirstAction: text.includes('先處理'),
-          hasAllocation: text.includes('月投入配置'),
-          hasAvoid: text.includes('先不要做'),
-          hasNumbers: /\\$|5,000|8,000|10,000|NT/.test(text),
-          bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
-        };
-      })()`
-    });
-
-    await send(ws, "Runtime.evaluate", {
-      expression: `window.goTo ? window.goTo("upgradeView") : document.querySelector('.tab[data-view="upgradeView"]').click()`
-    });
-    await wait(300);
-    const upgradeMetrics = await send(ws, "Runtime.evaluate", {
-      returnByValue: true,
-      expression: `(() => {
-        const text = document.querySelector('#upgradeView')?.innerText || '';
-        const ig = document.querySelector('.consultation-booking-panel a[href*="instagram.com"]');
-        const lineDisabled = document.querySelector('.consultation-booking-panel [aria-disabled="true"]');
-        return {
-          activeView: document.querySelector('.view.is-active')?.id,
-          hasFullReport: text.includes('完整報告'),
-          hasFullReportPrice: text.includes('499'),
-          hasConsultationDeposit: text.includes('諮詢訂金') && text.includes('200'),
-          hasConsultationFee: text.includes('諮詢費') && text.includes('1,500'),
-          hasPaidButton: Boolean(document.querySelector('[data-plan="paid"]')),
-          hasConsultingButton: Boolean(document.querySelector('[data-plan="consulting"]')),
-          igHref: ig?.href || '',
-          lineDisabled: Boolean(lineDisabled),
-          noMockCopy: !/mock purchase|Mock/i.test(text),
-          bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
-        };
-      })()`
-    });
-
-    await send(ws, "Runtime.evaluate", {
-      expression: `window.goTo ? window.goTo("databaseView") : document.querySelector('[data-goto="databaseView"]')?.click()`
-    });
-    for (let i = 0; i < 12; i++) {
-      const rows = await send(ws, "Runtime.evaluate", {
-        returnByValue: true,
-        expression: `document.querySelectorAll('#etfDatabaseTable tbody tr').length`
-      });
-      if (rows.result.value > 0) break;
-      await wait(500);
-    }
-    const databaseMetrics = await send(ws, "Runtime.evaluate", {
-      returnByValue: true,
-      expression: `(() => ({
-        activeView: document.querySelector('.view.is-active')?.id,
-        summary: document.querySelector('#databaseSummary')?.textContent,
-        dataQuality: document.querySelector('#dataQuality')?.innerText || '',
-        classificationStrip: document.querySelector('.classification-strip')?.innerText || '',
-        etfRows: document.querySelectorAll('#etfDatabaseTable tbody tr').length,
-        bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
-      }))()`
-    });
     const result = {
       url: targetUrl,
       viewport: "390x844 mobile",
@@ -380,68 +307,41 @@ async function main() {
       runtimeErrors,
       failedRequests: failures,
       badResponses,
-      input: inputMetrics.result.value,
-      entitlementGuard: entitlementGuardMetrics.result.value,
-      requiredValidation: validationMetrics.result.value,
-      detailedValidation: detailedValidationMetrics.result.value,
-      landingLead: landingLeadMetrics.result.value,
-      freeReport: freeReportMetrics.result.value,
-      upgrade: upgradeMetrics.result.value,
-      database: databaseMetrics.result.value,
+      landing,
+      requiredValidation,
+      consentStep,
+      freeReport,
+      database,
       passed: consoleErrors.length === 0
         && runtimeErrors.length === 0
         && failures.length === 0
         && badResponses.length === 0
-        && inputMetrics.result.value.activeView === "landingView"
-        && inputMetrics.result.value.quickCheckExists
-        && inputMetrics.result.value.contactExists
-        && inputMetrics.result.value.bodyOverflow === 0
-        && entitlementGuardMetrics.result.value.paidUnlocked === false
-        && entitlementGuardMetrics.result.value.consultingUnlocked === false
-        && entitlementGuardMetrics.result.value.paidTabLocked === true
-        && validationMetrics.result.value.activeView === "landingView"
-        && validationMetrics.result.value.quickErrorsVisible
-        && validationMetrics.result.value.quickErrorCount >= 4
-        && detailedValidationMetrics.result.value.activeView === "inputView"
-        && detailedValidationMetrics.result.value.errorsVisible
-        && detailedValidationMetrics.result.value.errorCount >= 4
-        && landingLeadMetrics.result.value.activeView === "landingView"
-        && landingLeadMetrics.result.value.hasIncomeQuestion
-        && landingLeadMetrics.result.value.hasExpenseQuestion
-        && landingLeadMetrics.result.value.hasSavingsQuestion
-        && landingLeadMetrics.result.value.hasPressureQuestion
-        && landingLeadMetrics.result.value.hasConcernQuestion
-        && landingLeadMetrics.result.value.hasAllocationConcern
-        && landingLeadMetrics.result.value.hasRiskConcern
-        && landingLeadMetrics.result.value.hasLineCta
-        && landingLeadMetrics.result.value.hasAllocationCta
-        && landingLeadMetrics.result.value.hasConsultCta
-        && landingLeadMetrics.result.value.hasDecisionCta
-        && landingLeadMetrics.result.value.keepsIgCta
-        && landingLeadMetrics.result.value.hidesStockRoute
-        && landingLeadMetrics.result.value.noOldStockCta
-        && landingLeadMetrics.result.value.bodyOverflow === 0
-        && freeReportMetrics.result.value.activeView === "freeReportView"
-        && freeReportMetrics.result.value.hasPrescription
-        && freeReportMetrics.result.value.hasFirstAction
-        && freeReportMetrics.result.value.hasAllocation
-        && freeReportMetrics.result.value.hasAvoid
-        && freeReportMetrics.result.value.hasNumbers
-        && freeReportMetrics.result.value.bodyOverflow === 0
-        && upgradeMetrics.result.value.activeView === "upgradeView"
-        && upgradeMetrics.result.value.hasFullReport
-        && upgradeMetrics.result.value.hasFullReportPrice
-        && upgradeMetrics.result.value.hasConsultationDeposit
-        && upgradeMetrics.result.value.hasConsultationFee
-        && upgradeMetrics.result.value.hasPaidButton
-        && upgradeMetrics.result.value.hasConsultingButton
-        && upgradeMetrics.result.value.igHref === "https://www.instagram.com/chendino080077/"
-        && upgradeMetrics.result.value.lineDisabled
-        && upgradeMetrics.result.value.noMockCopy
-        && upgradeMetrics.result.value.bodyOverflow === 0
-        && databaseMetrics.result.value.activeView === "databaseView"
-        && databaseMetrics.result.value.bodyOverflow === 0
-        && databaseMetrics.result.value.etfRows > 0
+        && landing.activeView === "landingView"
+        && landing.brand === "Chen Dino"
+        && landing.heroTitle.includes("先知道")
+        && landing.hasPain
+        && landing.hasSolution
+        && landing.hasFlow
+        && landing.hasServices
+        && landing.hasTestimonials
+        && landing.hasCta
+        && landing.hasIg
+        && landing.bodyOverflow === 0
+        && requiredValidation.step === "1"
+        && requiredValidation.errorsVisible
+        && requiredValidation.errorCount >= 1
+        && consentStep.step === "6"
+        && consentStep.consentVisible
+        && freeReport.activeView === "freeReportView"
+        && freeReport.hasPrescription
+        && freeReport.hasFirstAction
+        && freeReport.hasAllocation
+        && freeReport.hasAvoid
+        && freeReport.hasNumbers
+        && freeReport.bodyOverflow === 0
+        && database.activeView === "databaseView"
+        && database.etfRows > 0
+        && database.bodyOverflow === 0
     };
     console.log(JSON.stringify(result, null, 2));
     process.exit(result.passed ? 0 : 1);

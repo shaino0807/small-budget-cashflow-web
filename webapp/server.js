@@ -178,7 +178,7 @@ function setSecurityHeaders(req, res) {
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
-  res.setHeader("Content-Security-Policy", "default-src 'self'; connect-src 'self' https:; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; form-action 'self' https://payment-stage.ecpay.com.tw https://payment.ecpay.com.tw; frame-ancestors 'none'");
+  res.setHeader("Content-Security-Policy", "default-src 'self'; connect-src 'self' https:; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self'; form-action 'self' https://payment-stage.ecpay.com.tw https://payment.ecpay.com.tw; frame-ancestors 'none'");
 }
 
 function databaseFreshness() {

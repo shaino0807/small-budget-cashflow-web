@@ -3,36 +3,45 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#0f766e" />
-    <title>小資現金流地圖</title>
+    <meta name="theme-color" content="#04342C" />
+    <title>Chen Dino 小資現金流地圖</title>
     <script>
       if (location.protocol === "file:") {
         location.replace("https://shaino0807.github.io/small-budget-cashflow-web/");
       }
     </script>
+    <script src="./runtime-config.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="stylesheet" href="./styles.css" />
-    <script src="./runtime-config.js"></script>
   </head>
   <body>
-    <header class="app-header">
-      <div class="brand">
-        <span class="brand-mark" aria-hidden="true">現</span>
+    <header class="app-header brand-nav">
+      <a class="brand" href="#top" aria-label="Chen Dino 首頁">
+        <span class="brand-mark" aria-hidden="true">CD</span>
         <div>
-          <h1>小資現金流地圖</h1>
-          <p id="headerStatus">免費健檢</p>
+          <h1>Chen Dino</h1>
+          <p id="headerStatus">小資現金流地圖</p>
         </div>
-      </div>
+      </a>
+      <nav class="site-links" aria-label="網站導覽">
+        <a href="#painPoints">痛點</a>
+        <a href="#solutionPanel">解法</a>
+        <a href="#quickCheckPanel">健檢</a>
+        <a href="#servicePanel">服務</a>
+        <a href="#contactPanel">預約</a>
+      </nav>
       <div class="header-actions">
-        <button class="icon-button" id="sampleBtn" type="button" title="套用範例資料" aria-label="套用範例資料">↺</button>
-        <button class="icon-button" id="saveBtn" type="button" title="儲存目前資料" aria-label="儲存目前資料">💾</button>
+        <button class="icon-button" id="sampleBtn" type="button" title="套用範例資料" aria-label="套用範例資料">範</button>
+        <button class="icon-button" id="saveBtn" type="button" title="儲存目前資料" aria-label="儲存目前資料">存</button>
       </div>
     </header>
 
-    <nav class="tabbar" aria-label="主要功能">
+    <nav class="tabbar app-tabs" aria-label="App 功能">
       <button class="tab is-active" data-view="landingView" type="button">首頁</button>
-      <button class="tab" data-view="inputView" type="button">輸入</button>
+      <button class="tab" data-view="inputView" type="button">細填資料</button>
       <button class="tab" data-view="freeReportView" type="button">免費報告</button>
       <button class="tab" data-view="upgradeView" type="button">升級</button>
       <button class="tab paid-tab" data-view="paidReportView" type="button">完整報告</button>
@@ -41,229 +50,305 @@
       <button class="tab admin-tab" data-view="adminView" type="button" hidden>客戶後台</button>
     </nav>
 
-    <main>
+    <main class="site-main" id="top">
       <section id="landingView" class="view is-active" aria-labelledby="landingTitle">
-        <div class="hero-section">
-          <div class="hero-copy">
-            <span class="eyebrow">給每月只剩 5,000 到 10,000 的你</span>
-            <h2 id="landingTitle">先知道錢該存、該還，還是可以開始投資</h2>
-            <p>不用看懂投資術語，先把每月收入、必要支出、存款與壓力整理清楚，再判斷這筆錢該存、該還，還是可以開始投資。</p>
-            <div class="hero-actions">
-              <button class="primary-button" data-check-type="cashflow" data-scroll-target="quickCheckPanel" type="button">做現金流健檢</button>
-              <button class="secondary-button" data-scroll-target="contactPanel" type="button">預約 30 分鐘健檢</button>
-              <button class="secondary-button" data-goto="freeReportView" type="button">先看目前報告</button>
-            </div>
-            <div class="pain-points" aria-label="常見痛點">
-              <span>薪水進來又出去</span>
-              <span>怕投資賠錢</span>
-              <span>家用壓力固定</span>
-              <span>不知道 5,000 怎麼分</span>
-            </div>
-          </div>
-          <div class="hero-card" aria-label="健檢會回答的問題">
-            <strong>填完後會得到</strong>
-            <ul class="feature-list">
-              <li>你現在最該先處理的一件事</li>
-              <li>每月 5,000 到 10,000 的分配方式</li>
-              <li>你目前不適合做的投資動作</li>
-            </ul>
-          </div>
-        </div>
-
-        <section class="check-router" aria-label="選擇健檢">
-          <button class="check-route is-selected" data-check-type="cashflow" type="button">
-            <strong>做現金流健檢</strong>
-            <span>先看每月剩多少、預備金夠不夠、這筆錢能不能投資</span>
-          </button>
-        </section>
-
-        <section class="quick-check panel" id="quickCheckPanel" aria-labelledby="quickCheckTitle">
-          <div class="panel-head">
-            <div>
-              <h3 id="quickCheckTitle">5 題現金流健檢</h3>
-              <p class="panel-note">不用登入。資料只存在這台瀏覽器，先看免費結果。</p>
-            </div>
-            <span class="badge">約 3 分鐘</span>
-          </div>
-          <div id="cashflowQuiz">
-            <div class="quiz-grid">
-              <label>1. 每月收入
-                <input id="quizIncome" type="number" min="0" step="1000" placeholder="例如 42000" />
-              </label>
-              <label>2. 每月必要支出
-                <input id="quizExpense" type="number" min="0" step="1000" placeholder="房租、家用、吃飯、交通等" />
-              </label>
-              <label>3. 現在存款
-                <input id="quizSavings" type="number" min="0" step="10000" placeholder="例如 80000" />
-              </label>
-            </div>
-            <div class="choice-block">
-              <span>4. 有沒有貸款 / 保險壓力？</span>
-              <div class="choice-row" id="quizDebtInsurancePressure">
-                <button class="choice-button is-selected" data-pressure="none" type="button">沒有，先想把錢分好</button>
-                <button class="choice-button" data-pressure="some" type="button">有一點，每月繳完會緊</button>
-                <button class="choice-button" data-pressure="heavy" type="button">壓力大，常覺得快不夠用</button>
+        <section class="hero-section fullbleed" aria-label="小資現金流健檢">
+          <div class="section-inner hero-inner">
+            <div class="hero-copy" data-animate>
+              <span class="eyebrow">給每月只剩 5,000 到 10,000 的你</span>
+              <h2 id="landingTitle" data-typewriter="先知道這個月該存、該還，還是可以開始投資">先知道這個月該存、該還，還是可以開始投資</h2>
+              <p>把收入、必要支出、存款與壓力照順序填完，3 分鐘產生一份看得懂的現金流建議。</p>
+              <div class="hero-actions">
+                <a class="primary-button cta-link" href="#quickCheckPanel">開始 3 分鐘健檢</a>
+                <a class="secondary-button cta-link" href="#solutionPanel">先看怎麼做</a>
               </div>
             </div>
-            <div class="choice-block">
-              <span>5. 最想解決什麼？</span>
-              <div class="choice-row" id="quizConcern">
-                <button class="choice-button is-selected" data-concern="saving" type="button">存不到錢</button>
-                <button class="choice-button" data-concern="allocation" type="button">錢不知道怎麼分</button>
-                <button class="choice-button" data-concern="risk" type="button">怕亂投資</button>
-                <button class="choice-button" data-concern="family" type="button">家用壓力</button>
-              </div>
+            <div class="hero-proof" data-animate>
+              <span>Chen Dino 陳迪諾</span>
+              <strong>不用先懂投資術語，先把錢的順序排對。</strong>
+              <ul class="feature-list">
+                <li>每月剩多少</li>
+                <li>安全水位夠不夠</li>
+                <li>這筆錢該不該投資</li>
+              </ul>
             </div>
-          </div>
-
-          <div id="stockQuiz" hidden>
-            <div class="quiz-grid stock-quiz-grid">
-              <label>1. 你每月最多可投入股票多少？
-                <input id="stockMonthlyBudget" type="number" min="0" step="1000" placeholder="例如 8000" />
-                <small>依 3,000、5,000、10,000、15,000、20,000 以上分級</small>
-              </label>
-            </div>
-            <div class="choice-block">
-              <span>2. 你想買股票的原因是什麼？</span>
-              <div class="choice-row">
-                <button class="choice-button is-selected" data-stock-reason="price" type="button">想賺價差</button>
-                <button class="choice-button" data-stock-reason="dividend" type="button">想領股息</button>
-                <button class="choice-button" data-stock-reason="friend" type="button">朋友推薦</button>
-                <button class="choice-button" data-stock-reason="learn" type="button">想開始學</button>
-                <button class="choice-button" data-stock-reason="retirement" type="button">退休規劃</button>
-              </div>
-            </div>
-            <div class="choice-block">
-              <span>3. 如果股票跌 20%，你會怎麼做？</span>
-              <div class="choice-row">
-                <button class="choice-button" data-stock-drop="sell" type="button">賣掉</button>
-                <button class="choice-button is-selected" data-stock-drop="unsure" type="button">不知道</button>
-                <button class="choice-button" data-stock-drop="hold" type="button">繼續放</button>
-                <button class="choice-button" data-stock-drop="add" type="button">加碼</button>
-              </div>
-            </div>
-            <div class="choice-block">
-              <span>4. 你現在有幾檔個股？</span>
-              <div class="choice-row">
-                <button class="choice-button is-selected" data-stock-count="0" type="button">0</button>
-                <button class="choice-button" data-stock-count="1to3" type="button">1 到 3</button>
-                <button class="choice-button" data-stock-count="4to6" type="button">4 到 6</button>
-                <button class="choice-button" data-stock-count="7plus" type="button">7 檔以上</button>
-              </div>
-            </div>
-            <div class="choice-block">
-              <span>5. 這筆錢多久內不能動用？</span>
-              <div class="choice-row">
-                <button class="choice-button" data-stock-horizon="3months" type="button">3 個月內</button>
-                <button class="choice-button is-selected" data-stock-horizon="1year" type="button">1 年內</button>
-                <button class="choice-button" data-stock-horizon="3years" type="button">3 年以上</button>
-              </div>
-            </div>
-          </div>
-          <div class="quick-result" id="quickResult"></div>
-          <div class="validation-errors" id="quickValidationErrors" role="alert" hidden></div>
-          <section class="consent-box" aria-labelledby="consentTitle">
-            <h3 id="consentTitle">報告保存與後續聯絡</h3>
-            <label class="checkbox-label">
-              <input id="dataConsent" type="checkbox" />
-              <span>我同意保存本次健檢輸入與報告，用於重新開啟報告及後續服務。我可以使用存取碼刪除資料。</span>
-            </label>
-            <div class="consent-contact-grid">
-              <label>聯絡方式
-                <select id="contactChannel">
-                  <option value="none">不提供</option>
-                  <option value="line">LINE</option>
-                  <option value="form">表單編號</option>
-                  <option value="email">Email</option>
-                </select>
-              </label>
-              <label>聯絡資料
-                <input id="contactValue" type="text" maxlength="200" placeholder="選填，只在你同意後加密保存" />
-              </label>
-            </div>
-          </section>
-          <div class="button-row">
-            <button class="primary-button" id="quickGenerateBtn" type="button">產生免費報告</button>
-            <button class="secondary-button" data-goto="inputView" type="button">我想自己細填</button>
           </div>
         </section>
 
-        <section class="trust-strip" aria-label="資料來源信任背書">
-          <div>
-            <strong>資料不是亂猜</strong>
-            <p>先用你的收入、支出、存款與壓力做財務健檢；有持股資料時才輔助查核，不用網路謠言或手動亂填。</p>
+        <section class="section-block" id="painPoints">
+          <div class="section-inner">
+            <div class="section-kicker" data-animate>使用者回饋後先改這裡</div>
+            <div class="section-heading" data-animate>
+              <h2>首頁不要再像工具箱，改成一步一步帶你走。</h2>
+              <p>第一次來的人不需要看到所有功能。先讓他完成一條清楚路徑：填資料、看結果、知道下一步。</p>
+            </div>
+            <div class="pain-grid stagger-grid">
+              <article data-animate>
+                <span>01</span>
+                <h3>不知道先填哪裡</h3>
+                <p>所有欄位一次出現，使用者會停在首頁，不知道要從收入、支出還是報告開始。</p>
+              </article>
+              <article data-animate>
+                <span>02</span>
+                <h3>問題看起來太像表單</h3>
+                <p>小資族、上班族、家庭主婦需要生活化問法，不需要一開始就進入完整財務模型。</p>
+              </article>
+              <article data-animate>
+                <span>03</span>
+                <h3>報告價值太晚出現</h3>
+                <p>填完一頁就給一點回饋，最後再產生報告，完成率會比長表單更穩。</p>
+              </article>
+            </div>
           </div>
-          <button class="secondary-button" data-goto="databaseView" type="button">查看資料後台</button>
         </section>
 
-        <section class="contact-panel panel" id="contactPanel" aria-labelledby="contactTitle">
-          <span class="eyebrow">需要人幫你看</span>
-          <h3 id="contactTitle">把健檢結果傳給我，我幫你看第一步：先存、先還，還是可以開始投資。</h3>
-          <p class="panel-note">下方連結先保留為導流入口，正式上線前替換成你的 LINE 個人帳號、IG 與表單網址。</p>
-          <div class="contact-grid">
-            <a id="line-contact" class="contact-card" href="#" aria-label="LINE 個人諮詢">
-              <strong>LINE 傳我你的健檢結果，我幫你看第一步</strong>
-              <span>先判斷這個月該存、該還，還是可以開始投資</span>
-            </a>
-            <a id="ig-contact" class="contact-card" href="#" aria-label="IG 看案例">
-              <strong>IG 看小資買股常見錯誤</strong>
-              <span>先避開追高、融資、聽明牌與一次買滿</span>
-            </a>
-            <a id="form-contact" class="contact-card" href="#" aria-label="填表領配置表">
-              <strong>領「每月 5,000 / 10,000 分配表」</strong>
-              <span>把安全水位、還款與可投資金額先分清楚</span>
-            </a>
-            <a id="consult-contact" class="contact-card" href="#" aria-label="預約現金流健檢">
-              <strong>預約 30 分鐘現金流健檢</strong>
-              <span>我想知道我的錢該先存、先還，還是能投資</span>
-            </a>
+        <section class="section-block solution-section" id="solutionPanel">
+          <div class="section-inner solution-layout">
+            <div data-animate>
+              <span class="eyebrow">新的網站流程</span>
+              <h2>一頁只問一件事，填完才進下一頁。</h2>
+              <p>這個版本把健檢改成分步流程，使用者只需要照順序回答：收入、支出、存款、壓力、目標、同意保存，最後直接看免費報告。</p>
+            </div>
+            <div class="solution-steps stagger-grid">
+              <article data-animate><strong>1</strong><span>收入</span></article>
+              <article data-animate><strong>2</strong><span>支出</span></article>
+              <article data-animate><strong>3</strong><span>存款</span></article>
+              <article data-animate><strong>4</strong><span>壓力</span></article>
+              <article data-animate><strong>5</strong><span>目標</span></article>
+              <article data-animate><strong>6</strong><span>報告</span></article>
+            </div>
+          </div>
+        </section>
+
+        <section class="quick-check flow-panel" id="quickCheckPanel" aria-labelledby="quickCheckTitle">
+          <div class="section-inner">
+            <div class="flow-shell" data-animate>
+              <div class="flow-aside">
+                <span class="eyebrow">3 分鐘免費健檢</span>
+                <h2 id="quickCheckTitle">現金流分步健檢</h2>
+                <p>不用登入。資料會先存在這台瀏覽器；你同意後，才加密保存報告方便後續重新開啟。</p>
+                <div class="flow-progress" aria-label="填寫進度">
+                  <div class="flow-progress-bar" id="flowProgressBar"></div>
+                </div>
+                <p class="flow-progress-text" id="flowProgressText">第 1 步，共 6 步</p>
+                <div class="quick-result" id="quickResult"></div>
+              </div>
+
+              <div class="flow-card">
+                <div id="cashflowQuiz" class="flow-steps">
+                  <article class="flow-step is-active" data-flow-step="1">
+                    <span class="step-label">Step 1</span>
+                    <h3>你每個月大約收入多少？</h3>
+                    <p>抓大概就好，先不用精準到每一元。</p>
+                    <label>每月收入
+                      <input id="quizIncome" type="number" min="0" step="1000" placeholder="例如 42000" inputmode="numeric" />
+                    </label>
+                    <div class="flow-actions">
+                      <button class="primary-button" data-flow-next="2" type="button">下一步</button>
+                    </div>
+                  </article>
+
+                  <article class="flow-step" data-flow-step="2">
+                    <span class="step-label">Step 2</span>
+                    <h3>每月必要支出大約多少？</h3>
+                    <p>包含房租、家用、吃飯、交通、保險與貸款，先用總額估算。</p>
+                    <label>每月必要支出
+                      <input id="quizExpense" type="number" min="0" step="1000" placeholder="例如 33000" inputmode="numeric" />
+                    </label>
+                    <div class="flow-actions">
+                      <button class="secondary-button" data-flow-back="1" type="button">上一步</button>
+                      <button class="primary-button" data-flow-next="3" type="button">下一步</button>
+                    </div>
+                  </article>
+
+                  <article class="flow-step" data-flow-step="3">
+                    <span class="step-label">Step 3</span>
+                    <h3>你現在大約有多少存款？</h3>
+                    <p>這會用來判斷緊急預備金是否足夠。</p>
+                    <label>目前存款
+                      <input id="quizSavings" type="number" min="0" step="10000" placeholder="例如 80000" inputmode="numeric" />
+                    </label>
+                    <div class="flow-actions">
+                      <button class="secondary-button" data-flow-back="2" type="button">上一步</button>
+                      <button class="primary-button" data-flow-next="4" type="button">下一步</button>
+                    </div>
+                  </article>
+
+                  <article class="flow-step" data-flow-step="4">
+                    <span class="step-label">Step 4</span>
+                    <h3>貸款或保險壓力現在重嗎？</h3>
+                    <div class="choice-row vertical-choice" id="quizDebtInsurancePressure">
+                      <button class="choice-button is-selected" data-pressure="none" type="button">沒有，主要想把錢分好</button>
+                      <button class="choice-button" data-pressure="some" type="button">有一點，每月繳完會緊</button>
+                      <button class="choice-button" data-pressure="heavy" type="button">壓力大，常覺得快不夠用</button>
+                    </div>
+                    <div class="flow-actions">
+                      <button class="secondary-button" data-flow-back="3" type="button">上一步</button>
+                      <button class="primary-button" data-flow-next="5" type="button">下一步</button>
+                    </div>
+                  </article>
+
+                  <article class="flow-step" data-flow-step="5">
+                    <span class="step-label">Step 5</span>
+                    <h3>你最想先解決哪件事？</h3>
+                    <div class="choice-row vertical-choice" id="quizConcern">
+                      <button class="choice-button is-selected" data-concern="saving" type="button">存不到錢</button>
+                      <button class="choice-button" data-concern="allocation" type="button">錢不知道怎麼分</button>
+                      <button class="choice-button" data-concern="risk" type="button">怕亂投資</button>
+                      <button class="choice-button" data-concern="family" type="button">家用壓力</button>
+                    </div>
+                    <div class="flow-actions">
+                      <button class="secondary-button" data-flow-back="4" type="button">上一步</button>
+                      <button class="primary-button" data-flow-next="6" type="button">下一步</button>
+                    </div>
+                  </article>
+                </div>
+
+                <div id="stockQuiz" hidden></div>
+
+                <article class="flow-step consent-step" data-flow-step="6">
+                  <span class="step-label">Step 6</span>
+                  <h3>產生你的免費現金流報告</h3>
+                  <section class="consent-box" aria-labelledby="consentTitle">
+                    <h3 id="consentTitle">報告保存與後續聯絡</h3>
+                    <label class="checkbox-label">
+                      <input id="dataConsent" type="checkbox" />
+                      <span>我同意保存本次健檢輸入與報告，用於重新開啟報告及後續服務。我可以使用存取碼刪除資料。</span>
+                    </label>
+                    <div class="consent-contact-grid">
+                      <label>聯絡方式
+                        <select id="contactChannel">
+                          <option value="none">不提供</option>
+                          <option value="line">LINE</option>
+                          <option value="form">表單編號</option>
+                          <option value="email">Email</option>
+                        </select>
+                      </label>
+                      <label>聯絡資料
+                        <input id="contactValue" type="text" maxlength="200" placeholder="選填，只在你同意後加密保存" />
+                      </label>
+                    </div>
+                  </section>
+                  <div class="flow-actions">
+                    <button class="secondary-button" data-flow-back="5" type="button">上一步</button>
+                    <button class="primary-button" id="quickGenerateBtn" type="button">產生免費報告</button>
+                  </div>
+                </article>
+
+                <div class="validation-errors" id="quickValidationErrors" role="alert" hidden></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section-block service-section" id="servicePanel">
+          <div class="section-inner">
+            <div class="section-heading" data-animate>
+              <span class="eyebrow">服務</span>
+              <h2>從免費健檢到完整報告，先把順序排清楚。</h2>
+            </div>
+            <div class="service-grid stagger-grid">
+              <article data-animate>
+                <h3>免費現金流健檢</h3>
+                <p>先判斷每月能不能投資，以及安全水位是否足夠。</p>
+              </article>
+              <article data-animate>
+                <h3>每月 5,000 / 10,000 分配表</h3>
+                <p>把存款、還款、保險壓力與可投資金額分開。</p>
+              </article>
+              <article data-animate>
+                <h3>30 分鐘現金流健檢</h3>
+                <p>針對你的家庭支出、貸款與投資焦慮，整理第一步。</p>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="section-block testimonial-section" id="testimonialPanel">
+          <div class="section-inner testimonial-layout">
+            <div data-animate>
+              <span class="eyebrow">客戶回饋</span>
+              <h2>使用者需要的不是更多欄位，而是更清楚的下一步。</h2>
+            </div>
+            <div class="testimonial-list stagger-grid">
+              <blockquote data-animate>「以前打開就不知道要先看哪裡，現在照題目填完比較像有人帶。」</blockquote>
+              <blockquote data-animate>「我最想知道的是這個月到底能不能投資，不是先看一堆股票資料。」</blockquote>
+              <blockquote data-animate>「一頁一題比較不會怕填錯，也比較願意填到最後。」</blockquote>
+            </div>
+          </div>
+        </section>
+
+        <section class="section-block final-cta-section" id="contactPanel" aria-labelledby="contactTitle">
+          <div class="section-inner final-cta" data-animate>
+            <span class="eyebrow">Chen Dino 陳迪諾</span>
+            <h2 id="contactTitle">把健檢結果傳給我，我幫你看第一步。</h2>
+            <p>先判斷這個月該存、該還，還是能投資。正式 LINE / 表單網址提供後，這裡會直接接上。</p>
+            <div class="contact-grid">
+              <a id="line-contact" class="contact-card" href="#" aria-label="LINE 個人諮詢">
+                <strong>LINE 傳我你的健檢結果</strong>
+                <span>我幫你看第一步：先存、先還，還是能投資</span>
+              </a>
+              <a id="ig-contact" class="contact-card" href="#" aria-label="IG 看案例">
+                <strong>IG @chendino080077</strong>
+                <span>看小資買股常見錯誤與現金流案例</span>
+              </a>
+              <a id="form-contact" class="contact-card" href="#" aria-label="填表領配置表">
+                <strong>領每月 5,000 / 10,000 分配表</strong>
+                <span>把安全水位、還款與可投資金額先分清楚</span>
+              </a>
+              <a id="consult-contact" class="contact-card" href="#" aria-label="預約現金流健檢">
+                <strong>預約 30 分鐘現金流健檢</strong>
+                <span>適合家用、保險、貸款壓力混在一起的人</span>
+              </a>
+            </div>
+            <button class="text-link-button" data-goto="databaseView" type="button">管理者查看資料後台</button>
           </div>
         </section>
       </section>
 
-      <section id="inputView" class="view" aria-labelledby="inputTitle">
+      <section id="inputView" class="view app-view" aria-labelledby="inputTitle">
         <div class="section-title">
           <div>
             <h2 id="inputTitle">財務資料</h2>
-            <p>所有計算都在本機瀏覽器完成。</p>
+            <p>進階使用者可在這裡細填月份現金流與持股資料。</p>
           </div>
           <button class="primary-button" id="generateBtn" type="button">產生報告</button>
         </div>
 
         <div class="input-grid">
           <form class="panel" id="profileForm">
-              <div>
-                <h3>年度預設值</h3>
-                <p class="panel-note">用來建立財務底稿，也可套用到下方每月現金流；已逐月填寫時，以月份資料為準。</p>
-              </div>
-              <div class="field-grid">
-                <label>月收入<input id="monthlyIncome" type="number" min="0" step="1000" /></label>
-                <label>固定支出<input id="fixedExpense" type="number" min="0" step="1000" /></label>
+            <div>
+              <h3>年度預設值</h3>
+              <p class="panel-note">用來建立財務底稿，也可套用到下方每月現金流；已逐月填寫時，以月份資料為準。</p>
+            </div>
+            <div class="field-grid">
+              <label>月收入<input id="monthlyIncome" type="number" min="0" step="1000" /></label>
+              <label>固定支出<input id="fixedExpense" type="number" min="0" step="1000" /></label>
               <label>保險支出<input id="insuranceExpense" type="number" min="0" step="500" /></label>
               <label>貸款支出<input id="loanExpense" type="number" min="0" step="1000" /></label>
               <label>現金存款<input id="cashSavings" type="number" min="0" step="10000" /></label>
               <label>每月投資<input id="monthlyInvestment" type="number" min="0" step="1000" /></label>
-                <label>年齡<input id="age" type="number" min="18" max="80" step="1" /></label>
-                <label>退休月花費<input id="retirementMonthlyNeed" type="number" min="0" step="1000" /></label>
+              <label>年齡<input id="age" type="number" min="18" max="80" step="1" /></label>
+              <label>退休月花費<input id="retirementMonthlyNeed" type="number" min="0" step="1000" /></label>
+            </div>
+            <div class="panel-subhead">
+              <div>
+                <h3>月份現金流</h3>
+                <span>未填月份不代入月曆</span>
               </div>
-              <div class="panel-subhead">
-                <div>
-                  <h3>月份現金流</h3>
-                  <span>未填月份不代入月曆</span>
-                </div>
-                <div class="subhead-actions">
-                  <button class="secondary-button mini-button" id="applyProfileToMonthsBtn" type="button">套用預設到全年</button>
-                  <button class="secondary-button mini-button" id="clearMonthsBtn" type="button">清空月份</button>
-                </div>
+              <div class="subhead-actions">
+                <button class="secondary-button mini-button" id="applyProfileToMonthsBtn" type="button">套用預設到全年</button>
+                <button class="secondary-button mini-button" id="clearMonthsBtn" type="button">清空月份</button>
               </div>
-              <div id="monthlyCashflowEditor" class="monthly-editor"></div>
+            </div>
+            <div id="monthlyCashflowEditor" class="monthly-editor"></div>
           </form>
 
           <section class="panel">
             <div class="panel-head">
               <div>
                 <h3>ETF 與個股持股</h3>
-                <p class="panel-note">已經有股票的人，輸入代號可查看是否太集中。這裡只做查核與風險提醒，不提供選股推薦。</p>
+                <p class="panel-note">已經有股票的人，可輸入代號查看是否太集中。這裡只做查核與風險提醒。</p>
               </div>
               <button class="secondary-button" id="addHoldingBtn" type="button">新增</button>
             </div>
@@ -273,7 +358,7 @@
         <div class="validation-errors" id="profileValidationErrors" role="alert" hidden></div>
       </section>
 
-      <section id="databaseView" class="view" aria-labelledby="databaseTitle">
+      <section id="databaseView" class="view app-view" aria-labelledby="databaseTitle">
         <div class="section-title">
           <div>
             <h2 id="databaseTitle">後台資料庫</h2>
@@ -297,7 +382,7 @@
         <div id="etfDatabaseTable" class="table-panel"></div>
       </section>
 
-      <section id="freeReportView" class="view" aria-labelledby="freeTitle">
+      <section id="freeReportView" class="view app-view" aria-labelledby="freeTitle">
         <div class="section-title">
           <div>
             <h2 id="freeTitle">免費財務健檢</h2>
@@ -308,7 +393,7 @@
         <div id="freeReport" class="report-layout"></div>
       </section>
 
-      <section id="upgradeView" class="view" aria-labelledby="upgradeTitle">
+      <section id="upgradeView" class="view app-view" aria-labelledby="upgradeTitle">
         <div class="section-title">
           <div>
             <h2 id="upgradeTitle">升級方案</h2>
@@ -318,7 +403,7 @@
         <div class="plans" id="plans"></div>
       </section>
 
-      <section id="paidReportView" class="view" aria-labelledby="paidTitle">
+      <section id="paidReportView" class="view app-view" aria-labelledby="paidTitle">
         <div class="section-title">
           <div>
             <h2 id="paidTitle">完整付費報告</h2>
@@ -331,7 +416,7 @@
         <div id="paidReport" class="report-layout"></div>
       </section>
 
-      <section id="simulationView" class="view" aria-labelledby="simulationTitle">
+      <section id="simulationView" class="view app-view" aria-labelledby="simulationTitle">
         <div class="section-title">
           <div>
             <h2 id="simulationTitle">資產模擬</h2>
@@ -353,7 +438,7 @@
         <div id="simulationTable" class="table-panel"></div>
       </section>
 
-      <section id="calendarView" class="view" aria-labelledby="calendarTitle">
+      <section id="calendarView" class="view app-view" aria-labelledby="calendarTitle">
         <div class="section-title">
           <div>
             <h2 id="calendarTitle">月曆</h2>
@@ -363,7 +448,7 @@
         <div id="cashflowCalendar" class="calendar-grid"></div>
       </section>
 
-      <section id="adminView" class="view" aria-labelledby="adminTitle">
+      <section id="adminView" class="view app-view" aria-labelledby="adminTitle">
         <div class="section-title">
           <div>
             <h2 id="adminTitle">客戶健檢後台</h2>
@@ -384,7 +469,7 @@
     </main>
 
     <footer class="disclaimer">
-      本 App 僅供教育與財務規劃參考，不構成任何投資建議、買賣建議或保證報酬。所有投資皆有風險，使用者應自行判斷並承擔投資結果。
+      本網站僅供教育與財務規劃參考，不構成任何投資建議、買賣建議或保證報酬。所有投資皆有風險，使用者應自行判斷並承擔投資結果。
     </footer>
 
     <script src="./app.js"></script>
