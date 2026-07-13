@@ -284,6 +284,8 @@ async function main() {
       const text = document.querySelector("#freeReport")?.innerText || "";
       return {
         activeView: document.querySelector(".view.is-active")?.id,
+        hasWorkspaceNav: text.includes("健檢結果") && text.includes("ETF 部位配置"),
+        hasMissingEtfPrompt: text.includes("需先填 ETF 部位") && text.includes("補 ETF 部位配置"),
         hasPrescription: text.includes("本月最該做的 3 件事"),
         hasFirstAction: text.includes("先處理"),
         hasAllocation: text.includes("月投入配置"),
@@ -292,6 +294,18 @@ async function main() {
         bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
       };
     })()`);
+
+    await send(ws, "Runtime.evaluate", {
+      expression: `document.querySelector('#freeReport [data-focus-section="etfAllocationSection"]')?.click()`
+    });
+    await wait(750);
+    const workspaceJump = await evalValue(ws, `(() => ({
+      activeView: document.querySelector(".view.is-active")?.id,
+      hasEtfSection: Boolean(document.querySelector("#etfAllocationSection")),
+      hasHoldingEditor: Boolean(document.querySelector("#holdingEditor")),
+      hasBackHome: Boolean(document.querySelector('#inputView [data-goto="landingView"]')),
+      bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
+    }))()`);
 
     await send(ws, "Runtime.evaluate", {
       expression: `window.goTo("databaseView")`
@@ -326,6 +340,7 @@ async function main() {
       advancedInput,
       consentStep,
       freeReport,
+      workspaceJump,
       database,
       passed: consoleErrors.length === 0
         && runtimeErrors.length === 0
@@ -355,12 +370,19 @@ async function main() {
         && consentStep.step === "6"
         && consentStep.consentVisible
         && freeReport.activeView === "freeReportView"
+        && freeReport.hasWorkspaceNav
+        && freeReport.hasMissingEtfPrompt
         && freeReport.hasPrescription
         && freeReport.hasFirstAction
         && freeReport.hasAllocation
         && freeReport.hasAvoid
         && freeReport.hasNumbers
         && freeReport.bodyOverflow === 0
+        && workspaceJump.activeView === "inputView"
+        && workspaceJump.hasEtfSection
+        && workspaceJump.hasHoldingEditor
+        && workspaceJump.hasBackHome
+        && workspaceJump.bodyOverflow === 0
         && database.activeView === "databaseView"
         && database.etfRows > 0
         && database.bodyOverflow === 0

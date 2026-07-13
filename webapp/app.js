@@ -1895,6 +1895,52 @@ function renderQuickResult() {
   `;
 }
 
+function hasEnteredHoldings(holdings) {
+  return holdings.some((holding) => holdingAmount(holding) > 0);
+}
+
+function workspaceNavHtml(active = "freeReportView", activeSection = "") {
+  const items = [
+    { view: "freeReportView", label: "健檢結果" },
+    { view: "inputView", label: "家庭收支", section: "householdCashflowSection" },
+    { view: "inputView", label: "ETF 部位配置", section: "etfAllocationSection" },
+    { view: "inputView", label: "月份現金流", section: "monthlyCashflowSection" },
+    { view: "upgradeView", label: "方案 / 諮詢" }
+  ];
+  return `
+    <nav class="workspace-nav" aria-label="報告工作台導覽">
+      <div class="workspace-tabs">
+        ${items.map((item) => {
+          const isActive = active === item.view && (!item.section || item.section === activeSection);
+          const sectionAttr = item.section ? ` data-focus-section="${item.section}"` : "";
+          return `<button class="workspace-tab ${isActive ? "is-active" : ""}" data-goto="${item.view}"${sectionAttr} type="button">${item.label}</button>`;
+        }).join("")}
+      </div>
+      <div class="workspace-actions">
+        <button class="text-link-button" data-goto="landingView" data-focus-section="quickCheckPanel" type="button">返回首頁改答案</button>
+      </div>
+    </nav>
+  `;
+}
+
+function decorateHoldingDependentReport(report) {
+  if (hasEnteredHoldings(report.holdings)) return;
+  const score = q("#freeReport .score-panel");
+  if (!score) return;
+  const metricValues = score.querySelectorAll(".metric strong");
+  if (metricValues[1]) metricValues[1].textContent = "需先填 ETF 部位";
+  if (metricValues[2]) metricValues[2].textContent = "尚未填寫";
+  score.insertAdjacentHTML("beforeend", `
+    <div class="missing-data-callout">
+      <div>
+        <strong>ETF 部位還沒填，所以高股息依賴與年配息只能先保留。</strong>
+        <p>補上目前持有的 ETF、個股與金額後，這兩個數值才會變成可判讀的健檢結果。</p>
+      </div>
+      <button class="secondary-button mini-button" data-goto="inputView" data-focus-section="etfAllocationSection" type="button">補 ETF 部位配置</button>
+    </div>
+  `);
+}
+
 function scoreHtml(report) {
   return `
     <section class="score-panel">
@@ -2228,6 +2274,7 @@ async function deleteSavedReport() {
 function renderFreeReport() {
   const report = latestReport;
   q("#freeReport").innerHTML = `
+    ${workspaceNavHtml("freeReportView")}
     ${scoreHtml(report)}
     <div class="stack">
       ${reportRecordHtml()}
@@ -2247,6 +2294,7 @@ function renderFreeReport() {
       ${leadCtaHtml()}
     </div>
   `;
+  decorateHoldingDependentReport(report);
   bindGotoButtons();
   q("#restoreReportBtn")?.addEventListener("click", restoreSavedReport);
   q("#downloadReportBtn")?.addEventListener("click", downloadCurrentReport);
@@ -2876,7 +2924,15 @@ function goTo(viewId) {
 
 function bindGotoButtons() {
   document.querySelectorAll("[data-goto]").forEach((button) => {
-    button.addEventListener("click", () => goTo(button.dataset.goto));
+    if (button.dataset.gotoBound === "true") return;
+    button.dataset.gotoBound = "true";
+    button.addEventListener("click", () => {
+      goTo(button.dataset.goto);
+      const sectionId = button.dataset.focusSection;
+      if (sectionId) {
+        window.setTimeout(() => q(`#${sectionId}`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 180);
+      }
+    });
   });
 }
 

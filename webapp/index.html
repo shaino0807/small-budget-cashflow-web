@@ -346,8 +346,23 @@
           <button class="primary-button" id="generateBtn" type="button">產生報告</button>
         </div>
 
+        <nav class="workspace-nav" aria-label="報告工作台導覽">
+          <div class="workspace-tabs">
+            <button class="workspace-tab" data-goto="freeReportView" type="button">健檢結果</button>
+            <button class="workspace-tab is-active" data-goto="inputView" data-focus-section="householdCashflowSection" type="button">家庭收支</button>
+            <button class="workspace-tab" data-goto="inputView" data-focus-section="etfAllocationSection" type="button">ETF 部位配置</button>
+            <button class="workspace-tab" data-goto="inputView" data-focus-section="monthlyCashflowSection" type="button">月份現金流</button>
+            <button class="workspace-tab" data-goto="upgradeView" type="button">方案 / 諮詢</button>
+          </div>
+          <div class="workspace-actions">
+            <button class="text-link-button" data-goto="landingView" data-focus-section="quickCheckPanel" type="button">返回首頁改答案</button>
+            <button class="text-link-button" data-goto="freeReportView" type="button">返回健檢結果</button>
+          </div>
+        </nav>
+
         <div class="input-grid">
           <form class="panel" id="profileForm">
+            <span id="householdCashflowSection" class="workspace-anchor" aria-hidden="true"></span>
             <div>
               <h3>年度預設值</h3>
               <p class="panel-note">用來建立財務底稿，也可套用到下方每月現金流；已逐月填寫時，以月份資料為準。</p>
@@ -362,7 +377,7 @@
               <label>年齡<input id="age" type="number" min="18" max="80" step="1" /></label>
               <label>退休月花費<input id="retirementMonthlyNeed" type="number" min="0" step="1000" /></label>
             </div>
-            <div class="panel-subhead">
+            <div class="panel-subhead" id="monthlyCashflowSection">
               <div>
                 <h3>月份現金流</h3>
                 <span>未填月份不代入月曆</span>
@@ -375,7 +390,7 @@
             <div id="monthlyCashflowEditor" class="monthly-editor"></div>
           </form>
 
-          <section class="panel">
+          <section class="panel" id="etfAllocationSection">
             <div class="panel-head">
               <div>
                 <h3>ETF 與個股持股</h3>
