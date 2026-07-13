@@ -3013,9 +3013,6 @@ function bindEvents() {
   });
   bindGotoButtons();
   bindFlowSteps();
-  initTypewriter();
-  initScrollAnimations();
-  initStickyNav();
 }
 
 function registerServiceWorker() {
@@ -3052,11 +3049,14 @@ async function init() {
   if (new URLSearchParams(location.search).get("admin") === "1") {
     q(".admin-tab").hidden = false;
   }
+  initTypewriter();
+  initScrollAnimations();
+  initStickyNav();
+  loadBrandFonts();
   await loadEtfDatabase();
   syncInputs();
   bindEvents();
   document.body.dataset.appReady = "true";
-  loadBrandFonts();
   configureConsultationLinks();
   refreshReports();
   await handlePaymentReturn();

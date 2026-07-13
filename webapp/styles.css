@@ -1777,6 +1777,46 @@ a:hover {
   color: rgba(255, 253, 248, 0.82);
 }
 
+.hero-motion-strip {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(42px, 1fr) auto minmax(42px, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  max-width: 680px;
+  padding: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.10);
+  color: #fffdf8;
+  font-size: 13px;
+  font-weight: 900;
+  backdrop-filter: blur(12px);
+}
+
+.hero-motion-strip i {
+  position: relative;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.hero-motion-strip i::before {
+  position: absolute;
+  inset: 0 auto 0 -60%;
+  width: 60%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, transparent, var(--brand-mint), white);
+  content: "";
+  animation: cashflow-run 1.7s ease-in-out infinite;
+}
+
+.hero-motion-strip i:nth-of-type(2)::before {
+  animation-delay: 0.35s;
+}
+
 .hero-proof {
   display: grid;
   gap: 16px;
@@ -1809,6 +1849,85 @@ a:hover {
   margin-right: 9px;
   border-radius: 50%;
   background: var(--brand-mint);
+}
+
+.motion-stage {
+  display: grid;
+  gap: 12px;
+  margin-top: 10px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.flow-line {
+  position: relative;
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) 74px;
+  gap: 10px;
+  align-items: center;
+  min-height: 30px;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.flow-line i {
+  position: relative;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.flow-line i::before {
+  position: absolute;
+  inset: 0 auto 0 -45%;
+  width: 45%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, transparent, var(--brand-mint), #ffffff);
+  content: "";
+  animation: cashflow-run 2.2s ease-in-out infinite;
+}
+
+.flow-line-two i::before {
+  animation-delay: 0.35s;
+}
+
+.flow-line-three i::before {
+  animation-delay: 0.7s;
+}
+
+.flow-line strong {
+  color: #fffdf8;
+  text-align: right;
+}
+
+.motion-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.motion-cards div {
+  display: grid;
+  min-height: 54px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.11);
+  color: white;
+  font-weight: 900;
+  transform: translateY(0);
+  animation: card-breathe 3.2s ease-in-out infinite;
+}
+
+.motion-cards div:nth-child(2) {
+  animation-delay: 0.25s;
+}
+
+.motion-cards div:nth-child(3) {
+  animation-delay: 0.5s;
 }
 
 .primary-button,
@@ -2184,6 +2303,39 @@ a:hover {
   46%,
   100% {
     opacity: 0;
+  }
+}
+
+@keyframes cashflow-run {
+  0% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+
+  18% {
+    opacity: 1;
+  }
+
+  80% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateX(320%);
+    opacity: 0;
+  }
+}
+
+@keyframes card-breathe {
+  0%,
+  100% {
+    transform: translateY(0);
+    box-shadow: none;
+  }
+
+  45% {
+    transform: translateY(-8px);
+    box-shadow: 0 18px 32px rgba(0, 0, 0, 0.18);
   }
 }
 

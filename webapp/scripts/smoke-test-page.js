@@ -217,6 +217,8 @@ async function main() {
         hasServices: Boolean(document.querySelector("#servicePanel")),
         hasTestimonials: Boolean(document.querySelector("#testimonialPanel")),
         hasCta: Boolean(document.querySelector("#contactPanel")),
+        hasMotionStage: Boolean(document.querySelector(".motion-stage .flow-line i")),
+        hasMotionCards: document.querySelectorAll(".motion-cards div").length === 3,
         hasIg: text.includes("@chendino080077"),
         bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
       };
@@ -325,6 +327,8 @@ async function main() {
         && landing.hasServices
         && landing.hasTestimonials
         && landing.hasCta
+        && landing.hasMotionStage
+        && landing.hasMotionCards
         && landing.hasIg
         && landing.bodyOverflow === 0
         && requiredValidation.step === "1"
