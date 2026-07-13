@@ -219,6 +219,7 @@ async function main() {
         hasCta: Boolean(document.querySelector("#contactPanel")),
         hasMotionStage: Boolean(document.querySelector(".motion-stage .flow-line i")),
         hasMotionCards: document.querySelectorAll(".motion-cards div").length === 3,
+        hasAdvancedInputEntry: text.includes("填家庭收支與 ETF 配置"),
         hasIg: text.includes("@chendino080077"),
         bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
       };
@@ -245,6 +246,17 @@ async function main() {
       });
       await wait(350);
     };
+
+    await send(ws, "Runtime.evaluate", { expression: `document.querySelector('[data-goto="inputView"]').click()` });
+    await wait(350);
+    const advancedInput = await evalValue(ws, `(() => ({
+      activeView: document.querySelector(".view.is-active")?.id,
+      hasMonthlyEditor: Boolean(document.querySelector("#monthlyCashflowEditor")),
+      hasHoldingEditor: Boolean(document.querySelector("#holdingEditor")),
+      title: document.querySelector("#inputTitle")?.textContent || ""
+    }))()`);
+    await send(ws, "Runtime.evaluate", { expression: `window.goTo("landingView")` });
+    await wait(250);
 
     await fillStep("#quizIncome", "42000");
     await fillStep("#quizExpense", "33000");
@@ -311,6 +323,7 @@ async function main() {
       badResponses,
       landing,
       requiredValidation,
+      advancedInput,
       consentStep,
       freeReport,
       database,
@@ -329,11 +342,16 @@ async function main() {
         && landing.hasCta
         && landing.hasMotionStage
         && landing.hasMotionCards
+        && landing.hasAdvancedInputEntry
         && landing.hasIg
         && landing.bodyOverflow === 0
         && requiredValidation.step === "1"
         && requiredValidation.errorsVisible
         && requiredValidation.errorCount >= 1
+        && advancedInput.activeView === "inputView"
+        && advancedInput.hasMonthlyEditor
+        && advancedInput.hasHoldingEditor
+        && advancedInput.title.includes("財務資料")
         && consentStep.step === "6"
         && consentStep.consentVisible
         && freeReport.activeView === "freeReportView"
