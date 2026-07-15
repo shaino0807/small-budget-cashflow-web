@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const { summaryFlexMessage } = require("../line-bot");
 
 const apiBase = "https://api.line.me";
 const dataBase = "https://api-data.line.me";
@@ -55,11 +56,23 @@ async function main() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(richMenu)
   });
+  const flexMessage = summaryFlexMessage("已記錄支出", "早餐 NT$65", {
+    month: "2026-07",
+    income: 45000,
+    expense: 12065,
+    investment: 10000,
+    remaining: 22935
+  });
+  await lineRequest(`${apiBase}/v2/bot/message/validate/reply`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ messages: [flexMessage] })
+  });
   const existing = await lineRequest(`${apiBase}/v2/bot/richmenu/list`);
   const reusable = (existing.richmenus || []).find((menu) => menu.name === menuName);
   if (reusable && !force) {
     await lineRequest(`${apiBase}/v2/bot/user/all/richmenu/${encodeURIComponent(reusable.richMenuId)}`, { method: "POST" });
-    console.log(JSON.stringify({ ok: true, richMenuId: reusable.richMenuId, reused: true }, null, 2));
+    console.log(JSON.stringify({ ok: true, richMenuId: reusable.richMenuId, reused: true, flexValidated: true }, null, 2));
     return;
   }
   const created = await lineRequest(`${apiBase}/v2/bot/richmenu`, {
@@ -78,7 +91,7 @@ async function main() {
   for (const menu of replaced) {
     await lineRequest(`${apiBase}/v2/bot/richmenu/${encodeURIComponent(menu.richMenuId)}`, { method: "DELETE" });
   }
-  console.log(JSON.stringify({ ok: true, richMenuId, replaced: replaced.map((menu) => menu.richMenuId) }, null, 2));
+  console.log(JSON.stringify({ ok: true, richMenuId, replaced: replaced.map((menu) => menu.richMenuId), flexValidated: true }, null, 2));
 }
 
 main().catch((error) => {

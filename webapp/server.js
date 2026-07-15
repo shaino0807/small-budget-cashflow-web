@@ -21,6 +21,7 @@ let lineRichMenuStatus = {
   enabled: process.env.LINE_RICH_MENU_AUTO_DEPLOY === "1",
   status: process.env.LINE_RICH_MENU_AUTO_DEPLOY === "1" ? "pending" : "disabled",
   richMenuId: null,
+  flexValidated: false,
   error: null
 };
 
@@ -753,7 +754,13 @@ server.listen(port, "0.0.0.0", () => {
       } else {
         try {
           const result = JSON.parse(String(stdout).trim());
-          lineRichMenuStatus = { ...lineRichMenuStatus, status: "ready", richMenuId: result.richMenuId || null, error: null };
+          lineRichMenuStatus = {
+            ...lineRichMenuStatus,
+            status: "ready",
+            richMenuId: result.richMenuId || null,
+            flexValidated: result.flexValidated === true,
+            error: null
+          };
           console.log(`LINE Rich Menu 已確認：${String(stdout).trim()}`);
         } catch (parseError) {
           lineRichMenuStatus = { ...lineRichMenuStatus, status: "failed", error: "Rich Menu 部署結果格式不正確" };

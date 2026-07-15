@@ -674,5 +674,6 @@ module.exports = {
   parseLineCommand,
   parseLedgerMessage,
   parseLedgerMessageWithAi,
+  summaryFlexMessage,
   verifyLineSignature
 };
