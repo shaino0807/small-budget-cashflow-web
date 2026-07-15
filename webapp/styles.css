@@ -2428,7 +2428,8 @@ a:hover {
   margin: 16px 0;
 }
 
-.line-etf-positions {
+.line-etf-positions,
+.line-recent-entries {
   margin: 16px 0;
   padding: 14px 16px;
   border: 1px solid rgba(4, 52, 44, 0.12);
@@ -2436,7 +2437,8 @@ a:hover {
   background: rgba(159, 225, 203, 0.16);
 }
 
-.line-etf-positions > strong {
+.line-etf-positions > strong,
+.line-recent-entries > strong {
   display: block;
   margin-bottom: 6px;
 }

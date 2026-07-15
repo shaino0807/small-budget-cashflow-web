@@ -2213,6 +2213,13 @@ function reportRecordHtml() {
   `;
 }
 
+function lineEntryText(entry) {
+  const type = { income: "收入", expense: "支出", investment: "投資" }[entry.type] || "記帳";
+  const subject = entry.ticker || entry.note || entry.category || type;
+  const date = new Date(entry.occurredAt).toLocaleDateString("zh-TW", { month: "numeric", day: "numeric" });
+  return `${date} · ${type} · ${subject}`;
+}
+
 function lineSyncHtml() {
   const meta = state.reportMeta;
   if (!meta?.reportId) {
@@ -2254,6 +2261,14 @@ function lineSyncHtml() {
             <strong>LINE 累積 ETF 部位</strong>
             ${(summary.etfPositions || []).map((position) => `
               <div class="kv"><span>${escapeHtml(position.ticker)} · ${position.count} 筆</span><strong>${formatMoney(position.amount)}</strong></div>
+            `).join("")}
+          </div>
+        ` : ""}
+        ${(summary.recentEntries || []).length ? `
+          <div class="line-recent-entries">
+            <strong>最近明細</strong>
+            ${(summary.recentEntries || []).map((entry) => `
+              <div class="kv"><span>${escapeHtml(lineEntryText(entry))}</span><strong>${formatMoney(entry.amount)}</strong></div>
             `).join("")}
           </div>
         ` : ""}

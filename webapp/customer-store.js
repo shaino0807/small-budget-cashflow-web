@@ -145,6 +145,16 @@ function initialize() {
     CREATE INDEX IF NOT EXISTS idx_line_ledger_user_month ON line_ledger_entries(line_user_hash, occurred_at DESC);
     CREATE UNIQUE INDEX IF NOT EXISTS idx_line_ledger_source_message ON line_ledger_entries(line_user_hash, source_message_id)
       WHERE source_message_id IS NOT NULL;
+    CREATE TABLE IF NOT EXISTS line_command_receipts (
+      id TEXT PRIMARY KEY,
+      line_user_hash TEXT NOT NULL,
+      source_message_id TEXT NOT NULL,
+      command_type TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      result_cipher TEXT NOT NULL,
+      UNIQUE(line_user_hash, source_message_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_line_command_receipts_created ON line_command_receipts(created_at DESC);
     CREATE TABLE IF NOT EXISTS line_report_bindings (
       id TEXT PRIMARY KEY,
       report_id TEXT NOT NULL UNIQUE,
@@ -251,6 +261,63 @@ function createStore() {
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
+  function publicLineEntry(row) {
+    if (!row) return null;
+    const note = row.note_cipher ? decrypt(row.note_cipher)?.value : "";
+    return {
+      id: row.id,
+      type: row.entry_type,
+      amount: Number(row.amount || 0),
+      category: row.category,
+      ticker: row.ticker,
+      note: String(note || ""),
+      occurredAt: row.occurred_at,
+      createdAt: row.created_at
+    };
+  }
+
+  function lineEntriesByHash(lineUserHash, monthKey = taipeiMonthKey(), limit = 8) {
+    const range = taipeiMonthRange(monthKey);
+    return db.prepare(`
+      SELECT * FROM line_ledger_entries
+      WHERE line_user_hash = ? AND occurred_at >= ? AND occurred_at < ?
+      ORDER BY occurred_at DESC, created_at DESC
+      LIMIT ?
+    `).all(lineUserHash, range.start, range.end, Math.max(1, Math.min(20, Number(limit) || 8))).map(publicLineEntry);
+  }
+
+  function runLineCommandOnce({ lineUserHash, sourceMessageId, commandType, action }) {
+    const messageId = String(sourceMessageId || "").slice(0, 80);
+    if (!messageId) return action();
+    const existing = db.prepare(`
+      SELECT result_cipher FROM line_command_receipts
+      WHERE line_user_hash = ? AND source_message_id = ?
+    `).get(lineUserHash, messageId);
+    if (existing) return { ...decrypt(existing.result_cipher), duplicate: true };
+
+    db.exec("BEGIN IMMEDIATE");
+    try {
+      const repeated = db.prepare(`
+        SELECT result_cipher FROM line_command_receipts
+        WHERE line_user_hash = ? AND source_message_id = ?
+      `).get(lineUserHash, messageId);
+      if (repeated) {
+        db.exec("COMMIT");
+        return { ...decrypt(repeated.result_cipher), duplicate: true };
+      }
+      const result = action();
+      db.prepare(`
+        INSERT INTO line_command_receipts (id, line_user_hash, source_message_id, command_type, created_at, result_cipher)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(crypto.randomUUID(), lineUserHash, messageId, commandType, new Date().toISOString(), encrypt(result));
+      db.exec("COMMIT");
+      return result;
+    } catch (error) {
+      db.exec("ROLLBACK");
+      throw error;
+    }
+  }
+
   function lineSummaryByHash(lineUserHash, monthKey = taipeiMonthKey()) {
     const range = taipeiMonthRange(monthKey);
     const rows = db.prepare(`
@@ -284,6 +351,7 @@ function createStore() {
       count: Number(row.count || 0),
       lastOccurredAt: row.lastOccurredAt
     }));
+    summary.recentEntries = lineEntriesByHash(lineUserHash, range.monthKey, 8);
     summary.remaining = summary.income - summary.expense - summary.investment;
     return summary;
   }
@@ -476,6 +544,55 @@ function createStore() {
     return lineSummaryByHash(lineUserHash, monthKey);
   }
 
+  function lineLedgerEntries(lineUserId, monthKey = taipeiMonthKey(), limit = 8) {
+    if (!lineUserId) throw new Error("缺少 LINE 使用者");
+    return lineEntriesByHash(accessHash(`line:${lineUserId}`), monthKey, limit);
+  }
+
+  function updateLastLineLedgerEntry({ lineUserId, amount, sourceMessageId }) {
+    if (!lineUserId) throw new Error("缺少 LINE 使用者");
+    const numericAmount = Math.round(Number(amount));
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0 || numericAmount > 1000000000) throw new Error("金額格式不正確");
+    const lineUserHash = accessHash(`line:${lineUserId}`);
+    return runLineCommandOnce({
+      lineUserHash,
+      sourceMessageId,
+      commandType: "update_last",
+      action: () => {
+        const row = db.prepare(`
+          SELECT * FROM line_ledger_entries
+          WHERE line_user_hash = ?
+          ORDER BY occurred_at DESC, created_at DESC
+          LIMIT 1
+        `).get(lineUserHash);
+        if (!row) return { entry: null };
+        db.prepare("UPDATE line_ledger_entries SET amount = ? WHERE id = ?").run(numericAmount, row.id);
+        return { entry: publicLineEntry({ ...row, amount: numericAmount }) };
+      }
+    });
+  }
+
+  function deleteLastLineLedgerEntry({ lineUserId, sourceMessageId }) {
+    if (!lineUserId) throw new Error("缺少 LINE 使用者");
+    const lineUserHash = accessHash(`line:${lineUserId}`);
+    return runLineCommandOnce({
+      lineUserHash,
+      sourceMessageId,
+      commandType: "delete_last",
+      action: () => {
+        const row = db.prepare(`
+          SELECT * FROM line_ledger_entries
+          WHERE line_user_hash = ?
+          ORDER BY occurred_at DESC, created_at DESC
+          LIMIT 1
+        `).get(lineUserHash);
+        if (!row) return { entry: null };
+        db.prepare("DELETE FROM line_ledger_entries WHERE id = ?").run(row.id);
+        return { entry: publicLineEntry(row) };
+      }
+    });
+  }
+
   function createLineReportBinding({ reportId, accessCode }) {
     const report = assertReportAccess(reportId, accessCode);
     const now = new Date();
@@ -647,7 +764,11 @@ function createStore() {
   }
 
   function purgeExpired() {
-    return db.prepare("DELETE FROM reports WHERE expires_at < ?").run(new Date().toISOString()).changes;
+    const now = new Date();
+    const changes = db.prepare("DELETE FROM reports WHERE expires_at < ?").run(now.toISOString()).changes;
+    db.prepare("DELETE FROM line_command_receipts WHERE created_at < ?")
+      .run(new Date(now.getTime() - 90 * 86400000).toISOString());
+    return changes;
   }
 
   return {
@@ -659,15 +780,18 @@ function createStore() {
     createLineReportBinding,
     createReport,
     deleteReport,
+    deleteLastLineLedgerEntry,
     getAdminReport,
     getOrderStatus,
     getReport,
     addLineLedgerEntry,
     getLineReportSummary,
     lineLedgerSummary,
+    lineLedgerEntries,
     listReports,
     purgeExpired,
-    setFollowupStatus
+    setFollowupStatus,
+    updateLastLineLedgerEntry
   };
 }
 

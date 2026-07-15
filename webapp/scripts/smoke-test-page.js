@@ -307,10 +307,19 @@ async function main() {
           expense: 65,
           investment: 10000,
           counts: { income: 1, expense: 1, investment: 1 },
-          etfPositions: [{ ticker: "0056", amount: 10000, count: 1 }]
+          etfPositions: [{ ticker: "0056", amount: 10000, count: 1 }],
+          recentEntries: [{
+            type: "investment",
+            amount: 10000,
+            ticker: "0056",
+            note: "0056",
+            occurredAt: new Date().toISOString()
+          }]
         };
+        state.reportMeta.lineSummary = summary;
         applyLineSummaryToState(summary);
         applyLineSummaryToState(summary);
+        refreshReports();
       })()`
     });
     await wait(350);
@@ -325,7 +334,8 @@ async function main() {
         investment: Number(row?.querySelector('[data-month-field="monthlyInvestment"]')?.value || 0),
         ticker: holding?.querySelector('[data-field="ticker"]')?.value || "",
         lineLots: holding?.querySelectorAll(".lot-row.is-line-synced").length || 0,
-        lineAmount: Number(holding?.querySelector('.lot-row.is-line-synced [data-lot-field="amount"]')?.value || 0)
+        lineAmount: Number(holding?.querySelector('.lot-row.is-line-synced [data-lot-field="amount"]')?.value || 0),
+        recentEntries: document.querySelectorAll("#freeReport .line-recent-entries .kv").length
       };
     })()`);
 
@@ -421,6 +431,7 @@ async function main() {
         && lineApplied.ticker === "0056"
         && lineApplied.lineLots === 1
         && lineApplied.lineAmount === 10000
+        && lineApplied.recentEntries === 1
         && workspaceJump.activeView === "inputView"
         && workspaceJump.hasEtfSection
         && workspaceJump.hasHoldingEditor

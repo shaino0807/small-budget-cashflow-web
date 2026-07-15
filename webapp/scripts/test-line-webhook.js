@@ -4,7 +4,7 @@ const fs = require("fs");
 const http = require("http");
 const os = require("os");
 const path = require("path");
-const { parseLedgerMessage } = require("../line-bot");
+const { parseLedgerMessage, parseLineCommand } = require("../line-bot");
 
 const port = 5900 + Math.floor(Math.random() * 250);
 const baseUrl = `http://127.0.0.1:${port}`;
@@ -68,6 +68,16 @@ async function main() {
       throw new Error(`Parser failed for ${text}: ${JSON.stringify(parsed)}`);
     }
   }
+  const commandCases = [
+    ["查明細", "details"],
+    ["修改上一筆 80", "update_last"],
+    ["上一筆改成 120", "update_last"],
+    ["刪除上一筆", "delete_last"]
+  ];
+  for (const [text, command] of commandCases) {
+    const parsed = parseLineCommand(text);
+    if (parsed?.command !== command) throw new Error(`Command parser failed for ${text}: ${JSON.stringify(parsed)}`);
+  }
   const server = spawn(process.execPath, [path.join(__dirname, "..", "server.js")], {
     cwd: path.join(__dirname, "..", ".."),
     env: {
@@ -86,7 +96,7 @@ async function main() {
   });
   try {
     const health = await waitForServer();
-    if (!health.line?.configured || !health.line.replyDisabled || !health.line.webSyncEnabled) {
+    if (!health.line?.configured || !health.line.replyDisabled || !health.line.webSyncEnabled || !health.line.ledgerCommandsEnabled) {
       throw new Error("LINE readiness health check failed");
     }
     const body = JSON.stringify({
@@ -207,6 +217,61 @@ async function main() {
     ) {
       throw new Error(`LINE report summary did not include the ledger: ${JSON.stringify(summary)}`);
     }
+    const sendCommand = async (id, text) => {
+      const commandBody = JSON.stringify({
+        destination: "test",
+        events: [{
+          type: "message",
+          replyToken: "test-reply-token",
+          source: { type: "user", userId: "Utest" },
+          message: { id, type: "text", text }
+        }]
+      });
+      return request("/api/line/webhook", {
+        body: commandBody,
+        headers: { "x-line-signature": signature(commandBody) }
+      });
+    };
+    const details = await sendCommand("6", "查明細");
+    if (details.status !== 200 || details.body.replies[0]?.command !== "details") {
+      throw new Error(`LINE details command failed: ${JSON.stringify(details)}`);
+    }
+    const modified = await sendCommand("7", "修改上一筆 6000");
+    const modifiedDuplicate = await sendCommand("7", "修改上一筆 6000");
+    if (
+      modified.status !== 200
+      || modified.body.replies[0]?.command !== "update_last"
+      || modified.body.replies[0]?.commandDuplicate
+      || !modifiedDuplicate.body.replies[0]?.commandDuplicate
+    ) {
+      throw new Error(`LINE update command was not idempotent: ${JSON.stringify({ modified, modifiedDuplicate })}`);
+    }
+    const modifiedSummary = await request(`/api/line/summary?reportId=${encodeURIComponent(created.body.report.id)}`, {
+      method: "GET",
+      headers: { "X-Report-Access-Code": created.body.report.accessCode }
+    });
+    const modifiedPositions = Object.fromEntries((modifiedSummary.body.summary?.etfPositions || []).map((position) => [position.ticker, position.amount]));
+    if (modifiedSummary.body.summary.investment !== 16000 || modifiedPositions["00878"] !== 6000) {
+      throw new Error(`LINE update command changed the wrong entry: ${JSON.stringify(modifiedSummary)}`);
+    }
+    const deleted = await sendCommand("8", "刪除上一筆");
+    const deletedDuplicate = await sendCommand("8", "刪除上一筆");
+    if (
+      deleted.status !== 200
+      || deleted.body.replies[0]?.command !== "delete_last"
+      || deleted.body.replies[0]?.commandDuplicate
+      || !deletedDuplicate.body.replies[0]?.commandDuplicate
+    ) {
+      throw new Error(`LINE delete command was not idempotent: ${JSON.stringify({ deleted, deletedDuplicate })}`);
+    }
+    const finalSummary = await request(`/api/line/summary?reportId=${encodeURIComponent(created.body.report.id)}`, {
+      method: "GET",
+      headers: { "X-Report-Access-Code": created.body.report.accessCode }
+    });
+    const finalPositions = Object.fromEntries((finalSummary.body.summary?.etfPositions || []).map((position) => [position.ticker, position.amount]));
+    if (finalSummary.body.summary.investment !== 10000 || finalPositions["0056"] !== 10000 || finalPositions["00878"] !== undefined) {
+      throw new Error(`LINE duplicate delete removed more than one entry: ${JSON.stringify(finalSummary)}`);
+    }
     const invalid = await request("/api/line/webhook", {
       body,
       headers: { "x-line-signature": "invalid-signature" }
@@ -214,7 +279,15 @@ async function main() {
     if (invalid.status !== 401) {
       throw new Error(`Invalid LINE signature was not rejected: ${JSON.stringify(invalid)}`);
     }
-    console.log(JSON.stringify({ ok: true, valid: valid.body, bound: bound.body, summary: summary.body.summary, invalid: invalid.body }, null, 2));
+    console.log(JSON.stringify({
+      ok: true,
+      valid: valid.body,
+      bound: bound.body,
+      beforeCommands: summary.body.summary,
+      afterCommands: finalSummary.body.summary,
+      commandIdempotency: true,
+      invalid: invalid.body
+    }, null, 2));
   } finally {
     if (!server.killed) server.kill();
     await wait(200);

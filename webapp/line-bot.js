@@ -26,6 +26,7 @@ function lineReadiness() {
     ledgerEnabled: true,
     bindingEnabled: true,
     webSyncEnabled: true,
+    ledgerCommandsEnabled: true,
     replyDisabled: process.env.LINE_REPLY_DISABLED === "1"
   };
 }
@@ -115,6 +116,15 @@ function parseBindingMessage(text) {
   return match ? { intent: "binding", code: match[1] } : null;
 }
 
+function parseLineCommand(text) {
+  const raw = String(text || "").trim().replace(/[,，]/g, "");
+  if (/^(?:查詢?)?(?:本月)?明細$/.test(raw)) return { intent: "command", command: "details" };
+  if (/^刪除(?:上一筆|最後一筆)$/.test(raw)) return { intent: "command", command: "delete_last" };
+  const update = raw.match(/^(?:(?:修改)(?:上一筆|最後一筆)|(?:上一筆|最後一筆)改成?)\s*(?:金額)?\s*(\d+(?:\.\d+)?)$/);
+  if (update) return { intent: "command", command: "update_last", amount: Math.round(Number(update[1])) };
+  return null;
+}
+
 function ledgerTypeLabel(type) {
   return {
     expense: "支出",
@@ -136,6 +146,45 @@ function summaryReplyText(entry, summary) {
   ].join("\n");
 }
 
+function entryReplyText(entry) {
+  if (!entry) return "";
+  const date = new Date(entry.occurredAt).toLocaleString("zh-TW", {
+    timeZone: "Asia/Taipei",
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+  const subject = entry.ticker || entry.note || entry.category || ledgerTypeLabel(entry.type);
+  return `${date} ${ledgerTypeLabel(entry.type)} ${subject} ${formatMoney(entry.amount)}`;
+}
+
+function compactSummaryLines(summary) {
+  return [
+    `${summary.month} 月統計`,
+    `總收入：${formatMoney(summary.income)}`,
+    `總支出：${formatMoney(summary.expense)}`,
+    `投資總額：${formatMoney(summary.investment)}`,
+    `剩餘現金流：${formatMoney(summary.remaining)}`
+  ];
+}
+
+function detailsReplyText(entries, summary) {
+  if (!entries.length) return `目前 ${summary.month} 還沒有記帳資料。`;
+  return [
+    `${summary.month} 最近明細`,
+    ...entries.map((entry, index) => `${index + 1}. ${entryReplyText(entry)}`),
+    "需要修正時，輸入「修改上一筆 80」或「刪除上一筆」。"
+  ].join("\n");
+}
+
+function mutationReplyText(action, result, summary) {
+  if (!result.entry) return "目前沒有可以修改或刪除的記帳資料。";
+  const title = action === "delete_last" ? "已刪除上一筆" : "已修改上一筆";
+  const duplicate = result.duplicate ? "（這個指令已處理過，未重複執行）" : "";
+  return [title + duplicate, entryReplyText(result.entry), ...compactSummaryLines(summary), "回到網頁按「重新整理」即可同步最新結果。"].join("\n");
+}
+
 function helpReplyText() {
   return [
     "我還沒看懂這筆。",
@@ -143,7 +192,10 @@ function helpReplyText() {
     "買早餐 65",
     "付房租 12000",
     "賺 3000",
-    "買 0056 10000"
+    "買 0056 10000",
+    "查明細",
+    "修改上一筆 80",
+    "刪除上一筆"
   ].join("\n");
 }
 
@@ -180,9 +232,33 @@ async function handleLineWebhook(rawBody, options = {}) {
     let replyText = connectionReplyText();
     let ledgerResult = null;
     let bindingResult = null;
+    let commandResult = null;
+    const command = parseLineCommand(text);
     const binding = parseBindingMessage(text);
-    const parsed = binding || parseLedgerMessage(text);
-    if (parsed.intent === "binding") {
+    const parsed = command || binding || parseLedgerMessage(text);
+    if (parsed.intent === "command") {
+      if (!options.store || !userId) {
+        replyText = "LINE 記帳後端尚未準備好，請稍後再試。";
+      } else {
+        try {
+          if (parsed.command === "details") {
+            const summary = options.store.lineLedgerSummary(userId);
+            const entries = options.store.lineLedgerEntries(userId, summary.month, 8);
+            commandResult = { command: parsed.command, entries, summary };
+            replyText = detailsReplyText(entries, summary);
+          } else {
+            const result = parsed.command === "delete_last"
+              ? options.store.deleteLastLineLedgerEntry({ lineUserId: userId, sourceMessageId: event.message.id })
+              : options.store.updateLastLineLedgerEntry({ lineUserId: userId, amount: parsed.amount, sourceMessageId: event.message.id });
+            const summary = options.store.lineLedgerSummary(userId);
+            commandResult = { command: parsed.command, result, summary };
+            replyText = mutationReplyText(parsed.command, result, summary);
+          }
+        } catch (error) {
+          replyText = error.message || "記帳指令處理失敗，請稍後再試。";
+        }
+      }
+    } else if (parsed.intent === "binding") {
       if (!options.store || !userId) {
         replyText = "目前無法確認你的 LINE 身分，請稍後再試。";
       } else {
@@ -240,6 +316,8 @@ async function handleLineWebhook(rawBody, options = {}) {
       parsedIntent: parsed.intent,
       ledgerType: ledgerResult?.entry?.type || null,
       binding: bindingResult ? "linked" : null,
+      command: commandResult?.command || null,
+      commandDuplicate: Boolean(commandResult?.result?.duplicate),
       userId: event.source?.userId ? "present" : "missing",
       ...result
     });
@@ -251,6 +329,7 @@ module.exports = {
   handleLineWebhook,
   lineReadiness,
   parseBindingMessage,
+  parseLineCommand,
   parseLedgerMessage,
   verifyLineSignature
 };
