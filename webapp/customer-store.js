@@ -8,6 +8,7 @@ const reportVersion = "cashflow-report-v2";
 const dataDir = path.resolve(process.env.CUSTOMER_DATA_DIR || path.join(__dirname, "private-data"));
 const dbPath = path.join(dataDir, "customers.sqlite");
 const retentionDays = Math.max(1, Math.min(3650, Number(process.env.CUSTOMER_RETENTION_DAYS || 365)));
+const lineLedgerRetentionDays = Math.max(30, Math.min(3650, Number(process.env.LINE_LEDGER_RETENTION_DAYS || 1095)));
 
 function requiredSecret(name, minimumLength = 32) {
   const value = String(process.env[name] || "");
@@ -138,6 +139,7 @@ function initialize() {
       ticker TEXT,
       occurred_at TEXT NOT NULL,
       created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
       note_cipher TEXT,
       source_cipher TEXT,
       source_message_id TEXT
@@ -155,6 +157,26 @@ function initialize() {
       UNIQUE(line_user_hash, source_message_id)
     );
     CREATE INDEX IF NOT EXISTS idx_line_command_receipts_created ON line_command_receipts(created_at DESC);
+    CREATE TABLE IF NOT EXISTS line_profiles (
+      line_user_hash TEXT PRIMARY KEY,
+      monthly_income INTEGER NOT NULL DEFAULT 0,
+      fixed_expense INTEGER NOT NULL DEFAULT 0,
+      insurance_expense INTEGER NOT NULL DEFAULT 0,
+      loan_expense INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS line_holdings (
+      line_user_hash TEXT NOT NULL,
+      ticker TEXT NOT NULL,
+      amount INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY(line_user_hash, ticker)
+    );
+    CREATE INDEX IF NOT EXISTS idx_line_holdings_user ON line_holdings(line_user_hash, amount DESC);
+    CREATE TABLE IF NOT EXISTS schema_migrations (
+      migration_key TEXT PRIMARY KEY,
+      applied_at TEXT NOT NULL
+    );
     CREATE TABLE IF NOT EXISTS line_report_bindings (
       id TEXT PRIMARY KEY,
       report_id TEXT NOT NULL UNIQUE,
@@ -171,6 +193,25 @@ function initialize() {
   const orderColumns = db.prepare("PRAGMA table_info(orders)").all().map((row) => row.name);
   if (!orderColumns.includes("status_token_hash")) {
     db.exec("ALTER TABLE orders ADD COLUMN status_token_hash TEXT");
+  }
+  const ledgerColumns = db.prepare("PRAGMA table_info(line_ledger_entries)").all().map((row) => row.name);
+  if (!ledgerColumns.includes("updated_at")) {
+    db.exec("ALTER TABLE line_ledger_entries ADD COLUMN updated_at TEXT");
+    db.prepare("UPDATE line_ledger_entries SET updated_at = created_at WHERE updated_at IS NULL").run();
+  }
+  const holdingsMigration = db.prepare("SELECT 1 FROM schema_migrations WHERE migration_key = ?")
+    .get("line-holdings-from-ledger-v1");
+  if (!holdingsMigration) {
+    db.exec(`
+      INSERT INTO line_holdings (line_user_hash, ticker, amount, updated_at)
+      SELECT line_user_hash, ticker, SUM(amount), MAX(COALESCE(updated_at, created_at))
+      FROM line_ledger_entries
+      WHERE entry_type = 'investment' AND ticker IS NOT NULL AND ticker <> ''
+      GROUP BY line_user_hash, ticker
+      ON CONFLICT(line_user_hash, ticker) DO NOTHING;
+    `);
+    db.prepare("INSERT INTO schema_migrations (migration_key, applied_at) VALUES (?, ?)")
+      .run("line-holdings-from-ledger-v1", new Date().toISOString());
   }
   return db;
 }
@@ -257,8 +298,8 @@ function createStore() {
   const insertLineLedgerEntry = db.prepare(`
     INSERT INTO line_ledger_entries (
       id, line_user_hash, entry_type, amount, currency, category, ticker,
-      occurred_at, created_at, note_cipher, source_cipher, source_message_id
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      occurred_at, created_at, updated_at, note_cipher, source_cipher, source_message_id
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   function publicLineEntry(row) {
@@ -272,8 +313,43 @@ function createStore() {
       ticker: row.ticker,
       note: String(note || ""),
       occurredAt: row.occurred_at,
-      createdAt: row.created_at
+      createdAt: row.created_at,
+      updatedAt: row.updated_at || row.created_at
     };
+  }
+
+  function lineProfileByHash(lineUserHash) {
+    const row = db.prepare("SELECT * FROM line_profiles WHERE line_user_hash = ?").get(lineUserHash);
+    return {
+      monthlyIncome: Number(row?.monthly_income || 0),
+      fixedExpense: Number(row?.fixed_expense || 0),
+      insuranceExpense: Number(row?.insurance_expense || 0),
+      loanExpense: Number(row?.loan_expense || 0),
+      updatedAt: row?.updated_at || null
+    };
+  }
+
+  function lineHoldingsByHash(lineUserHash) {
+    return db.prepare(`
+      SELECT ticker, amount, updated_at AS updatedAt
+      FROM line_holdings
+      WHERE line_user_hash = ? AND amount > 0
+      ORDER BY amount DESC, ticker ASC
+    `).all(lineUserHash).map((row) => ({ ...row, amount: Number(row.amount || 0) }));
+  }
+
+  function adjustLineHolding(lineUserHash, ticker, delta, now = new Date().toISOString()) {
+    const normalizedTicker = String(ticker || "").trim().toUpperCase().slice(0, 12);
+    if (!normalizedTicker || !Number(delta)) return;
+    db.prepare(`
+      INSERT INTO line_holdings (line_user_hash, ticker, amount, updated_at)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(line_user_hash, ticker) DO UPDATE SET
+        amount = MAX(0, line_holdings.amount + excluded.amount),
+        updated_at = excluded.updated_at
+    `).run(lineUserHash, normalizedTicker, Math.round(Number(delta)), now);
+    db.prepare("DELETE FROM line_holdings WHERE line_user_hash = ? AND ticker = ? AND amount <= 0")
+      .run(lineUserHash, normalizedTicker);
   }
 
   function lineEntriesByHash(lineUserHash, monthKey = taipeiMonthKey(), limit = 8) {
@@ -339,18 +415,32 @@ function createStore() {
       if (row.type === "investment") summary.investment = Number(row.total || 0);
       if (summary.counts[row.type] !== undefined) summary.counts[row.type] = Number(row.count || 0);
     });
-    summary.etfPositions = db.prepare(`
-      SELECT ticker, COALESCE(SUM(amount), 0) AS amount, COUNT(*) AS count, MAX(occurred_at) AS lastOccurredAt
+    summary.expenseCategories = db.prepare(`
+      SELECT COALESCE(category, '其他支出') AS category, COALESCE(SUM(amount), 0) AS amount, COUNT(*) AS count
+      FROM line_ledger_entries
+      WHERE line_user_hash = ? AND entry_type = 'expense' AND occurred_at >= ? AND occurred_at < ?
+      GROUP BY COALESCE(category, '其他支出')
+      ORDER BY amount DESC, category ASC
+    `).all(lineUserHash, range.start, range.end).map((row) => ({
+      category: row.category,
+      amount: Number(row.amount || 0),
+      count: Number(row.count || 0)
+    }));
+    const investmentCounts = db.prepare(`
+      SELECT ticker, COUNT(*) AS count, MAX(occurred_at) AS lastOccurredAt
       FROM line_ledger_entries
       WHERE line_user_hash = ? AND entry_type = 'investment' AND ticker IS NOT NULL AND ticker <> ''
       GROUP BY ticker
-      ORDER BY amount DESC, ticker ASC
-    `).all(lineUserHash).map((row) => ({
-      ticker: row.ticker,
-      amount: Number(row.amount || 0),
-      count: Number(row.count || 0),
-      lastOccurredAt: row.lastOccurredAt
+    `).all(lineUserHash);
+    const countByTicker = new Map(investmentCounts.map((row) => [row.ticker, row]));
+    summary.etfPositions = lineHoldingsByHash(lineUserHash).map((holding) => ({
+      ticker: holding.ticker,
+      amount: holding.amount,
+      count: Number(countByTicker.get(holding.ticker)?.count || 0),
+      lastOccurredAt: countByTicker.get(holding.ticker)?.lastOccurredAt || holding.updatedAt
     }));
+    summary.profile = lineProfileByHash(lineUserHash);
+    summary.holdings = summary.etfPositions.map((position) => ({ ticker: position.ticker, amount: position.amount }));
     summary.recentEntries = lineEntriesByHash(lineUserHash, range.monthKey, 8);
     summary.remaining = summary.income - summary.expense - summary.investment;
     return summary;
@@ -500,8 +590,77 @@ function createStore() {
     return { eventCounts, reportCounts, conversions };
   }
 
-  function addLineLedgerEntry({ lineUserId, type, amount, category = null, ticker = null, note = "", source = {}, occurredAt = null }) {
-    if (!lineUserId) throw new Error("缺少 LINE 使用者");
+  function immediateTransaction(action) {
+    db.exec("BEGIN IMMEDIATE");
+    try {
+      const result = action();
+      db.exec("COMMIT");
+      return result;
+    } catch (error) {
+      db.exec("ROLLBACK");
+      throw error;
+    }
+  }
+
+  function normalizeLineProfile(profile = {}, current = {}) {
+    const result = { ...current };
+    const fields = ["monthlyIncome", "fixedExpense", "insuranceExpense", "loanExpense"];
+    fields.forEach((field) => {
+      if (!Object.prototype.hasOwnProperty.call(profile, field)) return;
+      const value = Math.round(Number(profile[field]));
+      if (!Number.isFinite(value) || value < 0 || value > 1000000000) throw new Error(`${field} 金額格式不正確`);
+      result[field] = value;
+    });
+    return result;
+  }
+
+  function updateLineProfileByHash(lineUserHash, profile = {}) {
+    const merged = normalizeLineProfile(profile, lineProfileByHash(lineUserHash));
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO line_profiles (
+        line_user_hash, monthly_income, fixed_expense, insurance_expense, loan_expense, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(line_user_hash) DO UPDATE SET
+        monthly_income = excluded.monthly_income,
+        fixed_expense = excluded.fixed_expense,
+        insurance_expense = excluded.insurance_expense,
+        loan_expense = excluded.loan_expense,
+        updated_at = excluded.updated_at
+    `).run(
+      lineUserHash,
+      merged.monthlyIncome,
+      merged.fixedExpense,
+      merged.insuranceExpense,
+      merged.loanExpense,
+      now
+    );
+    return { ...merged, updatedAt: now };
+  }
+
+  function replaceLineHoldingsByHash(lineUserHash, holdings = []) {
+    if (!Array.isArray(holdings) || holdings.length > 100) throw new Error("ETF 部位格式不正確");
+    const normalized = holdings.map((holding) => {
+      const ticker = String(holding.ticker || "").trim().toUpperCase();
+      const amount = Math.round(Number(holding.amount));
+      if (!/^[A-Z0-9.-]{2,12}$/.test(ticker)) throw new Error("ETF 代碼格式不正確");
+      if (!Number.isFinite(amount) || amount < 0 || amount > 1000000000) throw new Error(`${ticker} 部位金額格式不正確`);
+      return { ticker, amount };
+    });
+    const merged = new Map();
+    normalized.forEach(({ ticker, amount }) => merged.set(ticker, (merged.get(ticker) || 0) + amount));
+    return immediateTransaction(() => {
+      const now = new Date().toISOString();
+      db.prepare("DELETE FROM line_holdings WHERE line_user_hash = ?").run(lineUserHash);
+      const insert = db.prepare("INSERT INTO line_holdings (line_user_hash, ticker, amount, updated_at) VALUES (?, ?, ?, ?)");
+      for (const [ticker, amount] of merged.entries()) {
+        if (amount > 0) insert.run(lineUserHash, ticker, amount, now);
+      }
+      return lineHoldingsByHash(lineUserHash);
+    });
+  }
+
+  function addLineLedgerEntryByHash({ lineUserHash, type, amount, category = null, ticker = null, note = "", source = {}, occurredAt = null, profilePatch = null }) {
     const allowedTypes = ["expense", "income", "investment"];
     if (!allowedTypes.includes(type)) throw new Error("記帳類型不正確");
     const numericAmount = Math.round(Number(amount));
@@ -509,24 +668,30 @@ function createStore() {
     const now = new Date();
     const occurred = occurredAt ? new Date(occurredAt) : now;
     if (!Number.isFinite(occurred.getTime())) throw new Error("日期格式不正確");
-    const lineUserHash = accessHash(`line:${lineUserId}`);
     const sourceMessageId = source.messageId ? String(source.messageId).slice(0, 80) : null;
     const id = crypto.randomUUID();
     try {
-      insertLineLedgerEntry.run(
-        id,
-        lineUserHash,
-        type,
-        numericAmount,
-        "TWD",
-        category ? String(category).slice(0, 60) : null,
-        ticker ? String(ticker).toUpperCase().slice(0, 12) : null,
-        occurred.toISOString(),
-        now.toISOString(),
-        note ? encrypt({ value: String(note).slice(0, 300) }) : null,
-        encrypt(source),
-        sourceMessageId
-      );
+      return immediateTransaction(() => {
+        const normalizedTicker = ticker ? String(ticker).toUpperCase().slice(0, 12) : null;
+        insertLineLedgerEntry.run(
+          id,
+          lineUserHash,
+          type,
+          numericAmount,
+          "TWD",
+          category ? String(category).slice(0, 60) : null,
+          normalizedTicker,
+          occurred.toISOString(),
+          now.toISOString(),
+          now.toISOString(),
+          note ? encrypt({ value: String(note).slice(0, 300) }) : null,
+          encrypt(source),
+          sourceMessageId
+        );
+        if (type === "investment" && normalizedTicker) adjustLineHolding(lineUserHash, normalizedTicker, numericAmount, now.toISOString());
+        if (profilePatch && Object.keys(profilePatch).length) updateLineProfileByHash(lineUserHash, profilePatch);
+        return { id, type, amount: numericAmount, category, ticker: normalizedTicker, occurredAt: occurred.toISOString() };
+      });
     } catch (error) {
       if (String(error.message || "").includes("UNIQUE")) {
         const duplicate = new Error("這筆 LINE 訊息已經記錄過");
@@ -535,7 +700,11 @@ function createStore() {
       }
       throw error;
     }
-    return { id, type, amount: numericAmount, category, ticker, occurredAt: occurred.toISOString() };
+  }
+
+  function addLineLedgerEntry({ lineUserId, ...entry }) {
+    if (!lineUserId) throw new Error("缺少 LINE 使用者");
+    return addLineLedgerEntryByHash({ lineUserHash: accessHash(`line:${lineUserId}`), ...entry });
   }
 
   function lineLedgerSummary(lineUserId, monthKey = taipeiMonthKey()) {
@@ -549,48 +718,80 @@ function createStore() {
     return lineEntriesByHash(accessHash(`line:${lineUserId}`), monthKey, limit);
   }
 
-  function updateLastLineLedgerEntry({ lineUserId, amount, sourceMessageId }) {
+  function updateLineLedgerEntryByHash({ lineUserHash, entryId, patch = {} }) {
+    const row = db.prepare("SELECT * FROM line_ledger_entries WHERE id = ? AND line_user_hash = ?").get(entryId, lineUserHash);
+    if (!row) return null;
+    const type = patch.type === undefined ? row.entry_type : String(patch.type);
+    if (!["expense", "income", "investment"].includes(type)) throw new Error("記帳類型不正確");
+    const amount = patch.amount === undefined ? Number(row.amount) : Math.round(Number(patch.amount));
+    if (!Number.isFinite(amount) || amount <= 0 || amount > 1000000000) throw new Error("金額格式不正確");
+    const category = patch.category === undefined ? row.category : (patch.category ? String(patch.category).slice(0, 60) : null);
+    const ticker = patch.ticker === undefined ? row.ticker : (patch.ticker ? String(patch.ticker).trim().toUpperCase().slice(0, 12) : null);
+    const occurred = patch.occurredAt === undefined ? new Date(row.occurred_at) : new Date(patch.occurredAt);
+    if (!Number.isFinite(occurred.getTime())) throw new Error("日期格式不正確");
+    const noteCipher = patch.note === undefined
+      ? row.note_cipher
+      : (patch.note ? encrypt({ value: String(patch.note).slice(0, 300) }) : null);
+    const now = new Date().toISOString();
+    if (row.entry_type === "investment" && row.ticker) adjustLineHolding(lineUserHash, row.ticker, -Number(row.amount), now);
+    if (type === "investment" && ticker) adjustLineHolding(lineUserHash, ticker, amount, now);
+    db.prepare(`
+      UPDATE line_ledger_entries
+      SET entry_type = ?, amount = ?, category = ?, ticker = ?, occurred_at = ?, updated_at = ?, note_cipher = ?
+      WHERE id = ? AND line_user_hash = ?
+    `).run(type, amount, category, ticker, occurred.toISOString(), now, noteCipher, entryId, lineUserHash);
+    return publicLineEntry(db.prepare("SELECT * FROM line_ledger_entries WHERE id = ?").get(entryId));
+  }
+
+  function deleteLineLedgerEntryByHash({ lineUserHash, entryId }) {
+    const row = db.prepare("SELECT * FROM line_ledger_entries WHERE id = ? AND line_user_hash = ?").get(entryId, lineUserHash);
+    if (!row) return null;
+    if (row.entry_type === "investment" && row.ticker) adjustLineHolding(lineUserHash, row.ticker, -Number(row.amount));
+    db.prepare("DELETE FROM line_ledger_entries WHERE id = ? AND line_user_hash = ?").run(entryId, lineUserHash);
+    return publicLineEntry(row);
+  }
+
+  function indexedLineEntry(lineUserHash, index = 1, monthKey = taipeiMonthKey()) {
+    const entries = lineEntriesByHash(lineUserHash, monthKey, 20);
+    return entries[Math.max(0, Number(index || 1) - 1)] || null;
+  }
+
+  function updateIndexedLineLedgerEntry({ lineUserId, amount, index = 1, sourceMessageId }) {
     if (!lineUserId) throw new Error("缺少 LINE 使用者");
-    const numericAmount = Math.round(Number(amount));
-    if (!Number.isFinite(numericAmount) || numericAmount <= 0 || numericAmount > 1000000000) throw new Error("金額格式不正確");
     const lineUserHash = accessHash(`line:${lineUserId}`);
     return runLineCommandOnce({
       lineUserHash,
       sourceMessageId,
-      commandType: "update_last",
+      commandType: "update_indexed",
       action: () => {
-        const row = db.prepare(`
-          SELECT * FROM line_ledger_entries
-          WHERE line_user_hash = ?
-          ORDER BY occurred_at DESC, created_at DESC
-          LIMIT 1
-        `).get(lineUserHash);
-        if (!row) return { entry: null };
-        db.prepare("UPDATE line_ledger_entries SET amount = ? WHERE id = ?").run(numericAmount, row.id);
-        return { entry: publicLineEntry({ ...row, amount: numericAmount }) };
+        const entry = indexedLineEntry(lineUserHash, index);
+        if (!entry) return { entry: null, index };
+        return { entry: updateLineLedgerEntryByHash({ lineUserHash, entryId: entry.id, patch: { amount } }), index };
       }
     });
   }
 
-  function deleteLastLineLedgerEntry({ lineUserId, sourceMessageId }) {
+  function deleteIndexedLineLedgerEntry({ lineUserId, index = 1, sourceMessageId }) {
     if (!lineUserId) throw new Error("缺少 LINE 使用者");
     const lineUserHash = accessHash(`line:${lineUserId}`);
     return runLineCommandOnce({
       lineUserHash,
       sourceMessageId,
-      commandType: "delete_last",
+      commandType: "delete_indexed",
       action: () => {
-        const row = db.prepare(`
-          SELECT * FROM line_ledger_entries
-          WHERE line_user_hash = ?
-          ORDER BY occurred_at DESC, created_at DESC
-          LIMIT 1
-        `).get(lineUserHash);
-        if (!row) return { entry: null };
-        db.prepare("DELETE FROM line_ledger_entries WHERE id = ?").run(row.id);
-        return { entry: publicLineEntry(row) };
+        const entry = indexedLineEntry(lineUserHash, index);
+        if (!entry) return { entry: null, index };
+        return { entry: deleteLineLedgerEntryByHash({ lineUserHash, entryId: entry.id }), index };
       }
     });
+  }
+
+  function updateLastLineLedgerEntry(options) {
+    return updateIndexedLineLedgerEntry({ ...options, index: 1 });
+  }
+
+  function deleteLastLineLedgerEntry(options) {
+    return deleteIndexedLineLedgerEntry({ ...options, index: 1 });
   }
 
   function createLineReportBinding({ reportId, accessCode }) {
@@ -657,6 +858,79 @@ function createStore() {
     `).get(reportId);
     if (!binding?.line_user_hash) return { linked: false, month: taipeiMonthRange(monthKey).monthKey };
     return { linked: true, linkedAt: binding.bound_at, ...lineSummaryByHash(binding.line_user_hash, monthKey) };
+  }
+
+  function boundLineUserHash(reportId, accessCode) {
+    assertReportAccess(reportId, accessCode);
+    const binding = db.prepare(`
+      SELECT line_user_hash
+      FROM line_report_bindings
+      WHERE report_id = ? AND bound_at IS NOT NULL
+    `).get(reportId);
+    if (!binding?.line_user_hash) {
+      const error = new Error("這份報告尚未綁定 LINE");
+      error.statusCode = 409;
+      throw error;
+    }
+    return binding.line_user_hash;
+  }
+
+  function lineCashflowForReport({ reportId, accessCode, monthKey = taipeiMonthKey(), limit = 20 }) {
+    const lineUserHash = boundLineUserHash(reportId, accessCode);
+    return {
+      linked: true,
+      ...lineSummaryByHash(lineUserHash, monthKey),
+      entries: lineEntriesByHash(lineUserHash, monthKey, limit)
+    };
+  }
+
+  function addLineLedgerEntryForReport({ reportId, accessCode, ...entry }) {
+    const lineUserHash = boundLineUserHash(reportId, accessCode);
+    return addLineLedgerEntryByHash({ lineUserHash, ...entry });
+  }
+
+  function updateLineLedgerEntryForReport({ reportId, accessCode, entryId, patch }) {
+    const lineUserHash = boundLineUserHash(reportId, accessCode);
+    return immediateTransaction(() => updateLineLedgerEntryByHash({ lineUserHash, entryId, patch }));
+  }
+
+  function deleteLineLedgerEntryForReport({ reportId, accessCode, entryId }) {
+    const lineUserHash = boundLineUserHash(reportId, accessCode);
+    return immediateTransaction(() => deleteLineLedgerEntryByHash({ lineUserHash, entryId }));
+  }
+
+  function updateLineProfileForReport({ reportId, accessCode, profile }) {
+    return updateLineProfileByHash(boundLineUserHash(reportId, accessCode), profile);
+  }
+
+  function replaceLineHoldingsForReport({ reportId, accessCode, holdings }) {
+    return replaceLineHoldingsByHash(boundLineUserHash(reportId, accessCode), holdings);
+  }
+
+  function deleteLineUserDataByHash(lineUserHash) {
+    return immediateTransaction(() => {
+      const deleted = {
+        ledgerEntries: db.prepare("SELECT COUNT(*) AS count FROM line_ledger_entries WHERE line_user_hash = ?").get(lineUserHash).count,
+        holdings: db.prepare("SELECT COUNT(*) AS count FROM line_holdings WHERE line_user_hash = ?").get(lineUserHash).count,
+        profiles: db.prepare("SELECT COUNT(*) AS count FROM line_profiles WHERE line_user_hash = ?").get(lineUserHash).count,
+        bindings: db.prepare("SELECT COUNT(*) AS count FROM line_report_bindings WHERE line_user_hash = ?").get(lineUserHash).count
+      };
+      db.prepare("DELETE FROM line_ledger_entries WHERE line_user_hash = ?").run(lineUserHash);
+      db.prepare("DELETE FROM line_holdings WHERE line_user_hash = ?").run(lineUserHash);
+      db.prepare("DELETE FROM line_profiles WHERE line_user_hash = ?").run(lineUserHash);
+      db.prepare("DELETE FROM line_command_receipts WHERE line_user_hash = ?").run(lineUserHash);
+      db.prepare("DELETE FROM line_report_bindings WHERE line_user_hash = ?").run(lineUserHash);
+      return deleted;
+    });
+  }
+
+  function deleteLineUserData({ lineUserId }) {
+    if (!lineUserId) throw new Error("缺少 LINE 使用者");
+    return deleteLineUserDataByHash(accessHash(`line:${lineUserId}`));
+  }
+
+  function deleteLineUserDataForReport({ reportId, accessCode }) {
+    return deleteLineUserDataByHash(boundLineUserHash(reportId, accessCode));
   }
 
   function createOrder({ id, reportId, accessCode, productType, amount, currency = "TWD", provider = "ecpay" }) {
@@ -768,6 +1042,8 @@ function createStore() {
     const changes = db.prepare("DELETE FROM reports WHERE expires_at < ?").run(now.toISOString()).changes;
     db.prepare("DELETE FROM line_command_receipts WHERE created_at < ?")
       .run(new Date(now.getTime() - 90 * 86400000).toISOString());
+    db.prepare("DELETE FROM line_ledger_entries WHERE occurred_at < ?")
+      .run(new Date(now.getTime() - lineLedgerRetentionDays * 86400000).toISOString());
     return changes;
   }
 
@@ -776,9 +1052,15 @@ function createStore() {
     analytics,
     applyPaymentNotification,
     bindLineReport,
+    close: () => db.close(),
     createOrder,
     createLineReportBinding,
     createReport,
+    addLineLedgerEntryForReport,
+    deleteIndexedLineLedgerEntry,
+    deleteLineLedgerEntryForReport,
+    deleteLineUserData,
+    deleteLineUserDataForReport,
     deleteReport,
     deleteLastLineLedgerEntry,
     getAdminReport,
@@ -786,13 +1068,18 @@ function createStore() {
     getReport,
     addLineLedgerEntry,
     getLineReportSummary,
+    lineCashflowForReport,
     lineLedgerSummary,
     lineLedgerEntries,
     listReports,
     purgeExpired,
     setFollowupStatus,
+    replaceLineHoldingsForReport,
+    updateIndexedLineLedgerEntry,
+    updateLineLedgerEntryForReport,
+    updateLineProfileForReport,
     updateLastLineLedgerEntry
   };
 }
 
-module.exports = { createStore, inputVersion, reportVersion };
+module.exports = { createStore, inputVersion, lineLedgerRetentionDays, reportVersion };

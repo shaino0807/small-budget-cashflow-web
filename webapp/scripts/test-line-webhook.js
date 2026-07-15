@@ -4,7 +4,7 @@ const fs = require("fs");
 const http = require("http");
 const os = require("os");
 const path = require("path");
-const { parseLedgerMessage, parseLineCommand } = require("../line-bot");
+const { parseLedgerMessage, parseLedgerMessageWithAi, parseLineCommand } = require("../line-bot");
 
 const port = 5900 + Math.floor(Math.random() * 250);
 const baseUrl = `http://127.0.0.1:${port}`;
@@ -59,6 +59,10 @@ async function main() {
     ["買早餐 65", "expense", 65],
     ["今天賺 3000", "income", 3000],
     ["固定收入金額 50000", "income", 50000, "固定收入"],
+    ["月薪 5萬", "income", 50000, "固定收入"],
+    ["昨天付房租 1.2萬", "expense", 12000, "房租"],
+    ["繳保險 3000", "expense", 3000, "保險"],
+    ["繳房貸 2萬", "expense", 20000, "貸款"],
     ["買 0056 10000", "investment", 10000],
     ["ETF 00878 5000", "investment", 5000]
   ];
@@ -72,11 +76,37 @@ async function main() {
     ["查明細", "details"],
     ["修改上一筆 80", "update_last"],
     ["上一筆改成 120", "update_last"],
-    ["刪除上一筆", "delete_last"]
+    ["修改第2筆 180", "update_indexed"],
+    ["刪除上一筆", "delete_last"],
+    ["刪除第3筆", "delete_indexed"],
+    ["刪除全部資料", "request_delete_all"],
+    ["確認刪除全部資料", "confirm_delete_all"]
   ];
   for (const [text, command] of commandCases) {
     const parsed = parseLineCommand(text);
     if (parsed?.command !== command) throw new Error(`Command parser failed for ${text}: ${JSON.stringify(parsed)}`);
+  }
+  const originalFetch = global.fetch;
+  global.fetch = async () => ({
+    ok: true,
+    json: async () => ({
+      output_text: JSON.stringify({
+        entries: [
+          { type: "expense", amount: 120, category: "餐飲", ticker: null, note: "午餐", occurredAt: "2026-07-15T04:00:00.000Z" },
+          { type: "expense", amount: 60, category: "餐飲", ticker: null, note: "飲料", occurredAt: "2026-07-15T04:00:00.000Z" }
+        ]
+      })
+    })
+  });
+  try {
+    process.env.OPENAI_API_KEY = "test-openai-key";
+    const aiParsed = await parseLedgerMessageWithAi("午餐 120、飲料 60");
+    if (aiParsed?.entries?.length !== 2 || aiParsed.entries.reduce((sum, entry) => sum + entry.amount, 0) !== 180) {
+      throw new Error(`AI parser schema validation failed: ${JSON.stringify(aiParsed)}`);
+    }
+  } finally {
+    delete process.env.OPENAI_API_KEY;
+    global.fetch = originalFetch;
   }
   const server = spawn(process.execPath, [path.join(__dirname, "..", "server.js")], {
     cwd: path.join(__dirname, "..", ".."),
@@ -96,7 +126,7 @@ async function main() {
   });
   try {
     const health = await waitForServer();
-    if (!health.line?.configured || !health.line.replyDisabled || !health.line.webSyncEnabled || !health.line.ledgerCommandsEnabled) {
+    if (!health.line?.configured || !health.line.replyDisabled || !health.line.webSyncEnabled || !health.line.ledgerCommandsEnabled || health.line.richMenu?.status !== "disabled") {
       throw new Error("LINE readiness health check failed");
     }
     const body = JSON.stringify({
@@ -272,6 +302,58 @@ async function main() {
     if (finalSummary.body.summary.investment !== 10000 || finalPositions["0056"] !== 10000 || finalPositions["00878"] !== undefined) {
       throw new Error(`LINE duplicate delete removed more than one entry: ${JSON.stringify(finalSummary)}`);
     }
+    const reportId = created.body.report.id;
+    const reportAccess = { "X-Report-Access-Code": created.body.report.accessCode };
+    const cashflow = await request(`/api/users/me/cashflow?reportId=${encodeURIComponent(reportId)}`, { method: "GET", headers: reportAccess });
+    if (cashflow.status !== 200 || cashflow.body.cashflow?.profile?.monthlyIncome !== 50000 || cashflow.body.cashflow?.holdings?.[0]?.ticker !== "0056") {
+      throw new Error(`Full cashflow API failed: ${JSON.stringify(cashflow)}`);
+    }
+    const webEntry = await request("/api/ledger", {
+      body: JSON.stringify({ reportId, requestId: "web-ledger-1", type: "expense", amount: 900, category: "交通", note: "月票" }),
+      headers: reportAccess
+    });
+    if (webEntry.status !== 201 || !webEntry.body.entry?.id) throw new Error(`Ledger POST failed: ${JSON.stringify(webEntry)}`);
+    const duplicateWebEntry = await request("/api/ledger", {
+      body: JSON.stringify({ reportId, requestId: "web-ledger-1", type: "expense", amount: 900, category: "交通", note: "月票" }),
+      headers: reportAccess
+    });
+    if (duplicateWebEntry.status !== 409) throw new Error(`Duplicate web ledger request was accepted: ${JSON.stringify(duplicateWebEntry)}`);
+    const patchedEntry = await request(`/api/ledger/${webEntry.body.entry.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ reportId, patch: { amount: 1000 } }),
+      headers: reportAccess
+    });
+    if (patchedEntry.status !== 200 || patchedEntry.body.entry.amount !== 1000) throw new Error(`Ledger PATCH failed: ${JSON.stringify(patchedEntry)}`);
+    const profile = await request("/api/profile", {
+      method: "PATCH",
+      body: JSON.stringify({ reportId, profile: { monthlyIncome: 52000, insuranceExpense: 2500 } }),
+      headers: reportAccess
+    });
+    if (profile.status !== 200 || profile.body.profile.monthlyIncome !== 52000 || profile.body.profile.insuranceExpense !== 2500) {
+      throw new Error(`Profile PATCH failed: ${JSON.stringify(profile)}`);
+    }
+    const holdings = await request("/api/holdings", {
+      method: "PATCH",
+      body: JSON.stringify({ reportId, holdings: [{ ticker: "0056", amount: 15000 }, { ticker: "006208", amount: 8000 }] }),
+      headers: reportAccess
+    });
+    if (holdings.status !== 200 || holdings.body.holdings.length !== 2) throw new Error(`Holdings PATCH failed: ${JSON.stringify(holdings)}`);
+    const deletedEntry = await request(`/api/ledger/${webEntry.body.entry.id}?reportId=${encodeURIComponent(reportId)}`, {
+      method: "DELETE",
+      headers: reportAccess
+    });
+    if (deletedEntry.status !== 200 || deletedEntry.body.deleted.amount !== 1000) throw new Error(`Ledger DELETE failed: ${JSON.stringify(deletedEntry)}`);
+    const unconfirmedDelete = await request(`/api/users/me/data?reportId=${encodeURIComponent(reportId)}`, { method: "DELETE", headers: reportAccess });
+    if (unconfirmedDelete.status !== 400) throw new Error(`Unconfirmed data deletion was accepted: ${JSON.stringify(unconfirmedDelete)}`);
+    const confirmedDelete = await request(`/api/users/me/data?reportId=${encodeURIComponent(reportId)}`, {
+      method: "DELETE",
+      headers: { ...reportAccess, "X-Confirm-Delete": "DELETE LINE DATA" }
+    });
+    if (confirmedDelete.status !== 200 || confirmedDelete.body.deleted.ledgerEntries < 1 || confirmedDelete.body.deleted.bindings !== 1) {
+      throw new Error(`Confirmed data deletion failed: ${JSON.stringify(confirmedDelete)}`);
+    }
+    const afterPrivacyDelete = await request(`/api/users/me/cashflow?reportId=${encodeURIComponent(reportId)}`, { method: "GET", headers: reportAccess });
+    if (afterPrivacyDelete.status !== 409) throw new Error(`Deleted LINE data remained linked: ${JSON.stringify(afterPrivacyDelete)}`);
     const invalid = await request("/api/line/webhook", {
       body,
       headers: { "x-line-signature": "invalid-signature" }
@@ -286,6 +368,9 @@ async function main() {
       beforeCommands: summary.body.summary,
       afterCommands: finalSummary.body.summary,
       commandIdempotency: true,
+      ledgerApiCrud: true,
+      profileAndHoldingsApi: true,
+      privacyDelete: true,
       invalid: invalid.body
     }, null, 2));
   } finally {

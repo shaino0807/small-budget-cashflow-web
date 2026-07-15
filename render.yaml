@@ -62,6 +62,18 @@ services:
         sync: false
       - key: LINE_REPLY_DISABLED
         value: "0"
+      - key: LINE_RICH_MENU_AUTO_DEPLOY
+        value: "1"
+      - key: LINE_RICH_MENU_VERSION
+        value: "v1"
+      - key: LINE_LEDGER_RETENTION_DAYS
+        value: "1095"
+      - key: LINE_AI_PARSER_ENABLED
+        value: "1"
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_LINE_PARSER_MODEL
+        value: gpt-5.4-nano
     disk:
       name: customer-data
       mountPath: /data

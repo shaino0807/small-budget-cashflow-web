@@ -2273,9 +2273,11 @@ function lineSyncHtml() {
           </div>
         ` : ""}
         <p class="panel-note">已自動同步到 ${escapeHtml(summary.month)} 月家庭收支與 ETF 部位。</p>
+        <p class="panel-note">LINE 使用者識別碼會雜湊保存，記帳備註與來源加密保存；記帳保留 3 年，可隨時刪除全部 LINE 財務資料。</p>
         <div class="button-row">
           <button class="secondary-button" data-goto="inputView" data-focus-section="monthlyCashflowSection" type="button">查看月份現金流</button>
           <button class="secondary-button" data-goto="inputView" data-focus-section="etfAllocationSection" type="button">查看 ETF 部位</button>
+          <button class="secondary-button danger-button" id="deleteLineDataBtn" type="button">刪除全部 LINE 財務資料</button>
         </div>
       ` : `
         <p class="panel-note">尚未綁定 LINE。按下按鈕取得 15 分鐘有效的 6 位數綁定碼。</p>
@@ -2341,19 +2343,22 @@ function applyLineSummaryToState(summary) {
     state.profile.monthlyIncome = row.monthlyIncome;
   }
   if (Number(summary.counts?.expense || 0) > 0) {
-    row.fixedExpense = Number(summary.expense || 0);
-    row.insuranceExpense = 0;
-    row.loanExpense = 0;
-    state.profile.fixedExpense = row.fixedExpense;
-    state.profile.insuranceExpense = 0;
-    state.profile.loanExpense = 0;
+    const categoryTotals = Object.fromEntries((summary.expenseCategories || []).map((item) => [item.category, Number(item.amount || 0)]));
+    row.insuranceExpense = Number(categoryTotals["保險"] || 0);
+    row.loanExpense = Number(categoryTotals["貸款"] || 0);
+    row.fixedExpense = Math.max(0, Number(summary.expense || 0) - row.insuranceExpense - row.loanExpense);
   }
   if (Number(summary.counts?.investment || 0) > 0) {
     row.monthlyInvestment = Number(summary.investment || 0);
     state.profile.monthlyInvestment = row.monthlyInvestment;
   }
   state.monthlyCashflows[month] = row;
-  syncLineEtfPositions(summary.etfPositions || []);
+  if (summary.profile) {
+    ["monthlyIncome", "fixedExpense", "insuranceExpense", "loanExpense"].forEach((field) => {
+      if (Number(summary.profile[field] || 0) > 0) state.profile[field] = Number(summary.profile[field]);
+    });
+  }
+  syncLineEtfPositions(summary.holdings || summary.etfPositions || []);
   state.reportMeta.lineAppliedAt = new Date().toISOString();
   updateProfileInputs();
   renderMonthlyCashflows();
@@ -2389,19 +2394,116 @@ async function refreshLineSummary({ silent = false } = {}) {
   const meta = state.reportMeta;
   if (!backendAvailable() || !meta?.reportId || !meta.accessCode) return null;
   try {
-    const result = await apiRequest(`/api/line/summary?reportId=${encodeURIComponent(meta.reportId)}`, {
+    const result = await apiRequest(`/api/users/me/cashflow?reportId=${encodeURIComponent(meta.reportId)}&limit=20`, {
       headers: { "X-Report-Access-Code": meta.accessCode }
     });
-    state.reportMeta.lineSummary = result.summary;
-    if (result.summary.linked) state.reportMeta.lineBinding = { status: "linked", linkedAt: result.summary.linkedAt };
-    applyLineSummaryToState(result.summary);
+    if (result.cashflow.linked && !result.cashflow.profile?.updatedAt) {
+      const existingHoldings = result.cashflow.holdings || [];
+      const [profileResult, holdingsResult] = await Promise.all([
+        apiRequest("/api/profile", {
+          method: "PATCH",
+          headers: { "X-Report-Access-Code": meta.accessCode },
+          body: JSON.stringify({ reportId: meta.reportId, profile: state.profile })
+        }),
+        existingHoldings.length
+          ? Promise.resolve({ holdings: existingHoldings })
+          : apiRequest("/api/holdings", {
+            method: "PATCH",
+            headers: { "X-Report-Access-Code": meta.accessCode },
+            body: JSON.stringify({
+              reportId: meta.reportId,
+              holdings: state.holdings
+                .filter((holding) => holding.type === "ETF")
+                .map((holding) => ({ ticker: holding.ticker, amount: holdingAmount(holding) }))
+                .filter((holding) => holding.ticker && holding.amount > 0)
+            })
+          })
+      ]);
+      result.cashflow.profile = profileResult.profile;
+      result.cashflow.holdings = holdingsResult.holdings;
+      result.cashflow.etfPositions = holdingsResult.holdings.map((holding) => ({ ...holding, count: 0 }));
+    }
+    state.reportMeta.lineSummary = result.cashflow;
+    if (result.cashflow.linked) state.reportMeta.lineBinding = { status: "linked", linkedAt: result.cashflow.linkedAt };
+    applyLineSummaryToState(result.cashflow);
     persist();
     refreshReports();
-    if (!silent) showToast(result.summary.linked ? "LINE 記帳摘要已更新。" : "尚未完成 LINE 綁定。");
-    return result.summary;
+    if (!silent) showToast(result.cashflow.linked ? "LINE 記帳摘要已更新。" : "尚未完成 LINE 綁定。");
+    return result.cashflow;
   } catch (error) {
     if (!silent) showToast(error.message);
     return null;
+  }
+}
+
+async function syncWebFinancialData({ silent = false } = {}) {
+  const meta = state.reportMeta;
+  if (!backendAvailable() || !meta?.reportId || !meta.accessCode || !meta.lineSummary?.linked) return false;
+  try {
+    await apiRequest("/api/profile", {
+      method: "PATCH",
+      headers: { "X-Report-Access-Code": meta.accessCode },
+      body: JSON.stringify({ reportId: meta.reportId, profile: state.profile })
+    });
+    await apiRequest("/api/holdings", {
+      method: "PATCH",
+      headers: { "X-Report-Access-Code": meta.accessCode },
+      body: JSON.stringify({
+        reportId: meta.reportId,
+        holdings: state.holdings
+          .filter((holding) => holding.type === "ETF")
+          .map((holding) => ({ ticker: holding.ticker, amount: holdingAmount(holding) }))
+          .filter((holding) => holding.ticker && holding.amount > 0)
+      })
+    });
+    if (!silent) showToast("已同步到 LINE 現金流帳本。");
+    return true;
+  } catch (error) {
+    if (!silent) showToast(error.message);
+    return false;
+  }
+}
+
+function clearLineSyncedState(summary) {
+  const month = Number(String(summary?.month || "").slice(5, 7));
+  if (Number.isInteger(month) && month >= 1 && month <= 12) {
+    const row = state.monthlyCashflows[month] || {};
+    if (Number(summary.counts?.income || 0) > 0) row.monthlyIncome = 0;
+    if (Number(summary.counts?.expense || 0) > 0) {
+      row.fixedExpense = 0;
+      row.insuranceExpense = 0;
+      row.loanExpense = 0;
+    }
+    if (Number(summary.counts?.investment || 0) > 0) row.monthlyInvestment = 0;
+    state.monthlyCashflows[month] = row;
+  }
+  syncLineEtfPositions([]);
+}
+
+async function deleteAllLineData() {
+  const meta = state.reportMeta;
+  if (!backendAvailable() || !meta?.reportId || !meta.accessCode) return;
+  const confirmed = window.confirm("確定刪除全部 LINE 記帳、ETF 部位、財務設定與網頁綁定？刪除後無法復原。");
+  if (!confirmed) return;
+  try {
+    await apiRequest(`/api/users/me/data?reportId=${encodeURIComponent(meta.reportId)}`, {
+      method: "DELETE",
+      headers: {
+        "X-Report-Access-Code": meta.accessCode,
+        "X-Confirm-Delete": "DELETE LINE DATA"
+      }
+    });
+    clearLineSyncedState(meta.lineSummary);
+    delete state.reportMeta.lineSummary;
+    delete state.reportMeta.lineBinding;
+    delete state.reportMeta.lineAppliedAt;
+    persist();
+    renderMonthlyCashflows();
+    renderHoldings();
+    refreshReports();
+    showToast("已刪除全部 LINE 財務資料與綁定。");
+  } catch (error) {
+    showToast(error.message);
   }
 }
 
@@ -2445,6 +2547,7 @@ async function restoreSavedReport() {
     renderHoldings();
     refreshReports();
     persist();
+    await refreshLineSummary({ silent: true });
     showToast("已重新開啟保存的報告");
   } catch (error) {
     showToast(error.message);
@@ -2499,6 +2602,7 @@ function renderFreeReport() {
   q("#deleteReportBtn")?.addEventListener("click", deleteSavedReport);
   q("#createLineBindingBtn")?.addEventListener("click", createLineBinding);
   q("#refreshLineSummaryBtn")?.addEventListener("click", () => refreshLineSummary());
+  q("#deleteLineDataBtn")?.addEventListener("click", deleteAllLineData);
 }
 
 function renderUpgrade() {
@@ -3220,9 +3324,10 @@ function bindEvents() {
     goTo("freeReportView");
     await saveGeneratedReport();
   });
-  q("#saveBtn").addEventListener("click", () => {
+  q("#saveBtn").addEventListener("click", async () => {
     persist();
-    showToast("已儲存到此瀏覽器");
+    const synced = await syncWebFinancialData({ silent: true });
+    showToast(synced ? "已儲存並同步到 LINE 現金流帳本" : "已儲存到此瀏覽器");
   });
   q("#sampleBtn").addEventListener("click", () => {
     state = normalizeState(structuredClone(sampleState));
@@ -3316,6 +3421,7 @@ async function init() {
   configureConsultationLinks();
   refreshReports();
   await handlePaymentReturn();
+  await refreshLineSummary({ silent: true });
   registerServiceWorker();
   trackEvent("page_opened", { path: location.pathname });
   refreshDatabaseFromServer("open");

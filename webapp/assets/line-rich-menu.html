@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=2500, initial-scale=1" />
+  <style>
+    * { box-sizing: border-box; }
+    html, body { width: 2500px; height: 843px; margin: 0; overflow: hidden; }
+    body { font-family: "Microsoft JhengHei", "Noto Sans TC", sans-serif; background: #f6f4ef; color: #04342c; }
+    .menu { display: grid; grid-template-columns: 833px 834px 833px; grid-template-rows: 421px 422px; width: 2500px; height: 843px; }
+    .item {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 42px;
+      padding: 42px;
+      border-right: 3px solid rgba(4, 52, 44, 0.14);
+      border-bottom: 3px solid rgba(4, 52, 44, 0.14);
+      background: #f6f4ef;
+    }
+    .item:nth-child(3n) { border-right: 0; }
+    .item:nth-child(n+4) { border-bottom: 0; }
+    .item.dark { background: #04342c; color: #ffffff; }
+    .item.mint { background: #9fe1cb; }
+    .item.purple { background: #7c3aed; color: #ffffff; }
+    .icon {
+      display: grid;
+      place-items: center;
+      width: 132px;
+      height: 132px;
+      border: 4px solid currentColor;
+      border-radius: 26px;
+      font-size: 56px;
+      font-weight: 800;
+      line-height: 1;
+    }
+    .copy { min-width: 0; }
+    strong { display: block; font-size: 60px; line-height: 1.12; letter-spacing: 0; white-space: nowrap; }
+    span { display: block; margin-top: 16px; font-size: 28px; line-height: 1.3; opacity: 0.76; white-space: nowrap; }
+  </style>
+</head>
+<body>
+  <main class="menu">
+    <section class="item"><div class="icon">支</div><div class="copy"><strong>記一筆支出</strong><span>買、付、花、繳</span></div></section>
+    <section class="item mint"><div class="icon">收</div><div class="copy"><strong>記一筆收入</strong><span>薪水、獎金、額外收入</span></div></section>
+    <section class="item"><div class="icon">ETF</div><div class="copy"><strong>ETF 配置</strong><span>投入金額與累積部位</span></div></section>
+    <section class="item dark"><div class="icon">月</div><div class="copy"><strong>本月摘要</strong><span>收入、支出、投資、剩餘</span></div></section>
+    <section class="item purple"><div class="icon">報</div><div class="copy"><strong>完整報告</strong><span>開啟現金流健檢網站</span></div></section>
+    <section class="item dark"><div class="icon">綁</div><div class="copy"><strong>綁定網頁</strong><span>連接你的健檢報告</span></div></section>
+  </main>
+</body>
+</html>

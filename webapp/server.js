@@ -2,7 +2,7 @@ const http = require("http");
 const { execFile } = require("child_process");
 const fs = require("fs");
 const path = require("path");
-const { createStore } = require("./customer-store");
+const { createStore, lineLedgerRetentionDays } = require("./customer-store");
 const { buildCheckout, createMerchantTradeNo, ecpayConfig, productCatalog, productFor, verifyNotification } = require("./ecpay");
 const { handleLineWebhook, lineReadiness, verifyLineSignature } = require("./line-bot");
 
@@ -17,6 +17,12 @@ let lastActionDispatchAt = 0;
 let customerStore = null;
 let customerStoreError = null;
 const rateBuckets = new Map();
+let lineRichMenuStatus = {
+  enabled: process.env.LINE_RICH_MENU_AUTO_DEPLOY === "1",
+  status: process.env.LINE_RICH_MENU_AUTO_DEPLOY === "1" ? "pending" : "disabled",
+  richMenuId: null,
+  error: null
+};
 
 function cleanBaseUrl(value, fallback) {
   return String(value || fallback).replace(/\/$/, "");
@@ -194,7 +200,7 @@ function setSecurityHeaders(req, res) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Vary", "Origin");
   }
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Report-Access-Code, X-Line-Signature");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Report-Access-Code, X-Line-Signature, X-Confirm-Delete");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   res.setHeader("X-Frame-Options", "DENY");
@@ -306,7 +312,8 @@ const server = http.createServer((req, res) => {
       service: "small-budget-cashflow-api",
       time: new Date().toISOString(),
       customerStoreConfigured: Boolean(process.env.CUSTOMER_DATA_KEY && process.env.ACCESS_CODE_PEPPER && process.env.ADMIN_API_KEY),
-      line: lineReadiness(),
+      lineLedgerRetentionDays,
+      line: { ...lineReadiness(), richMenu: lineRichMenuStatus },
       payment: paymentReadiness()
     });
     return;
@@ -344,6 +351,145 @@ const server = http.createServer((req, res) => {
         monthKey: url.searchParams.get("month") || undefined
       });
       sendJson(res, 200, { ok: true, summary });
+    } catch (error) {
+      sendJson(res, error.statusCode || 400, { ok: false, error: publicStoreError(error) });
+    }
+    return;
+  }
+  if (urlPath === "/api/users/me/cashflow" && req.method === "GET") {
+    try {
+      const cashflow = getCustomerStore().lineCashflowForReport({
+        reportId: url.searchParams.get("reportId"),
+        accessCode: accessCode(req, url),
+        monthKey: url.searchParams.get("month") || undefined,
+        limit: url.searchParams.get("limit") || 20
+      });
+      sendJson(res, 200, { ok: true, cashflow });
+    } catch (error) {
+      sendJson(res, error.statusCode || 400, { ok: false, error: publicStoreError(error) });
+    }
+    return;
+  }
+  if (urlPath === "/api/ledger/monthly-summary" && req.method === "GET") {
+    try {
+      const cashflow = getCustomerStore().lineCashflowForReport({
+        reportId: url.searchParams.get("reportId"),
+        accessCode: accessCode(req, url),
+        monthKey: url.searchParams.get("month") || undefined,
+        limit: 8
+      });
+      const { entries, ...summary } = cashflow;
+      sendJson(res, 200, { ok: true, summary });
+    } catch (error) {
+      sendJson(res, error.statusCode || 400, { ok: false, error: publicStoreError(error) });
+    }
+    return;
+  }
+  if (urlPath === "/api/ledger" && req.method === "GET") {
+    try {
+      const cashflow = getCustomerStore().lineCashflowForReport({
+        reportId: url.searchParams.get("reportId"),
+        accessCode: accessCode(req, url),
+        monthKey: url.searchParams.get("month") || undefined,
+        limit: url.searchParams.get("limit") || 20
+      });
+      sendJson(res, 200, { ok: true, month: cashflow.month, entries: cashflow.entries });
+    } catch (error) {
+      sendJson(res, error.statusCode || 400, { ok: false, error: publicStoreError(error) });
+    }
+    return;
+  }
+  if (urlPath === "/api/ledger" && req.method === "POST") {
+    if (!rateLimit(req, 60)) return sendJson(res, 429, { ok: false, error: "記帳請求次數過多" });
+    readJson(req, 20000)
+      .then((body) => {
+        const entry = getCustomerStore().addLineLedgerEntryForReport({
+          reportId: body.reportId,
+          accessCode: accessCode(req, url),
+          type: body.type,
+          amount: body.amount,
+          category: body.category,
+          ticker: body.ticker,
+          note: body.note,
+          occurredAt: body.occurredAt,
+          source: {
+            platform: "web",
+            requestId: body.requestId || null,
+            messageId: body.requestId ? `web:${String(body.requestId).slice(0, 70)}` : null
+          }
+        });
+        sendJson(res, 201, { ok: true, entry });
+      })
+      .catch((error) => sendJson(res, error.statusCode || 400, { ok: false, error: publicStoreError(error) }));
+    return;
+  }
+  const ledgerEntryMatch = urlPath.match(/^\/api\/ledger\/([0-9a-f-]+)$/i);
+  if (ledgerEntryMatch && req.method === "PATCH") {
+    readJson(req, 20000)
+      .then((body) => {
+        const entry = getCustomerStore().updateLineLedgerEntryForReport({
+          reportId: body.reportId,
+          accessCode: accessCode(req, url),
+          entryId: ledgerEntryMatch[1],
+          patch: body.patch || body
+        });
+        if (!entry) return sendJson(res, 404, { ok: false, error: "找不到這筆記帳明細" });
+        sendJson(res, 200, { ok: true, entry });
+      })
+      .catch((error) => sendJson(res, error.statusCode || 400, { ok: false, error: publicStoreError(error) }));
+    return;
+  }
+  if (ledgerEntryMatch && req.method === "DELETE") {
+    try {
+      const entry = getCustomerStore().deleteLineLedgerEntryForReport({
+        reportId: url.searchParams.get("reportId"),
+        accessCode: accessCode(req, url),
+        entryId: ledgerEntryMatch[1]
+      });
+      if (!entry) return sendJson(res, 404, { ok: false, error: "找不到這筆記帳明細" });
+      sendJson(res, 200, { ok: true, deleted: entry });
+    } catch (error) {
+      sendJson(res, error.statusCode || 400, { ok: false, error: publicStoreError(error) });
+    }
+    return;
+  }
+  if (urlPath === "/api/profile" && req.method === "PATCH") {
+    readJson(req, 20000)
+      .then((body) => sendJson(res, 200, {
+        ok: true,
+        profile: getCustomerStore().updateLineProfileForReport({
+          reportId: body.reportId,
+          accessCode: accessCode(req, url),
+          profile: body.profile || body
+        })
+      }))
+      .catch((error) => sendJson(res, error.statusCode || 400, { ok: false, error: publicStoreError(error) }));
+    return;
+  }
+  if (urlPath === "/api/holdings" && req.method === "PATCH") {
+    readJson(req, 100000)
+      .then((body) => sendJson(res, 200, {
+        ok: true,
+        holdings: getCustomerStore().replaceLineHoldingsForReport({
+          reportId: body.reportId,
+          accessCode: accessCode(req, url),
+          holdings: body.holdings
+        })
+      }))
+      .catch((error) => sendJson(res, error.statusCode || 400, { ok: false, error: publicStoreError(error) }));
+    return;
+  }
+  if (urlPath === "/api/users/me/data" && req.method === "DELETE") {
+    if (String(req.headers["x-confirm-delete"] || "") !== "DELETE LINE DATA") {
+      sendJson(res, 400, { ok: false, error: "缺少刪除全部 LINE 財務資料的確認" });
+      return;
+    }
+    try {
+      const deleted = getCustomerStore().deleteLineUserDataForReport({
+        reportId: url.searchParams.get("reportId"),
+        accessCode: accessCode(req, url)
+      });
+      sendJson(res, 200, { ok: true, deleted });
     } catch (error) {
       sendJson(res, error.statusCode || 400, { ok: false, error: publicStoreError(error) });
     }
@@ -592,4 +738,30 @@ const server = http.createServer((req, res) => {
 
 server.listen(port, "0.0.0.0", () => {
   console.log(`小資現金流地圖 webapp: http://localhost:${port}`);
+  if (process.env.LINE_RICH_MENU_AUTO_DEPLOY === "1" && process.env.LINE_CHANNEL_ACCESS_TOKEN) {
+    lineRichMenuStatus = { ...lineRichMenuStatus, status: "deploying", error: null };
+    execFile(process.execPath, [path.join(root, "scripts", "deploy-line-rich-menu.js")], {
+      cwd: root,
+      env: process.env,
+      timeout: 60000,
+      windowsHide: true
+    }, (error, stdout, stderr) => {
+      if (error) {
+        const message = String(stderr || error.message).trim().slice(0, 300);
+        lineRichMenuStatus = { ...lineRichMenuStatus, status: "failed", error: message };
+        console.error(`LINE Rich Menu 部署失敗：${message}`);
+      } else {
+        try {
+          const result = JSON.parse(String(stdout).trim());
+          lineRichMenuStatus = { ...lineRichMenuStatus, status: "ready", richMenuId: result.richMenuId || null, error: null };
+          console.log(`LINE Rich Menu 已確認：${String(stdout).trim()}`);
+        } catch (parseError) {
+          lineRichMenuStatus = { ...lineRichMenuStatus, status: "failed", error: "Rich Menu 部署結果格式不正確" };
+          console.error(`LINE Rich Menu 部署結果解析失敗：${parseError.message}`);
+        }
+      }
+    });
+  } else if (process.env.LINE_RICH_MENU_AUTO_DEPLOY === "1") {
+    lineRichMenuStatus = { ...lineRichMenuStatus, status: "missing_token", error: "LINE_CHANNEL_ACCESS_TOKEN 尚未設定" };
+  }
 });

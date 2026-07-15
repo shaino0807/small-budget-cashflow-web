@@ -335,7 +335,8 @@ async function main() {
         ticker: holding?.querySelector('[data-field="ticker"]')?.value || "",
         lineLots: holding?.querySelectorAll(".lot-row.is-line-synced").length || 0,
         lineAmount: Number(holding?.querySelector('.lot-row.is-line-synced [data-lot-field="amount"]')?.value || 0),
-        recentEntries: document.querySelectorAll("#freeReport .line-recent-entries .kv").length
+        recentEntries: document.querySelectorAll("#freeReport .line-recent-entries .kv").length,
+        privacyDelete: Boolean(document.querySelector("#freeReport #deleteLineDataBtn"))
       };
     })()`);
 
@@ -432,6 +433,7 @@ async function main() {
         && lineApplied.lineLots === 1
         && lineApplied.lineAmount === 10000
         && lineApplied.recentEntries === 1
+        && lineApplied.privacyDelete
         && workspaceJump.activeView === "inputView"
         && workspaceJump.hasEtfSection
         && workspaceJump.hasHoldingEditor
