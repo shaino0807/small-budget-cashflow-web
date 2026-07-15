@@ -25,6 +25,7 @@ function lineReadiness() {
     configured: secret.length >= 16 && token.length >= 32,
     ledgerEnabled: true,
     bindingEnabled: true,
+    webSyncEnabled: true,
     replyDisabled: process.env.LINE_REPLY_DISABLED === "1"
   };
 }

@@ -86,7 +86,7 @@ async function main() {
   });
   try {
     const health = await waitForServer();
-    if (!health.line?.configured || !health.line.replyDisabled) {
+    if (!health.line?.configured || !health.line.replyDisabled || !health.line.webSyncEnabled) {
       throw new Error("LINE readiness health check failed");
     }
     const body = JSON.stringify({
