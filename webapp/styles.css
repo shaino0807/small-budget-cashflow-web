@@ -2428,6 +2428,28 @@ a:hover {
   margin: 16px 0;
 }
 
+.line-etf-positions {
+  margin: 16px 0;
+  padding: 14px 16px;
+  border: 1px solid rgba(4, 52, 44, 0.12);
+  border-radius: 12px;
+  background: rgba(159, 225, 203, 0.16);
+}
+
+.line-etf-positions > strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.lot-row.is-line-synced {
+  border-color: rgba(29, 158, 117, 0.28);
+  background: rgba(159, 225, 203, 0.12);
+}
+
+.lot-row.is-line-synced .mini-tag {
+  margin-left: 6px;
+}
+
 @media (max-width: 980px) {
   .site-links {
     display: none;

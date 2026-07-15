@@ -298,6 +298,38 @@ async function main() {
     })()`);
 
     await send(ws, "Runtime.evaluate", {
+      expression: `(() => {
+        const month = String(new Date().getMonth() + 1).padStart(2, "0");
+        const summary = {
+          linked: true,
+          month: new Date().getFullYear() + "-" + month,
+          income: 50000,
+          expense: 65,
+          investment: 10000,
+          counts: { income: 1, expense: 1, investment: 1 },
+          etfPositions: [{ ticker: "0056", amount: 10000, count: 1 }]
+        };
+        applyLineSummaryToState(summary);
+        applyLineSummaryToState(summary);
+      })()`
+    });
+    await wait(350);
+    const lineApplied = await evalValue(ws, `(() => {
+      const month = new Date().getMonth() + 1;
+      const row = document.querySelector('.month-row[data-month="' + month + '"]');
+      const holdingRows = [...document.querySelectorAll("#holdingEditor .holding-row")];
+      const holding = holdingRows.find((item) => item.querySelector('[data-field="ticker"]')?.value === "0056");
+      return {
+        income: Number(row?.querySelector('[data-month-field="monthlyIncome"]')?.value || 0),
+        expense: Number(row?.querySelector('[data-month-field="fixedExpense"]')?.value || 0),
+        investment: Number(row?.querySelector('[data-month-field="monthlyInvestment"]')?.value || 0),
+        ticker: holding?.querySelector('[data-field="ticker"]')?.value || "",
+        lineLots: holding?.querySelectorAll(".lot-row.is-line-synced").length || 0,
+        lineAmount: Number(holding?.querySelector('.lot-row.is-line-synced [data-lot-field="amount"]')?.value || 0)
+      };
+    })()`);
+
+    await send(ws, "Runtime.evaluate", {
       expression: `document.querySelector('#freeReport [data-focus-section="etfAllocationSection"]')?.click()`
     });
     await wait(750);
@@ -342,6 +374,7 @@ async function main() {
       advancedInput,
       consentStep,
       freeReport,
+      lineApplied,
       workspaceJump,
       database,
       passed: consoleErrors.length === 0
@@ -382,6 +415,12 @@ async function main() {
         && freeReport.hasLineSyncPanel
         && freeReport.hasLineBindingAction
         && freeReport.bodyOverflow === 0
+        && lineApplied.income === 50000
+        && lineApplied.expense === 65
+        && lineApplied.investment === 10000
+        && lineApplied.ticker === "0056"
+        && lineApplied.lineLots === 1
+        && lineApplied.lineAmount === 10000
         && workspaceJump.activeView === "inputView"
         && workspaceJump.hasEtfSection
         && workspaceJump.hasHoldingEditor

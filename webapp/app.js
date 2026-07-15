@@ -218,8 +218,10 @@ function normalizeHolding(holding) {
   const amount = Number(holding.amount || 0);
   const lots = Array.isArray(holding.lots) && holding.lots.length
     ? holding.lots.map((lot) => ({
+      ...lot,
       price: Number(lot.price || 0),
-      amount: Number(lot.amount || 0)
+      amount: Number(lot.amount || 0),
+      source: lot.source === "line" ? "line" : undefined
     }))
     : [{ price: Number(holding.buyPrice || 0), amount }];
   return {
@@ -1432,10 +1434,10 @@ function renderHoldings() {
           <button class="secondary-button mini-button" data-add-lot="${index}" type="button">新增一筆</button>
         </div>
         ${(holding.lots || []).map((lot, lotIndex) => `
-          <div class="lot-row" data-lot="${lotIndex}">
-            <label>買入點位<input data-lot-field="price" type="number" min="0" step="0.01" value="${lot.price}" /></label>
-            <label>投入金額<input data-lot-field="amount" type="number" min="0" step="1000" value="${lot.amount}" /></label>
-            <button class="icon-button" data-remove-lot="${lotIndex}" type="button" title="刪除買入項目" aria-label="刪除買入項目">×</button>
+          <div class="lot-row ${lot.source === "line" ? "is-line-synced" : ""}" data-lot="${lotIndex}">
+            <label>買入點位${lot.source === "line" ? `<span class="mini-tag">LINE 同步</span>` : ""}<input data-lot-field="price" type="number" min="0" step="0.01" value="${lot.price}" ${lot.source === "line" ? "readonly" : ""} /></label>
+            <label>投入金額<input data-lot-field="amount" type="number" min="0" step="1000" value="${lot.amount}" ${lot.source === "line" ? "readonly" : ""} /></label>
+            <button class="icon-button" data-remove-lot="${lotIndex}" type="button" title="${lot.source === "line" ? "LINE 同步部位需從 LINE 記帳更新" : "刪除買入項目"}" aria-label="${lot.source === "line" ? "LINE 同步部位" : "刪除買入項目"}" ${lot.source === "line" ? "disabled" : ""}>×</button>
           </div>
         `).join("")}
       </div>
@@ -2247,7 +2249,19 @@ function lineSyncHtml() {
           <div class="metric"><span>投資總額</span><strong>${formatMoney(summary.investment)}</strong></div>
           <div class="metric"><span>剩餘現金流</span><strong>${formatMoney(summary.remaining)}</strong></div>
         </div>
-        <p class="panel-note">已綁定 LINE，資料月份：${escapeHtml(summary.month)}。</p>
+        ${(summary.etfPositions || []).length ? `
+          <div class="line-etf-positions">
+            <strong>LINE 累積 ETF 部位</strong>
+            ${(summary.etfPositions || []).map((position) => `
+              <div class="kv"><span>${escapeHtml(position.ticker)} · ${position.count} 筆</span><strong>${formatMoney(position.amount)}</strong></div>
+            `).join("")}
+          </div>
+        ` : ""}
+        <p class="panel-note">已自動同步到 ${escapeHtml(summary.month)} 月家庭收支與 ETF 部位。</p>
+        <div class="button-row">
+          <button class="secondary-button" data-goto="inputView" data-focus-section="monthlyCashflowSection" type="button">查看月份現金流</button>
+          <button class="secondary-button" data-goto="inputView" data-focus-section="etfAllocationSection" type="button">查看 ETF 部位</button>
+        </div>
       ` : `
         <p class="panel-note">尚未綁定 LINE。按下按鈕取得 15 分鐘有效的 6 位數綁定碼。</p>
         ${binding?.status === "pending" ? `
@@ -2261,6 +2275,75 @@ function lineSyncHtml() {
       `}
     </section>
   `;
+}
+
+function syncLineEtfPositions(positions = []) {
+  const normalizedPositions = positions
+    .map((position) => ({ ticker: String(position.ticker || "").trim().toUpperCase(), amount: Number(position.amount || 0) }))
+    .filter((position) => position.ticker && position.amount > 0);
+
+  state.holdings = state.holdings
+    .map((holding) => {
+      const lots = (holding.lots || []).filter((lot) => lot.source !== "line");
+      return { ...holding, lots, amount: lots.reduce((sum, lot) => sum + Number(lot.amount || 0), 0) };
+    })
+    .filter((holding) => !holding.lineSynced || holdingAmount(holding) > 0);
+
+  normalizedPositions.forEach((position) => {
+    let holding = state.holdings.find((item) => String(item.ticker || "").trim().toUpperCase() === position.ticker);
+    if (!holding) {
+      holding = normalizeHolding({
+        ticker: position.ticker,
+        name: `LINE ${position.ticker}`,
+        type: "ETF",
+        amount: 0,
+        lots: [],
+        dividendYield: 0,
+        expenseRatio: 0,
+        sector: "未分類",
+        lineSynced: true
+      });
+      holding.lots = [];
+      state.holdings.push(holding);
+    }
+    holding.lots = [
+      ...(holding.lots || []).filter((lot) => lot.source !== "line"),
+      { price: latestMarketPrice(position.ticker) || 0, amount: position.amount, source: "line" }
+    ];
+    holding.amount = holdingAmount(holding);
+  });
+  enrichHoldingsFromDatabase();
+  mergeDuplicateHoldings();
+}
+
+function applyLineSummaryToState(summary) {
+  if (!summary?.linked) return false;
+  const month = Number(String(summary.month || "").slice(5, 7));
+  if (!Number.isInteger(month) || month < 1 || month > 12) return false;
+  const row = state.monthlyCashflows[month] || {};
+  if (Number(summary.counts?.income || 0) > 0) {
+    row.monthlyIncome = Number(summary.income || 0);
+    state.profile.monthlyIncome = row.monthlyIncome;
+  }
+  if (Number(summary.counts?.expense || 0) > 0) {
+    row.fixedExpense = Number(summary.expense || 0);
+    row.insuranceExpense = 0;
+    row.loanExpense = 0;
+    state.profile.fixedExpense = row.fixedExpense;
+    state.profile.insuranceExpense = 0;
+    state.profile.loanExpense = 0;
+  }
+  if (Number(summary.counts?.investment || 0) > 0) {
+    row.monthlyInvestment = Number(summary.investment || 0);
+    state.profile.monthlyInvestment = row.monthlyInvestment;
+  }
+  state.monthlyCashflows[month] = row;
+  syncLineEtfPositions(summary.etfPositions || []);
+  state.reportMeta.lineAppliedAt = new Date().toISOString();
+  updateProfileInputs();
+  renderMonthlyCashflows();
+  renderHoldings();
+  return true;
 }
 
 async function createLineBinding() {
@@ -2296,6 +2379,7 @@ async function refreshLineSummary({ silent = false } = {}) {
     });
     state.reportMeta.lineSummary = result.summary;
     if (result.summary.linked) state.reportMeta.lineBinding = { status: "linked", linkedAt: result.summary.linkedAt };
+    applyLineSummaryToState(result.summary);
     persist();
     refreshReports();
     if (!silent) showToast(result.summary.linked ? "LINE 記帳摘要已更新。" : "尚未完成 LINE 綁定。");

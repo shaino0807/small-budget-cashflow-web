@@ -58,12 +58,13 @@ async function main() {
   const parserCases = [
     ["買早餐 65", "expense", 65],
     ["今天賺 3000", "income", 3000],
+    ["固定收入金額 50000", "income", 50000, "固定收入"],
     ["買 0056 10000", "investment", 10000],
     ["ETF 00878 5000", "investment", 5000]
   ];
-  for (const [text, type, amount] of parserCases) {
+  for (const [text, type, amount, category] of parserCases) {
     const parsed = parseLedgerMessage(text);
-    if (parsed.type !== type || parsed.amount !== amount) {
+    if (parsed.type !== type || parsed.amount !== amount || (category && parsed.category !== category)) {
       throw new Error(`Parser failed for ${text}: ${JSON.stringify(parsed)}`);
     }
   }
@@ -167,11 +168,43 @@ async function main() {
     if (bound.status !== 200 || bound.body.replies[0]?.parsedIntent !== "binding" || bound.body.replies[0]?.binding !== "linked") {
       throw new Error(`LINE binding webhook failed: ${JSON.stringify(bound)}`);
     }
+    const ledgerMessages = [
+      ["3", "固定收入金額 50000"],
+      ["4", "買 0056 10000"],
+      ["5", "ETF 00878 5000"]
+    ];
+    for (const [id, text] of ledgerMessages) {
+      const ledgerBody = JSON.stringify({
+        destination: "test",
+        events: [{
+          type: "message",
+          replyToken: "test-reply-token",
+          source: { type: "user", userId: "Utest" },
+          message: { id, type: "text", text }
+        }]
+      });
+      const ledger = await request("/api/line/webhook", {
+        body: ledgerBody,
+        headers: { "x-line-signature": signature(ledgerBody) }
+      });
+      if (ledger.status !== 200 || ledger.body.replies[0]?.parsedIntent !== "ledger") {
+        throw new Error(`LINE sync ledger message failed: ${JSON.stringify(ledger)}`);
+      }
+    }
     const summary = await request(`/api/line/summary?reportId=${encodeURIComponent(created.body.report.id)}`, {
       method: "GET",
       headers: { "X-Report-Access-Code": created.body.report.accessCode }
     });
-    if (summary.status !== 200 || !summary.body.summary?.linked || summary.body.summary.expense !== 65) {
+    const positions = Object.fromEntries((summary.body.summary?.etfPositions || []).map((position) => [position.ticker, position.amount]));
+    if (
+      summary.status !== 200
+      || !summary.body.summary?.linked
+      || summary.body.summary.expense !== 65
+      || summary.body.summary.income !== 50000
+      || summary.body.summary.investment !== 15000
+      || positions["0056"] !== 10000
+      || positions["00878"] !== 5000
+    ) {
       throw new Error(`LINE report summary did not include the ledger: ${JSON.stringify(summary)}`);
     }
     const invalid = await request("/api/line/webhook", {

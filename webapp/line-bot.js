@@ -100,7 +100,8 @@ function parseLedgerMessage(text) {
     return { intent: "ledger", type: "investment", amount, ticker, category: "ETF", note: compactNote(raw) || ticker || "投資" };
   }
   if (hasIncome) {
-    return { intent: "ledger", type: "income", amount, category: "收入", note: compactNote(raw) || "收入" };
+    const category = /固定收入|月薪|薪水/.test(raw) ? "固定收入" : "收入";
+    return { intent: "ledger", type: "income", amount, category, note: compactNote(raw) || category };
   }
   if (hasExpense) {
     return { intent: "ledger", type: "expense", amount, category: "支出", note: compactNote(raw) || "支出" };

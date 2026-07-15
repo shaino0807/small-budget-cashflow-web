@@ -272,6 +272,18 @@ function createStore() {
       if (row.type === "investment") summary.investment = Number(row.total || 0);
       if (summary.counts[row.type] !== undefined) summary.counts[row.type] = Number(row.count || 0);
     });
+    summary.etfPositions = db.prepare(`
+      SELECT ticker, COALESCE(SUM(amount), 0) AS amount, COUNT(*) AS count, MAX(occurred_at) AS lastOccurredAt
+      FROM line_ledger_entries
+      WHERE line_user_hash = ? AND entry_type = 'investment' AND ticker IS NOT NULL AND ticker <> ''
+      GROUP BY ticker
+      ORDER BY amount DESC, ticker ASC
+    `).all(lineUserHash).map((row) => ({
+      ticker: row.ticker,
+      amount: Number(row.amount || 0),
+      count: Number(row.count || 0),
+      lastOccurredAt: row.lastOccurredAt
+    }));
     summary.remaining = summary.income - summary.expense - summary.investment;
     return summary;
   }
