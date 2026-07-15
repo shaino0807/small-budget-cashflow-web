@@ -4,7 +4,7 @@ const fs = require("fs");
 const http = require("http");
 const os = require("os");
 const path = require("path");
-const { parseLedgerMessage, parseLedgerMessageWithAi, parseLineCommand } = require("../line-bot");
+const { parseIncomingMessage, parseLedgerMessage, parseLedgerMessageWithAi, parseLineCommand } = require("../line-bot");
 
 const port = 5900 + Math.floor(Math.random() * 250);
 const baseUrl = `http://127.0.0.1:${port}`;
@@ -100,12 +100,18 @@ async function main() {
   });
   try {
     process.env.OPENAI_API_KEY = "test-openai-key";
+    process.env.LINE_AI_PARSER_ENABLED = "1";
     const aiParsed = await parseLedgerMessageWithAi("午餐 120、飲料 60");
     if (aiParsed?.entries?.length !== 2 || aiParsed.entries.reduce((sum, entry) => sum + entry.amount, 0) !== 180) {
       throw new Error(`AI parser schema validation failed: ${JSON.stringify(aiParsed)}`);
     }
+    const routedAiParsed = await parseIncomingMessage("午餐 120、飲料 60");
+    if (routedAiParsed?.parser !== "ai" || routedAiParsed.entries?.length !== 2) {
+      throw new Error(`AI parser routing failed: ${JSON.stringify(routedAiParsed)}`);
+    }
   } finally {
     delete process.env.OPENAI_API_KEY;
+    delete process.env.LINE_AI_PARSER_ENABLED;
     global.fetch = originalFetch;
   }
   const server = spawn(process.execPath, [path.join(__dirname, "..", "server.js")], {
