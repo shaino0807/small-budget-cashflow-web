@@ -4,7 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const { createStore, lineLedgerRetentionDays } = require("./customer-store");
 const { buildCheckout, createMerchantTradeNo, ecpayConfig, productCatalog, productFor, verifyNotification } = require("./ecpay");
-const { handleLineWebhook, lineReadiness, verifyLineSignature } = require("./line-bot");
+const { handleLineWebhook, lineReadiness, parseLedgerMessageWithAi, verifyLineSignature } = require("./line-bot");
 
 const root = __dirname;
 const port = Number(process.env.PORT || 5188);
@@ -22,6 +22,16 @@ let lineRichMenuStatus = {
   status: process.env.LINE_RICH_MENU_AUTO_DEPLOY === "1" ? "pending" : "disabled",
   richMenuId: null,
   flexValidated: false,
+  error: null
+};
+let lineAiParserStatus = {
+  enabled: process.env.LINE_AI_PARSER_ENABLED === "1",
+  status: process.env.LINE_AI_PARSER_ENABLED !== "1"
+    ? "disabled"
+    : process.env.OPENAI_API_KEY
+      ? "pending"
+      : "missing_key",
+  model: process.env.OPENAI_LINE_PARSER_MODEL || "gpt-5.4-nano",
   error: null
 };
 
@@ -314,7 +324,7 @@ const server = http.createServer((req, res) => {
       time: new Date().toISOString(),
       customerStoreConfigured: Boolean(process.env.CUSTOMER_DATA_KEY && process.env.ACCESS_CODE_PEPPER && process.env.ADMIN_API_KEY),
       lineLedgerRetentionDays,
-      line: { ...lineReadiness(), richMenu: lineRichMenuStatus },
+      line: { ...lineReadiness(), aiParser: lineAiParserStatus, richMenu: lineRichMenuStatus },
       payment: paymentReadiness()
     });
     return;
@@ -739,6 +749,21 @@ const server = http.createServer((req, res) => {
 
 server.listen(port, "0.0.0.0", () => {
   console.log(`小資現金流地圖 webapp: http://localhost:${port}`);
+  if (lineAiParserStatus.status === "pending") {
+    lineAiParserStatus = { ...lineAiParserStatus, status: "validating", error: null };
+    parseLedgerMessageWithAi("午餐 120、飲料 60")
+      .then((result) => {
+        const total = (result?.entries || []).reduce((sum, entry) => sum + Number(entry.amount || 0), 0);
+        if (result?.entries?.length !== 2 || total !== 180) throw new Error("AI parser canary 未正確拆成兩筆");
+        lineAiParserStatus = { ...lineAiParserStatus, status: "ready", error: null };
+        console.log("LINE AI parser canary 已通過");
+      })
+      .catch((error) => {
+        const message = String(error.message || error).slice(0, 300);
+        lineAiParserStatus = { ...lineAiParserStatus, status: "failed", error: message };
+        console.error(`LINE AI parser canary 失敗：${message}`);
+      });
+  }
   if (process.env.LINE_RICH_MENU_AUTO_DEPLOY === "1" && process.env.LINE_CHANNEL_ACCESS_TOKEN) {
     lineRichMenuStatus = { ...lineRichMenuStatus, status: "deploying", error: null };
     execFile(process.execPath, [path.join(root, "scripts", "deploy-line-rich-menu.js")], {
