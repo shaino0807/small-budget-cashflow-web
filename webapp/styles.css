@@ -2420,6 +2420,14 @@ a:hover {
   font-weight: 700;
 }
 
+.line-sync-panel .panel-head {
+  align-items: flex-start;
+}
+
+.line-binding-code {
+  margin: 16px 0;
+}
+
 @media (max-width: 980px) {
   .site-links {
     display: none;

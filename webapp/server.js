@@ -326,6 +326,29 @@ const server = http.createServer((req, res) => {
       .catch((error) => sendJson(res, error.statusCode || 400, { ok: false, error: error.message }));
     return;
   }
+  if (urlPath === "/api/line/bindings" && req.method === "POST") {
+    if (!rateLimit(req, 8, 60000)) return sendJson(res, 429, { ok: false, error: "LINE 綁定碼建立次數過多，請稍後再試" });
+    readJson(req, 10000)
+      .then((body) => sendJson(res, 201, { ok: true, binding: getCustomerStore().createLineReportBinding({
+        reportId: body.reportId,
+        accessCode: body.accessCode
+      }) }))
+      .catch((error) => sendJson(res, error.statusCode || 400, { ok: false, error: publicStoreError(error) }));
+    return;
+  }
+  if (urlPath === "/api/line/summary" && req.method === "GET") {
+    try {
+      const summary = getCustomerStore().getLineReportSummary({
+        reportId: url.searchParams.get("reportId"),
+        accessCode: accessCode(req, url),
+        monthKey: url.searchParams.get("month") || undefined
+      });
+      sendJson(res, 200, { ok: true, summary });
+    } catch (error) {
+      sendJson(res, error.statusCode || 400, { ok: false, error: publicStoreError(error) });
+    }
+    return;
+  }
   if (urlPath === "/api/market/database" && req.method === "GET") {
     res.writeHead(200, {
       "Content-Type": "application/json; charset=utf-8",

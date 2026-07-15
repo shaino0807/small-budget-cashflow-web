@@ -291,6 +291,8 @@ async function main() {
         hasAllocation: text.includes("月投入配置"),
         hasAvoid: text.includes("先不要做"),
         hasNumbers: /5,000|10,000|NT|\\$/.test(text),
+        hasLineSyncPanel: Boolean(document.querySelector("#freeReport .line-sync-panel")),
+        hasLineBindingAction: Boolean(document.querySelector("#freeReport #createLineBindingBtn")),
         bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
       };
     })()`);
@@ -377,6 +379,8 @@ async function main() {
         && freeReport.hasAllocation
         && freeReport.hasAvoid
         && freeReport.hasNumbers
+        && freeReport.hasLineSyncPanel
+        && freeReport.hasLineBindingAction
         && freeReport.bodyOverflow === 0
         && workspaceJump.activeView === "inputView"
         && workspaceJump.hasEtfSection

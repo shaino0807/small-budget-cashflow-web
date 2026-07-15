@@ -24,6 +24,7 @@ function lineReadiness() {
     channelAccessTokenConfigured: token.length >= 32,
     configured: secret.length >= 16 && token.length >= 32,
     ledgerEnabled: true,
+    bindingEnabled: true,
     replyDisabled: process.env.LINE_REPLY_DISABLED === "1"
   };
 }
@@ -107,6 +108,11 @@ function parseLedgerMessage(text) {
   return { intent: "help", reason: "unknown_keyword" };
 }
 
+function parseBindingMessage(text) {
+  const match = String(text || "").trim().match(/^(?:綁定|绑定|bind)\s*(\d{6})$/i);
+  return match ? { intent: "binding", code: match[1] } : null;
+}
+
 function ledgerTypeLabel(type) {
   return {
     expense: "支出",
@@ -171,8 +177,21 @@ async function handleLineWebhook(rawBody, options = {}) {
     const userId = event.source?.userId || "";
     let replyText = connectionReplyText();
     let ledgerResult = null;
-    const parsed = parseLedgerMessage(text);
-    if (parsed.intent === "ledger") {
+    let bindingResult = null;
+    const binding = parseBindingMessage(text);
+    const parsed = binding || parseLedgerMessage(text);
+    if (parsed.intent === "binding") {
+      if (!options.store || !userId) {
+        replyText = "目前無法確認你的 LINE 身分，請稍後再試。";
+      } else {
+        try {
+          bindingResult = options.store.bindLineReport({ lineUserId: userId, code: parsed.code });
+          replyText = "綁定成功。之後在 LINE 記錄的收入、支出與 ETF 投資，會同步到這份網頁報告。";
+        } catch (error) {
+          replyText = error.message || "綁定失敗，請回到網頁重新產生綁定碼。";
+        }
+      }
+    } else if (parsed.intent === "ledger") {
       if (!options.store || !userId) {
         replyText = "LINE 記帳後端尚未準備好，請稍後再試。";
       } else {
@@ -218,6 +237,7 @@ async function handleLineWebhook(rawBody, options = {}) {
       messageType: event.message.type,
       parsedIntent: parsed.intent,
       ledgerType: ledgerResult?.entry?.type || null,
+      binding: bindingResult ? "linked" : null,
       userId: event.source?.userId ? "present" : "missing",
       ...result
     });
@@ -228,6 +248,7 @@ async function handleLineWebhook(rawBody, options = {}) {
 module.exports = {
   handleLineWebhook,
   lineReadiness,
+  parseBindingMessage,
   parseLedgerMessage,
   verifyLineSignature
 };

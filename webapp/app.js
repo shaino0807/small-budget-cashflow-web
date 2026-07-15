@@ -254,7 +254,10 @@ function normalizeMonthlyCashflows(saved, profile) {
 function persist() {
   const safeState = structuredClone(state);
   safeState.consent.contactValue = "";
-  if (safeState.reportMeta) safeState.reportMeta.accessCode = null;
+  if (safeState.reportMeta) {
+    safeState.reportMeta.accessCode = null;
+    delete safeState.reportMeta.lineBinding;
+  }
   localStorage.setItem(storageKey, JSON.stringify(safeState));
 }
 
@@ -2208,6 +2211,101 @@ function reportRecordHtml() {
   `;
 }
 
+function lineSyncHtml() {
+  const meta = state.reportMeta;
+  if (!meta?.reportId) {
+    return `
+      <section class="panel line-sync-panel">
+        <h3>LINE 懶人記帳同步</h3>
+        <p>先完成免費健檢並保存報告，才可以把 LINE 記帳連到這份報告。</p>
+      </section>
+    `;
+  }
+  if (!meta.accessCode) {
+    return `
+      <section class="panel line-sync-panel">
+        <h3>LINE 懶人記帳同步</h3>
+        <p>請在上方輸入報告編號與存取碼重新開啟報告，再建立 LINE 綁定。</p>
+      </section>
+    `;
+  }
+  const summary = meta.lineSummary;
+  const binding = meta.lineBinding;
+  return `
+    <section class="panel line-sync-panel">
+      <div class="panel-head">
+        <div>
+          <h3>LINE 懶人記帳同步</h3>
+          <p class="panel-note">綁定後，在官方 LINE 輸入「買早餐 65」、「賺 3000」或「買 0056 10000」，本月數字會在此更新。</p>
+        </div>
+        <button class="secondary-button mini-button" id="refreshLineSummaryBtn" type="button">重新整理</button>
+      </div>
+      ${summary?.linked ? `
+        <div class="metrics compact-metrics">
+          <div class="metric"><span>本月總收入</span><strong>${formatMoney(summary.income)}</strong></div>
+          <div class="metric"><span>本月總支出</span><strong>${formatMoney(summary.expense)}</strong></div>
+          <div class="metric"><span>投資總額</span><strong>${formatMoney(summary.investment)}</strong></div>
+          <div class="metric"><span>剩餘現金流</span><strong>${formatMoney(summary.remaining)}</strong></div>
+        </div>
+        <p class="panel-note">已綁定 LINE，資料月份：${escapeHtml(summary.month)}。</p>
+      ` : `
+        <p class="panel-note">尚未綁定 LINE。按下按鈕取得 15 分鐘有效的 6 位數綁定碼。</p>
+        ${binding?.status === "pending" ? `
+          <div class="access-code-box line-binding-code">
+            <p>請到官方 LINE 帳號傳送：</p>
+            <code>綁定 ${binding.code}</code>
+            <p class="panel-note">有效至：${new Date(binding.expiresAt).toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" })}</p>
+          </div>
+        ` : ""}
+        <button class="primary-button" id="createLineBindingBtn" type="button">產生 LINE 綁定碼</button>
+      `}
+    </section>
+  `;
+}
+
+async function createLineBinding() {
+  const meta = state.reportMeta;
+  if (!backendAvailable() || !meta?.reportId || !meta.accessCode) {
+    showToast("請先保存或重新開啟報告，再建立 LINE 綁定。");
+    return;
+  }
+  try {
+    const result = await apiRequest("/api/line/bindings", {
+      method: "POST",
+      body: JSON.stringify({ reportId: meta.reportId, accessCode: meta.accessCode })
+    });
+    state.reportMeta.lineBinding = result.binding;
+    if (result.binding.status === "linked") {
+      await refreshLineSummary({ silent: true });
+      showToast("這份報告已綁定 LINE 帳本。");
+      return;
+    }
+    refreshReports();
+    showToast("已產生綁定碼，請到 LINE 傳送「綁定 6 位數碼」。");
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function refreshLineSummary({ silent = false } = {}) {
+  const meta = state.reportMeta;
+  if (!backendAvailable() || !meta?.reportId || !meta.accessCode) return null;
+  try {
+    const result = await apiRequest(`/api/line/summary?reportId=${encodeURIComponent(meta.reportId)}`, {
+      headers: { "X-Report-Access-Code": meta.accessCode }
+    });
+    state.reportMeta.lineSummary = result.summary;
+    if (result.summary.linked) state.reportMeta.lineBinding = { status: "linked", linkedAt: result.summary.linkedAt };
+    persist();
+    refreshReports();
+    if (!silent) showToast(result.summary.linked ? "LINE 記帳摘要已更新。" : "尚未完成 LINE 綁定。");
+    return result.summary;
+  } catch (error) {
+    if (!silent) showToast(error.message);
+    return null;
+  }
+}
+
 function downloadCurrentReport() {
   if (!state.reportMeta) return;
   const blob = new Blob([JSON.stringify(reportSubmission(), null, 2)], { type: "application/json" });
@@ -2278,6 +2376,7 @@ function renderFreeReport() {
     ${scoreHtml(report)}
     <div class="stack">
       ${reportRecordHtml()}
+      ${lineSyncHtml()}
       ${state.leadProfile.checkType === "stock" ? stockSafetyHtml(report) : ""}
       ${beginnerPrescriptionHtml(report)}
       ${breakdownHtml(report)}
@@ -2299,6 +2398,8 @@ function renderFreeReport() {
   q("#restoreReportBtn")?.addEventListener("click", restoreSavedReport);
   q("#downloadReportBtn")?.addEventListener("click", downloadCurrentReport);
   q("#deleteReportBtn")?.addEventListener("click", deleteSavedReport);
+  q("#createLineBindingBtn")?.addEventListener("click", createLineBinding);
+  q("#refreshLineSummaryBtn")?.addEventListener("click", () => refreshLineSummary());
 }
 
 function renderUpgrade() {

@@ -145,6 +145,18 @@ function initialize() {
     CREATE INDEX IF NOT EXISTS idx_line_ledger_user_month ON line_ledger_entries(line_user_hash, occurred_at DESC);
     CREATE UNIQUE INDEX IF NOT EXISTS idx_line_ledger_source_message ON line_ledger_entries(line_user_hash, source_message_id)
       WHERE source_message_id IS NOT NULL;
+    CREATE TABLE IF NOT EXISTS line_report_bindings (
+      id TEXT PRIMARY KEY,
+      report_id TEXT NOT NULL UNIQUE,
+      code_hash TEXT NOT NULL UNIQUE,
+      line_user_hash TEXT,
+      created_at TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      bound_at TEXT,
+      FOREIGN KEY(report_id) REFERENCES reports(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_line_report_bindings_code ON line_report_bindings(code_hash);
+    CREATE INDEX IF NOT EXISTS idx_line_report_bindings_user ON line_report_bindings(line_user_hash, bound_at DESC);
   `);
   const orderColumns = db.prepare("PRAGMA table_info(orders)").all().map((row) => row.name);
   if (!orderColumns.includes("status_token_hash")) {
@@ -239,6 +251,31 @@ function createStore() {
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
+  function lineSummaryByHash(lineUserHash, monthKey = taipeiMonthKey()) {
+    const range = taipeiMonthRange(monthKey);
+    const rows = db.prepare(`
+      SELECT entry_type AS type, COALESCE(SUM(amount), 0) AS total, COUNT(*) AS count
+      FROM line_ledger_entries
+      WHERE line_user_hash = ? AND occurred_at >= ? AND occurred_at < ?
+      GROUP BY entry_type
+    `).all(lineUserHash, range.start, range.end);
+    const summary = {
+      month: range.monthKey,
+      income: 0,
+      expense: 0,
+      investment: 0,
+      counts: { income: 0, expense: 0, investment: 0 }
+    };
+    rows.forEach((row) => {
+      if (row.type === "income") summary.income = Number(row.total || 0);
+      if (row.type === "expense") summary.expense = Number(row.total || 0);
+      if (row.type === "investment") summary.investment = Number(row.total || 0);
+      if (summary.counts[row.type] !== undefined) summary.counts[row.type] = Number(row.count || 0);
+    });
+    summary.remaining = summary.income - summary.expense - summary.investment;
+    return summary;
+  }
+
   function listEntitlements(reportId) {
     return db.prepare("SELECT entitlement FROM report_entitlements WHERE report_id = ? ORDER BY granted_at")
       .all(reportId)
@@ -282,6 +319,8 @@ function createStore() {
       "report_generated",
       "report_reopened",
       "cta_clicked",
+      "line_binding_code_created",
+      "line_report_bound",
       "payment_checkout_started",
       "payment_paid",
       "payment_failed"
@@ -421,29 +460,74 @@ function createStore() {
 
   function lineLedgerSummary(lineUserId, monthKey = taipeiMonthKey()) {
     if (!lineUserId) throw new Error("缺少 LINE 使用者");
-    const range = taipeiMonthRange(monthKey);
     const lineUserHash = accessHash(`line:${lineUserId}`);
-    const rows = db.prepare(`
-      SELECT entry_type AS type, COALESCE(SUM(amount), 0) AS total, COUNT(*) AS count
-      FROM line_ledger_entries
-      WHERE line_user_hash = ? AND occurred_at >= ? AND occurred_at < ?
-      GROUP BY entry_type
-    `).all(lineUserHash, range.start, range.end);
-    const summary = {
-      month: range.monthKey,
-      income: 0,
-      expense: 0,
-      investment: 0,
-      counts: { income: 0, expense: 0, investment: 0 }
-    };
-    rows.forEach((row) => {
-      if (row.type === "income") summary.income = Number(row.total || 0);
-      if (row.type === "expense") summary.expense = Number(row.total || 0);
-      if (row.type === "investment") summary.investment = Number(row.total || 0);
-      if (summary.counts[row.type] !== undefined) summary.counts[row.type] = Number(row.count || 0);
-    });
-    summary.remaining = summary.income - summary.expense - summary.investment;
-    return summary;
+    return lineSummaryByHash(lineUserHash, monthKey);
+  }
+
+  function createLineReportBinding({ reportId, accessCode }) {
+    const report = assertReportAccess(reportId, accessCode);
+    const now = new Date();
+    const existing = db.prepare("SELECT * FROM line_report_bindings WHERE report_id = ?").get(reportId);
+    if (existing?.bound_at) return { status: "linked", linkedAt: existing.bound_at };
+    if (existing) db.prepare("DELETE FROM line_report_bindings WHERE report_id = ?").run(reportId);
+
+    const expiresAt = new Date(now.getTime() + 15 * 60 * 1000).toISOString();
+    let code = "";
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const candidate = String(crypto.randomInt(0, 1000000)).padStart(6, "0");
+      const exists = db.prepare("SELECT 1 FROM line_report_bindings WHERE code_hash = ?").get(accessHash(`line-bind:${candidate}`));
+      if (!exists) {
+        code = candidate;
+        break;
+      }
+    }
+    if (!code) throw new Error("暫時無法產生 LINE 綁定碼，請稍後再試");
+    db.prepare(`
+      INSERT INTO line_report_bindings (id, report_id, code_hash, line_user_hash, created_at, expires_at, bound_at)
+      VALUES (?, ?, ?, NULL, ?, ?, NULL)
+    `).run(crypto.randomUUID(), reportId, accessHash(`line-bind:${code}`), now.toISOString(), expiresAt);
+    addEvent({ anonymousId: report.anonymous_id, reportId, eventType: "line_binding_code_created" });
+    return { status: "pending", code, expiresAt };
+  }
+
+  function bindLineReport({ lineUserId, code }) {
+    if (!lineUserId) throw new Error("缺少 LINE 使用者");
+    const normalizedCode = String(code || "").trim();
+    if (!/^\d{6}$/.test(normalizedCode)) {
+      const error = new Error("綁定碼格式不正確，請回到網頁重新取得 6 位數綁定碼");
+      error.statusCode = 400;
+      throw error;
+    }
+    const now = new Date().toISOString();
+    const row = db.prepare(`
+      SELECT binding.*, reports.anonymous_id
+      FROM line_report_bindings binding
+      JOIN reports ON reports.id = binding.report_id
+      WHERE binding.code_hash = ? AND binding.bound_at IS NULL AND binding.expires_at > ? AND reports.expires_at > ?
+    `).get(accessHash(`line-bind:${normalizedCode}`), now, now);
+    if (!row) {
+      const error = new Error("綁定碼無效或已過期，請回到網頁重新產生");
+      error.statusCode = 404;
+      throw error;
+    }
+    db.prepare(`
+      UPDATE line_report_bindings
+      SET line_user_hash = ?, bound_at = ?
+      WHERE id = ? AND bound_at IS NULL
+    `).run(accessHash(`line:${lineUserId}`), now, row.id);
+    addEvent({ anonymousId: row.anonymous_id, reportId: row.report_id, eventType: "line_report_bound" });
+    return { reportId: row.report_id, boundAt: now };
+  }
+
+  function getLineReportSummary({ reportId, accessCode, monthKey = taipeiMonthKey() }) {
+    assertReportAccess(reportId, accessCode);
+    const binding = db.prepare(`
+      SELECT line_user_hash, bound_at
+      FROM line_report_bindings
+      WHERE report_id = ? AND bound_at IS NOT NULL
+    `).get(reportId);
+    if (!binding?.line_user_hash) return { linked: false, month: taipeiMonthRange(monthKey).monthKey };
+    return { linked: true, linkedAt: binding.bound_at, ...lineSummaryByHash(binding.line_user_hash, monthKey) };
   }
 
   function createOrder({ id, reportId, accessCode, productType, amount, currency = "TWD", provider = "ecpay" }) {
@@ -558,13 +642,16 @@ function createStore() {
     addEvent,
     analytics,
     applyPaymentNotification,
+    bindLineReport,
     createOrder,
+    createLineReportBinding,
     createReport,
     deleteReport,
     getAdminReport,
     getOrderStatus,
     getReport,
     addLineLedgerEntry,
+    getLineReportSummary,
     lineLedgerSummary,
     listReports,
     purgeExpired,
