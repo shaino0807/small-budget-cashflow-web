@@ -320,7 +320,7 @@ const server = http.createServer((req, res) => {
           sendJson(res, 401, { ok: false, error: "LINE 簽章驗證失敗" });
           return;
         }
-        const result = await handleLineWebhook(rawBody);
+        const result = await handleLineWebhook(rawBody, { store: getCustomerStore() });
         sendJson(res, 200, { ok: true, ...result });
       })
       .catch((error) => sendJson(res, error.statusCode || 400, { ok: false, error: error.message }));

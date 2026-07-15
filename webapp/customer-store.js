@@ -128,6 +128,23 @@ function initialize() {
       FOREIGN KEY(report_id) REFERENCES reports(id) ON DELETE CASCADE,
       FOREIGN KEY(source_order_id) REFERENCES orders(id) ON DELETE CASCADE
     );
+    CREATE TABLE IF NOT EXISTS line_ledger_entries (
+      id TEXT PRIMARY KEY,
+      line_user_hash TEXT NOT NULL,
+      entry_type TEXT NOT NULL,
+      amount INTEGER NOT NULL,
+      currency TEXT NOT NULL,
+      category TEXT,
+      ticker TEXT,
+      occurred_at TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      note_cipher TEXT,
+      source_cipher TEXT,
+      source_message_id TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_line_ledger_user_month ON line_ledger_entries(line_user_hash, occurred_at DESC);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_line_ledger_source_message ON line_ledger_entries(line_user_hash, source_message_id)
+      WHERE source_message_id IS NOT NULL;
   `);
   const orderColumns = db.prepare("PRAGMA table_info(orders)").all().map((row) => row.name);
   if (!orderColumns.includes("status_token_hash")) {
@@ -166,6 +183,18 @@ function validateSubmission(body) {
   return body;
 }
 
+function taipeiMonthKey(date = new Date()) {
+  return new Date(date.getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 7);
+}
+
+function taipeiMonthRange(monthKey = taipeiMonthKey()) {
+  const normalized = String(monthKey || "").match(/^\d{4}-\d{2}$/) ? monthKey : taipeiMonthKey();
+  const [year, month] = normalized.split("-").map(Number);
+  const start = new Date(Date.UTC(year, month - 1, 1) - 8 * 60 * 60 * 1000);
+  const end = new Date(Date.UTC(year, month, 1) - 8 * 60 * 60 * 1000);
+  return { monthKey: normalized, start: start.toISOString(), end: end.toISOString() };
+}
+
 function publicReport(row, entitlements = []) {
   const payload = decrypt(row.payload_cipher);
   return {
@@ -202,6 +231,12 @@ function createStore() {
   const insertPaymentEvent = db.prepare(`
     INSERT INTO payment_events (id, order_id, provider, event_type, valid_mac, created_at, raw_cipher)
     VALUES (?, ?, ?, ?, ?, ?, ?)
+  `);
+  const insertLineLedgerEntry = db.prepare(`
+    INSERT INTO line_ledger_entries (
+      id, line_user_hash, entry_type, amount, currency, category, ticker,
+      occurred_at, created_at, note_cipher, source_cipher, source_message_id
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   function listEntitlements(reportId) {
@@ -346,6 +381,71 @@ function createStore() {
     return { eventCounts, reportCounts, conversions };
   }
 
+  function addLineLedgerEntry({ lineUserId, type, amount, category = null, ticker = null, note = "", source = {}, occurredAt = null }) {
+    if (!lineUserId) throw new Error("缺少 LINE 使用者");
+    const allowedTypes = ["expense", "income", "investment"];
+    if (!allowedTypes.includes(type)) throw new Error("記帳類型不正確");
+    const numericAmount = Math.round(Number(amount));
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0 || numericAmount > 1000000000) throw new Error("金額格式不正確");
+    const now = new Date();
+    const occurred = occurredAt ? new Date(occurredAt) : now;
+    if (!Number.isFinite(occurred.getTime())) throw new Error("日期格式不正確");
+    const lineUserHash = accessHash(`line:${lineUserId}`);
+    const sourceMessageId = source.messageId ? String(source.messageId).slice(0, 80) : null;
+    const id = crypto.randomUUID();
+    try {
+      insertLineLedgerEntry.run(
+        id,
+        lineUserHash,
+        type,
+        numericAmount,
+        "TWD",
+        category ? String(category).slice(0, 60) : null,
+        ticker ? String(ticker).toUpperCase().slice(0, 12) : null,
+        occurred.toISOString(),
+        now.toISOString(),
+        note ? encrypt({ value: String(note).slice(0, 300) }) : null,
+        encrypt(source),
+        sourceMessageId
+      );
+    } catch (error) {
+      if (String(error.message || "").includes("UNIQUE")) {
+        const duplicate = new Error("這筆 LINE 訊息已經記錄過");
+        duplicate.statusCode = 409;
+        throw duplicate;
+      }
+      throw error;
+    }
+    return { id, type, amount: numericAmount, category, ticker, occurredAt: occurred.toISOString() };
+  }
+
+  function lineLedgerSummary(lineUserId, monthKey = taipeiMonthKey()) {
+    if (!lineUserId) throw new Error("缺少 LINE 使用者");
+    const range = taipeiMonthRange(monthKey);
+    const lineUserHash = accessHash(`line:${lineUserId}`);
+    const rows = db.prepare(`
+      SELECT entry_type AS type, COALESCE(SUM(amount), 0) AS total, COUNT(*) AS count
+      FROM line_ledger_entries
+      WHERE line_user_hash = ? AND occurred_at >= ? AND occurred_at < ?
+      GROUP BY entry_type
+    `).all(lineUserHash, range.start, range.end);
+    const summary = {
+      month: range.monthKey,
+      income: 0,
+      expense: 0,
+      investment: 0,
+      counts: { income: 0, expense: 0, investment: 0 }
+    };
+    rows.forEach((row) => {
+      if (row.type === "income") summary.income = Number(row.total || 0);
+      if (row.type === "expense") summary.expense = Number(row.total || 0);
+      if (row.type === "investment") summary.investment = Number(row.total || 0);
+      if (summary.counts[row.type] !== undefined) summary.counts[row.type] = Number(row.count || 0);
+    });
+    summary.remaining = summary.income - summary.expense - summary.investment;
+    return summary;
+  }
+
   function createOrder({ id, reportId, accessCode, productType, amount, currency = "TWD", provider = "ecpay" }) {
     const report = assertReportAccess(reportId, accessCode);
     const now = new Date().toISOString();
@@ -464,6 +564,8 @@ function createStore() {
     getAdminReport,
     getOrderStatus,
     getReport,
+    addLineLedgerEntry,
+    lineLedgerSummary,
     listReports,
     purgeExpired,
     setFollowupStatus

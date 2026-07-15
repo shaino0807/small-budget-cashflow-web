@@ -107,6 +107,14 @@ LINE webhook 本地測試：
 node webapp\scripts\test-line-webhook.js
 ```
 
+LINE 記帳 MVP 已支援以下文字格式：
+
+- `買早餐 65`、`付房租 12000`、`花 300`：記為支出。
+- `賺 3000`、`收入 45000`、`薪水 50000`：記為收入。
+- `買 0056 10000`、`ETF 00878 5000`：記為投資，並保留 ETF/標的代碼。
+
+目前會先以 LINE 使用者 ID 建立獨立帳本並回覆本月收入、支出、投資總額與剩餘現金流。和網頁報告/ETF 配置的帳號綁定同步會在下一階段處理。
+
 管理端入口使用 `?admin=1`，例如 `http://localhost:5188/?admin=1`。公開首頁預設不顯示管理端分頁。
 
 `render.yaml` 已準備 Render Docker Web Service、Singapore 區域、1 GB 持久磁碟及健康檢查。Render 持久磁碟需要付費 Web Service。建立 Blueprint 時只需另外輸入後臺專用的 `GITHUB_ACTIONS_TOKEN`；此 token 不會進入前端。每次頁面開啟都會要求後臺檢查更新，後臺最多每 15 分鐘安全觸發一次 GitHub Actions，避免流量成長後對 GitHub 與官方資料來源造成濫用。
