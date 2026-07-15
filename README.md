@@ -77,6 +77,7 @@ ETF 主檔會保留 TWSE 官方篩選器可讀分類：`managerType`、`rewardTy
 - `GET /api/admin/analytics`：完成數、重新開啟數與轉換統計。
 - `PATCH /api/admin/reports/:id`：更新聯絡與轉換狀態。
 - `POST /api/market/refresh`：每次公開頁開啟時要求更新官方資料。
+- `POST /api/line/webhook`：LINE Messaging API webhook，會驗證 `x-line-signature` 後處理訊息。Webhook URL 應設定為 `https://small-budget-cashflow-api.onrender.com/api/line/webhook`。
 
 正式部署後臺時，將 `webapp/runtime-config.js` 的 `window.CASHFLOW_API_BASE` 設為 HTTPS API 網址。GitHub Pages 只負責靜態前端，SQLite 與密鑰必須部署在有持久磁碟與環境變數保護的後臺主機。
 
@@ -97,6 +98,14 @@ node webapp\scripts\validate-payment-config.js --production
 stage 模式可使用綠界公開測試參數，正式 production 才要求綠界 `MerchantID`、`HashKey`、`HashIV`、公開前後端 HTTPS 網址、完整報告 NT$499、諮詢訂金 NT$200、諮詢費 NT$1,500，以及 IG / LINE 諮詢連結。真實金鑰只放 Render 或 GitHub Secrets，不提交到 Git。
 
 GitHub Pages runtime 設定使用 repository variables：`CONSULTATION_IG_URL`、`CONSULTATION_LINE_URL`、`FULL_REPORT_PRICE_TWD`、`CONSULTATION_DEPOSIT_TWD`、`CONSULTATION_FEE_TWD`。Render 後臺另外使用環境變數保存綠界金流設定。
+
+LINE 官方帳號整合需要在 Render 後臺設定 `LINE_CHANNEL_SECRET` 與 `LINE_CHANNEL_ACCESS_TOKEN`。這兩個值只放 Render 環境變數，不提交到 Git。若本地測試不想真的呼叫 LINE reply API，可暫時設定 `LINE_REPLY_DISABLED=1`。
+
+LINE webhook 本地測試：
+
+```powershell
+node webapp\scripts\test-line-webhook.js
+```
 
 管理端入口使用 `?admin=1`，例如 `http://localhost:5188/?admin=1`。公開首頁預設不顯示管理端分頁。
 

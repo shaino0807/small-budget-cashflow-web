@@ -56,6 +56,12 @@ services:
         value: https://www.instagram.com/chendino080077/
       - key: CONSULTATION_LINE_URL
         sync: false
+      - key: LINE_CHANNEL_SECRET
+        sync: false
+      - key: LINE_CHANNEL_ACCESS_TOKEN
+        sync: false
+      - key: LINE_REPLY_DISABLED
+        value: "0"
     disk:
       name: customer-data
       mountPath: /data

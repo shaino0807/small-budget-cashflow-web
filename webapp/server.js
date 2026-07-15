@@ -4,6 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const { createStore } = require("./customer-store");
 const { buildCheckout, createMerchantTradeNo, ecpayConfig, productCatalog, productFor, verifyNotification } = require("./ecpay");
+const { handleLineWebhook, lineReadiness, verifyLineSignature } = require("./line-bot");
 
 const root = __dirname;
 const port = Number(process.env.PORT || 5188);
@@ -136,6 +137,26 @@ function readJson(req, maxBytes = 600000) {
   });
 }
 
+function readRawBody(req, maxBytes = 1000000) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let total = 0;
+    req.on("data", (chunk) => {
+      total += chunk.length;
+      if (total > maxBytes) {
+        const error = new Error("請求資料超過大小限制");
+        error.statusCode = 413;
+        reject(error);
+        req.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on("end", () => resolve(Buffer.concat(chunks)));
+    req.on("error", reject);
+  });
+}
+
 function readForm(req, maxBytes = 200000) {
   return new Promise((resolve, reject) => {
     let body = "";
@@ -173,7 +194,7 @@ function setSecurityHeaders(req, res) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Vary", "Origin");
   }
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Report-Access-Code");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Report-Access-Code, X-Line-Signature");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   res.setHeader("X-Frame-Options", "DENY");
@@ -285,8 +306,24 @@ const server = http.createServer((req, res) => {
       service: "small-budget-cashflow-api",
       time: new Date().toISOString(),
       customerStoreConfigured: Boolean(process.env.CUSTOMER_DATA_KEY && process.env.ACCESS_CODE_PEPPER && process.env.ADMIN_API_KEY),
+      line: lineReadiness(),
       payment: paymentReadiness()
     });
+    return;
+  }
+  if (urlPath === "/api/line/webhook" && req.method === "POST") {
+    if (!rateLimit(req, 240)) return sendJson(res, 429, { ok: false, error: "LINE webhook 請求次數過多" });
+    readRawBody(req, 1000000)
+      .then(async (rawBody) => {
+        const signature = String(req.headers["x-line-signature"] || "");
+        if (!verifyLineSignature(rawBody, signature)) {
+          sendJson(res, 401, { ok: false, error: "LINE 簽章驗證失敗" });
+          return;
+        }
+        const result = await handleLineWebhook(rawBody);
+        sendJson(res, 200, { ok: true, ...result });
+      })
+      .catch((error) => sendJson(res, error.statusCode || 400, { ok: false, error: error.message }));
     return;
   }
   if (urlPath === "/api/market/database" && req.method === "GET") {
