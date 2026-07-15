@@ -110,13 +110,13 @@
       "00878",
       "006208"
     ],
-    "refreshExecutedAt": "2026-07-15T12:04:29.311Z",
+    "refreshExecutedAt": "2026-07-15T14:14:18.642Z",
     "sourceFreshness": {
       "referenceTradingDate": "2026-07-15",
-      "checkedAt": "2026-07-15T12:04:29.311Z",
+      "checkedAt": "2026-07-15T14:14:18.642Z",
       "sources": {
         "etfMaster": {
-          "observedAt": "2026-07-15T12:04:29.311Z",
+          "observedAt": "2026-07-15T14:14:18.642Z",
           "sourceDataDate": null,
           "status": "observed_without_source_date",
           "evidence": "TWSE ETF e添富商品篩選器回應沒有提供資料日期，不得以執行日冒充交易日"
@@ -146,13 +146,13 @@
           "evidence": "TWSE STOCK_DAY 回傳資料列 date 最大值"
         },
         "issuerHoldings": {
-          "observedAt": "2026-07-15T12:04:29.311Z",
+          "observedAt": "2026-07-15T14:14:18.642Z",
           "sourceDataDate": "2026-07-15",
           "status": "current",
           "evidence": "投信官方成分股 asOfDate 最大值"
         },
         "issuerNav": {
-          "observedAt": "2026-07-15T12:04:29.311Z",
+          "observedAt": "2026-07-15T14:14:18.642Z",
           "sourceDataDate": "2026-07-15",
           "status": "current",
           "evidence": "投信官方 NAV date 最大值"
