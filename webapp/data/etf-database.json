@@ -1,7 +1,7 @@
 {
   "metadata": {
     "name": "小資現金流地圖 ETF 官方資料庫",
-    "snapshotDate": "2026-07-15",
+    "snapshotDate": "2026-07-16",
     "officialPerformanceDate": "2026-07-15",
     "buildMode": "official_twse_etfortune_master_with_quality_flags",
     "sources": [
@@ -34,6 +34,24 @@
         "name": "TWSE OpenAPI 上市個股日成交資訊",
         "url": "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL",
         "usage": "ETF 每日開高低收、成交量與成交金額"
+      },
+      {
+        "id": "twse-company-basic",
+        "name": "TWSE OpenAPI 上市公司基本資料",
+        "url": "https://openapi.twse.com.tw/v1/opendata/t187ap03_L",
+        "usage": "股票主檔、公司簡稱、產業別與上市日期"
+      },
+      {
+        "id": "twse-stock-day-all",
+        "name": "TWSE OpenAPI 上市個股日成交資訊",
+        "url": "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL",
+        "usage": "股票每日開高低收、成交量與最新價格"
+      },
+      {
+        "id": "tpex-mainboard-daily-close-quotes",
+        "name": "TPEx OpenAPI 上櫃股票行情",
+        "url": "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes",
+        "usage": "上櫃股票代號、名稱、每日開高低收、成交量、成交金額與發行股數"
       },
       {
         "id": "twse-etfortune-products",
@@ -77,24 +95,6 @@
         "name": "富邦投信 ETF 基金資產",
         "url": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
         "usage": "006208 官方基金資產、完整可見持股列與 NAV"
-      },
-      {
-        "id": "twse-company-basic",
-        "name": "TWSE OpenAPI 上市公司基本資料",
-        "url": "https://openapi.twse.com.tw/v1/opendata/t187ap03_L",
-        "usage": "股票主檔、公司簡稱、產業別與上市日期"
-      },
-      {
-        "id": "twse-stock-day-all",
-        "name": "TWSE OpenAPI 上市個股日成交資訊",
-        "url": "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL",
-        "usage": "股票每日開高低收、成交量與最新價格"
-      },
-      {
-        "id": "tpex-mainboard-daily-close-quotes",
-        "name": "TPEx OpenAPI 上櫃股票行情",
-        "url": "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes",
-        "usage": "上櫃股票代號、名稱、每日開高低收、成交量、成交金額與發行股數"
       }
     ],
     "limitations": [
@@ -110,13 +110,13 @@
       "00878",
       "006208"
     ],
-    "refreshExecutedAt": "2026-07-15T15:47:12.043Z",
+    "refreshExecutedAt": "2026-07-16T03:46:57.984Z",
     "sourceFreshness": {
       "referenceTradingDate": "2026-07-15",
-      "checkedAt": "2026-07-15T15:47:12.043Z",
+      "checkedAt": "2026-07-16T03:46:57.984Z",
       "sources": {
         "etfMaster": {
-          "observedAt": "2026-07-15T15:47:12.043Z",
+          "observedAt": "2026-07-16T03:46:57.984Z",
           "sourceDataDate": null,
           "status": "observed_without_source_date",
           "evidence": "TWSE ETF e添富商品篩選器回應沒有提供資料日期，不得以執行日冒充交易日"
@@ -140,19 +140,19 @@
           "evidence": "官方 Date 欄位"
         },
         "priceSeries": {
-          "observedAt": "2026-07-15T15:46:20.967Z",
+          "observedAt": "2026-07-16T03:46:39.413Z",
           "sourceDataDate": "2026-07-15",
           "status": "current",
           "evidence": "TWSE STOCK_DAY 回傳資料列 date 最大值"
         },
         "issuerHoldings": {
-          "observedAt": "2026-07-15T15:47:12.043Z",
+          "observedAt": "2026-07-16T03:46:57.984Z",
           "sourceDataDate": "2026-07-15",
           "status": "current",
           "evidence": "投信官方成分股 asOfDate 最大值"
         },
         "issuerNav": {
-          "observedAt": "2026-07-15T15:47:12.043Z",
+          "observedAt": "2026-07-16T03:46:57.984Z",
           "sourceDataDate": "2026-07-15",
           "status": "current",
           "evidence": "投信官方 NAV date 最大值"
@@ -179,7 +179,7 @@
       "themes": [
         "高股息"
       ],
-      "aumBillionTwd": 259,
+      "aumBillionTwd": 267,
       "beneficiaries": 135729,
       "ytdAverageValueMillionTwd": 1019.252,
       "ytdAverageVolume": 75749940,
@@ -187,7 +187,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.555Z",
+        "observedAt": "2026-07-16T03:46:38.040Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00400A",
@@ -232,7 +232,7 @@
       "themes": [
         "大型權值"
       ],
-      "aumBillionTwd": 31,
+      "aumBillionTwd": 32,
       "beneficiaries": 17685,
       "ytdAverageValueMillionTwd": 152.323,
       "ytdAverageVolume": 12398224,
@@ -240,7 +240,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.040Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00401A",
@@ -290,7 +290,7 @@
         "大型權值",
         "科技主題型"
       ],
-      "aumBillionTwd": 75,
+      "aumBillionTwd": 76,
       "beneficiaries": 53436,
       "ytdAverageValueMillionTwd": 277.99,
       "ytdAverageVolume": 28340417,
@@ -298,7 +298,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.040Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00402A",
@@ -347,7 +347,7 @@
       "themes": [
         "大型權值"
       ],
-      "aumBillionTwd": 1596,
+      "aumBillionTwd": 1645,
       "beneficiaries": 994018,
       "ytdAverageValueMillionTwd": 7362.993,
       "ytdAverageVolume": 704689437,
@@ -355,7 +355,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.040Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00403A",
@@ -402,7 +402,7 @@
       "indexName": "無",
       "listingDate": "2026-06-09",
       "themes": [],
-      "aumBillionTwd": 34,
+      "aumBillionTwd": 35,
       "beneficiaries": 23866,
       "ytdAverageValueMillionTwd": 194.716,
       "ytdAverageVolume": 19490288,
@@ -410,7 +410,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.040Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00404A",
@@ -452,7 +452,7 @@
         "綠能及電動車",
         "生技"
       ],
-      "aumBillionTwd": 259,
+      "aumBillionTwd": 268,
       "beneficiaries": 150815,
       "ytdAverageValueMillionTwd": 1492.605,
       "ytdAverageVolume": 162851323,
@@ -460,7 +460,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00405A",
@@ -509,7 +509,7 @@
       "themes": [
         "大型權值"
       ],
-      "aumBillionTwd": 76,
+      "aumBillionTwd": 85,
       "beneficiaries": 40799,
       "ytdAverageValueMillionTwd": 352.904,
       "ytdAverageVolume": 35195388,
@@ -517,7 +517,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00406A",
@@ -567,14 +567,14 @@
         "因子投資",
         "全市場指數"
       ],
-      "aumBillionTwd": 261,
+      "aumBillionTwd": 270,
       "beneficiaries": 157843,
       "ytdAverageValueMillionTwd": 2098.636,
       "ytdAverageVolume": 216385420,
       "close": 9.34,
       "performance": {
         "date": null,
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date",
         "source": "twse-etfortune-products"
       },
@@ -633,7 +633,7 @@
       "close": 10.16,
       "performance": {
         "date": null,
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date",
         "source": "twse-etfortune-products"
       },
@@ -675,7 +675,7 @@
       "themes": [
         "大型權值"
       ],
-      "aumBillionTwd": 21916,
+      "aumBillionTwd": 22309,
       "beneficiaries": 3311850,
       "ytdAverageValueMillionTwd": 11785.386,
       "ytdAverageVolume": 135914518,
@@ -683,7 +683,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/0050",
@@ -732,7 +732,7 @@
       "themes": [
         "中小型權值"
       ],
-      "aumBillionTwd": 34,
+      "aumBillionTwd": 35,
       "beneficiaries": 13725,
       "ytdAverageValueMillionTwd": 13.437,
       "ytdAverageVolume": 110850,
@@ -740,7 +740,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/0051",
@@ -785,7 +785,7 @@
       "themes": [
         "科技主題型"
       ],
-      "aumBillionTwd": 1571,
+      "aumBillionTwd": 1598,
       "beneficiaries": 468426,
       "ytdAverageValueMillionTwd": 2368.301,
       "ytdAverageVolume": 47926252,
@@ -793,7 +793,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/0052",
@@ -846,7 +846,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/0053",
@@ -899,7 +899,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/0055",
@@ -937,7 +937,7 @@
       "themes": [
         "高股息"
       ],
-      "aumBillionTwd": 7208,
+      "aumBillionTwd": 7372,
       "beneficiariesTenThousand": 154.63,
       "performance": {
         "oneDay": -4.54,
@@ -950,7 +950,7 @@
         "fiveYears": 124.67,
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/0056",
@@ -1023,7 +1023,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/0057",
@@ -1080,7 +1080,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/0061",
@@ -1129,7 +1129,7 @@
       "themes": [
         "大型權值"
       ],
-      "aumBillionTwd": 19,
+      "aumBillionTwd": 20,
       "beneficiaries": 1180,
       "ytdAverageValueMillionTwd": 3.123,
       "ytdAverageVolume": 18397,
@@ -1137,7 +1137,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/006203",
@@ -1194,7 +1194,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/006204",
@@ -1249,7 +1249,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/006205",
@@ -1298,7 +1298,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/006206",
@@ -1355,7 +1355,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/006207",
@@ -1397,7 +1397,7 @@
       "themes": [
         "大型權值"
       ],
-      "aumBillionTwd": 4434,
+      "aumBillionTwd": 4506,
       "beneficiariesTenThousand": 68.62,
       "performance": {
         "oneDay": -2.99,
@@ -1410,7 +1410,7 @@
         "fiveYears": 239.5,
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/006208",
@@ -1481,7 +1481,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00625K",
@@ -1522,7 +1522,7 @@
       "themes": [
         "大型權值"
       ],
-      "aumBillionTwd": 2478,
+      "aumBillionTwd": 2568,
       "beneficiaries": 317522,
       "ytdAverageValueMillionTwd": 6285.378,
       "ytdAverageVolume": 155164701,
@@ -1530,7 +1530,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00631L",
@@ -1579,7 +1579,7 @@
       "themes": [
         "大型權值"
       ],
-      "aumBillionTwd": 241,
+      "aumBillionTwd": 236,
       "beneficiaries": 61592,
       "ytdAverageValueMillionTwd": 1509.072,
       "ytdAverageVolume": 123893195,
@@ -1587,7 +1587,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00632R",
@@ -1645,7 +1645,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00633L",
@@ -1699,7 +1699,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00634R",
@@ -1742,7 +1742,7 @@
       "indexName": "標普高盛黃金ER指數(S&P GSCI Gold Excess Return Index)",
       "listingDate": "2015-04-15",
       "themes": [],
-      "aumBillionTwd": 127,
+      "aumBillionTwd": 129,
       "beneficiaries": 58332,
       "ytdAverageValueMillionTwd": 392.982,
       "ytdAverageVolume": 7783000,
@@ -1750,7 +1750,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00635U",
@@ -1801,7 +1801,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00636",
@@ -1852,7 +1852,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00636K",
@@ -1905,7 +1905,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00637L",
@@ -1962,7 +1962,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00638R",
@@ -2021,7 +2021,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00639",
@@ -2074,7 +2074,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00640L",
@@ -2131,7 +2131,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00641R",
@@ -2178,7 +2178,7 @@
       "indexName": "標普高盛原油ER指數(S&P GSCI Crude Oil Enhanced Excess Return)",
       "listingDate": "2015-09-07",
       "themes": [],
-      "aumBillionTwd": 27,
+      "aumBillionTwd": 28,
       "beneficiaries": 11315,
       "ytdAverageValueMillionTwd": 435.946,
       "ytdAverageVolume": 17595083,
@@ -2186,7 +2186,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00642U",
@@ -2237,7 +2237,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00643",
@@ -2284,7 +2284,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00643K",
@@ -2333,7 +2333,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00645",
@@ -2382,7 +2382,7 @@
       "themes": [
         "大型權值"
       ],
-      "aumBillionTwd": 431,
+      "aumBillionTwd": 432,
       "beneficiaries": 107612,
       "ytdAverageValueMillionTwd": 256.675,
       "ytdAverageVolume": 3648976,
@@ -2390,7 +2390,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00646",
@@ -2447,7 +2447,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00647L",
@@ -2504,7 +2504,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00648R",
@@ -2553,7 +2553,7 @@
       "themes": [
         "大型權值"
       ],
-      "aumBillionTwd": 22,
+      "aumBillionTwd": 21,
       "beneficiaries": 2716,
       "ytdAverageValueMillionTwd": 109.078,
       "ytdAverageVolume": 6291208,
@@ -2561,7 +2561,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00650L",
@@ -2618,7 +2618,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00651R",
@@ -2675,7 +2675,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00652",
@@ -2732,7 +2732,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00653L",
@@ -2789,7 +2789,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00654R",
@@ -2846,7 +2846,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00655L",
@@ -2903,7 +2903,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00656R",
@@ -2958,7 +2958,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00657",
@@ -3009,7 +3009,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00657K",
@@ -3062,7 +3062,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00660",
@@ -3115,7 +3115,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00661",
@@ -3164,7 +3164,7 @@
       "themes": [
         "大型權值"
       ],
-      "aumBillionTwd": 1044,
+      "aumBillionTwd": 1057,
       "beneficiaries": 105752,
       "ytdAverageValueMillionTwd": 563.753,
       "ytdAverageVolume": 5106697,
@@ -3172,7 +3172,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00662",
@@ -3221,7 +3221,7 @@
       "themes": [
         "全市場指數"
       ],
-      "aumBillionTwd": 152,
+      "aumBillionTwd": 158,
       "beneficiaries": 16552,
       "ytdAverageValueMillionTwd": 1024.836,
       "ytdAverageVolume": 12945461,
@@ -3229,7 +3229,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00663L",
@@ -3286,7 +3286,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00664R",
@@ -3336,7 +3336,7 @@
         "全市場指數",
         "大型權值"
       ],
-      "aumBillionTwd": 47,
+      "aumBillionTwd": 46,
       "beneficiaries": 5958,
       "ytdAverageValueMillionTwd": 238.466,
       "ytdAverageVolume": 24009598,
@@ -3344,7 +3344,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00665L",
@@ -3402,7 +3402,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00666R",
@@ -3457,7 +3457,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00668",
@@ -3508,7 +3508,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00668K",
@@ -3561,7 +3561,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00669R",
@@ -3610,7 +3610,7 @@
       "themes": [
         "大型權值"
       ],
-      "aumBillionTwd": 149,
+      "aumBillionTwd": 152,
       "beneficiaries": 12365,
       "ytdAverageValueMillionTwd": 260.813,
       "ytdAverageVolume": 1539414,
@@ -3618,7 +3618,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00670L",
@@ -3675,7 +3675,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00671R",
@@ -3730,7 +3730,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.556Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00673R",
@@ -3785,7 +3785,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00674R",
@@ -3834,7 +3834,7 @@
       "themes": [
         "全市場指數"
       ],
-      "aumBillionTwd": 350,
+      "aumBillionTwd": 364,
       "beneficiaries": 19920,
       "ytdAverageValueMillionTwd": 784.333,
       "ytdAverageVolume": 3474227,
@@ -3842,7 +3842,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00675L",
@@ -3899,7 +3899,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.041Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00676R",
@@ -3956,7 +3956,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00678",
@@ -4009,7 +4009,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00680L",
@@ -4066,7 +4066,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00681R",
@@ -4121,7 +4121,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00682U",
@@ -4172,7 +4172,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00683L",
@@ -4227,7 +4227,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00684R",
@@ -4274,7 +4274,7 @@
       "indexName": "臺指日報酬兩倍指數",
       "listingDate": "2017-03-30",
       "themes": [],
-      "aumBillionTwd": 589,
+      "aumBillionTwd": 613,
       "beneficiaries": 164360,
       "ytdAverageValueMillionTwd": 930.923,
       "ytdAverageVolume": 27610970,
@@ -4282,7 +4282,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00685L",
@@ -4337,7 +4337,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00686R",
@@ -4394,7 +4394,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00688L",
@@ -4451,7 +4451,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00689R",
@@ -4500,7 +4500,7 @@
       "themes": [
         "大型權值"
       ],
-      "aumBillionTwd": 61,
+      "aumBillionTwd": 62,
       "beneficiaries": 14056,
       "ytdAverageValueMillionTwd": 41.872,
       "ytdAverageVolume": 654305,
@@ -4508,7 +4508,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00690",
@@ -4554,7 +4554,7 @@
         "大型權值",
         "公司治理及ESG"
       ],
-      "aumBillionTwd": 556,
+      "aumBillionTwd": 565,
       "beneficiaries": 90954,
       "ytdAverageValueMillionTwd": 130.083,
       "ytdAverageVolume": 1725930,
@@ -4562,7 +4562,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00692",
@@ -4617,7 +4617,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00693U",
@@ -4671,7 +4671,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00700",
@@ -4722,7 +4722,7 @@
         "高息低波動",
         "大型權值"
       ],
-      "aumBillionTwd": 67,
+      "aumBillionTwd": 68,
       "beneficiaries": 38423,
       "ytdAverageValueMillionTwd": 43.055,
       "ytdAverageVolume": 1363370,
@@ -4730,7 +4730,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00701",
@@ -4789,7 +4789,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00702",
@@ -4846,7 +4846,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00703",
@@ -4901,7 +4901,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00706L",
@@ -4956,7 +4956,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00707R",
@@ -5003,7 +5003,7 @@
       "indexName": "標普高盛黃金日報酬正向兩倍ER指數(S&P GSCI Gold 2x Leveraged Index ER)",
       "listingDate": "2017-09-01",
       "themes": [],
-      "aumBillionTwd": 86,
+      "aumBillionTwd": 90,
       "beneficiaries": 16289,
       "ytdAverageValueMillionTwd": 570.859,
       "ytdAverageVolume": 5630947,
@@ -5011,7 +5011,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00708L",
@@ -5068,7 +5068,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00709",
@@ -5119,7 +5119,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00710B",
@@ -5166,7 +5166,7 @@
       "indexName": "彭博新興市場10年期以上美元投資等級債券(不含中國)國家10%上限指數(Bloomberg EM USD ex China Investment Grade 10 year 10% Country Capped Index)",
       "listingDate": "2017-08-21",
       "themes": [],
-      "aumBillionTwd": 141,
+      "aumBillionTwd": 140,
       "beneficiaries": 799,
       "ytdAverageValueMillionTwd": 18.921,
       "ytdAverageVolume": 1194223,
@@ -5174,7 +5174,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00711B",
@@ -5219,7 +5219,7 @@
       "themes": [
         "高股息"
       ],
-      "aumBillionTwd": 465,
+      "aumBillionTwd": 471,
       "beneficiaries": 138281,
       "ytdAverageValueMillionTwd": 287.02,
       "ytdAverageVolume": 32055207,
@@ -5227,7 +5227,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00712",
@@ -5273,7 +5273,7 @@
         "高息低波動",
         "因子投資"
       ],
-      "aumBillionTwd": 1051,
+      "aumBillionTwd": 1057,
       "beneficiaries": 274178,
       "ytdAverageValueMillionTwd": 648.329,
       "ytdAverageVolume": 11963175,
@@ -5281,7 +5281,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00713",
@@ -5336,7 +5336,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00714",
@@ -5379,7 +5379,7 @@
       "indexName": "標普高盛布蘭特原油日報酬正向兩倍ER指數(S&P GSCI Brent Crude 2X leveraged ER Index)",
       "listingDate": "2017-11-16",
       "themes": [],
-      "aumBillionTwd": 54,
+      "aumBillionTwd": 55,
       "beneficiaries": 8372,
       "ytdAverageValueMillionTwd": 1124.304,
       "ytdAverageVolume": 26533904,
@@ -5387,7 +5387,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00715L",
@@ -5444,7 +5444,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00717",
@@ -5493,7 +5493,7 @@
       "themes": [
         "大型權值"
       ],
-      "aumBillionTwd": 24,
+      "aumBillionTwd": 25,
       "beneficiaries": 9577,
       "ytdAverageValueMillionTwd": 11.541,
       "ytdAverageVolume": 229187,
@@ -5501,7 +5501,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00728",
@@ -5558,7 +5558,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00730",
@@ -5616,7 +5616,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00731",
@@ -5666,7 +5666,7 @@
         "因子投資",
         "中小型權值"
       ],
-      "aumBillionTwd": 47,
+      "aumBillionTwd": 48,
       "beneficiaries": 21359,
       "ytdAverageValueMillionTwd": 97.623,
       "ytdAverageVolume": 1620524,
@@ -5674,7 +5674,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00733",
@@ -5719,7 +5719,7 @@
       "themes": [
         "科技主題型"
       ],
-      "aumBillionTwd": 113,
+      "aumBillionTwd": 119,
       "beneficiaries": 32215,
       "ytdAverageValueMillionTwd": 282.033,
       "ytdAverageVolume": 3128243,
@@ -5727,7 +5727,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00735",
@@ -5776,7 +5776,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00736",
@@ -5833,7 +5833,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00737",
@@ -5876,7 +5876,7 @@
       "indexName": "道瓊白銀ER指數(Dow Jones Commodity Index Silver Excess Return)",
       "listingDate": "2018-06-01",
       "themes": [],
-      "aumBillionTwd": 115,
+      "aumBillionTwd": 117,
       "beneficiaries": 34664,
       "ytdAverageValueMillionTwd": 1014.985,
       "ytdAverageVolume": 14930643,
@@ -5884,7 +5884,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00738U",
@@ -5930,7 +5930,7 @@
         "大型權值",
         "中小型權值"
       ],
-      "aumBillionTwd": 7,
+      "aumBillionTwd": 8,
       "beneficiaries": 1996,
       "ytdAverageValueMillionTwd": 2.928,
       "ytdAverageVolume": 104342,
@@ -5938,7 +5938,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00739",
@@ -5995,7 +5995,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00752",
@@ -6044,7 +6044,7 @@
       "themes": [
         "大型權值"
       ],
-      "aumBillionTwd": 69,
+      "aumBillionTwd": 71,
       "beneficiaries": 11317,
       "ytdAverageValueMillionTwd": 206.958,
       "ytdAverageVolume": 18898412,
@@ -6052,7 +6052,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00753L",
@@ -6103,7 +6103,7 @@
         "大型權值",
         "科技主題型"
       ],
-      "aumBillionTwd": 366,
+      "aumBillionTwd": 370,
       "beneficiaries": 72190,
       "ytdAverageValueMillionTwd": 327.651,
       "ytdAverageVolume": 2778588,
@@ -6111,7 +6111,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00757",
@@ -6161,7 +6161,7 @@
         "大型權值",
         "科技主題型"
       ],
-      "aumBillionTwd": 54,
+      "aumBillionTwd": 55,
       "beneficiaries": 23137,
       "ytdAverageValueMillionTwd": 39.756,
       "ytdAverageVolume": 423704,
@@ -6169,7 +6169,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00762",
@@ -6224,7 +6224,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00763U",
@@ -6269,7 +6269,7 @@
       "themes": [
         "科技主題型"
       ],
-      "aumBillionTwd": 54,
+      "aumBillionTwd": 55,
       "beneficiaries": 18504,
       "ytdAverageValueMillionTwd": 39.74,
       "ytdAverageVolume": 696073,
@@ -6277,7 +6277,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00770",
@@ -6330,7 +6330,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00771",
@@ -6387,7 +6387,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00775B",
@@ -6441,7 +6441,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00783",
@@ -6487,7 +6487,7 @@
         "大型權值",
         "科技主題型"
       ],
-      "aumBillionTwd": 680,
+      "aumBillionTwd": 702,
       "beneficiaries": 173571,
       "ytdAverageValueMillionTwd": 1050.059,
       "ytdAverageVolume": 15203557,
@@ -6495,7 +6495,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.042Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00830",
@@ -6544,7 +6544,7 @@
       "themes": [
         "公司治理及ESG"
       ],
-      "aumBillionTwd": 366,
+      "aumBillionTwd": 373,
       "beneficiaries": 80812,
       "ytdAverageValueMillionTwd": 86.419,
       "ytdAverageVolume": 1205194,
@@ -6552,7 +6552,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00850",
@@ -6605,7 +6605,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00851",
@@ -6658,7 +6658,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00852L",
@@ -6708,7 +6708,7 @@
         "大型權值",
         "科技主題型"
       ],
-      "aumBillionTwd": 61,
+      "aumBillionTwd": 62,
       "beneficiaries": 19615,
       "ytdAverageValueMillionTwd": 17.777,
       "ytdAverageVolume": 231450,
@@ -6716,7 +6716,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00861",
@@ -6773,7 +6773,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00865B",
@@ -6830,7 +6830,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00875",
@@ -6876,7 +6876,7 @@
         "大型權值",
         "科技主題型"
       ],
-      "aumBillionTwd": 78,
+      "aumBillionTwd": 85,
       "beneficiaries": 22056,
       "ytdAverageValueMillionTwd": 29.397,
       "ytdAverageVolume": 381670,
@@ -6884,7 +6884,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00876",
@@ -6927,7 +6927,7 @@
         "高股息",
         "公司治理及ESG"
       ],
-      "aumBillionTwd": 6018,
+      "aumBillionTwd": 6090,
       "beneficiariesTenThousand": 158.45,
       "performance": {
         "oneDay": -3.74,
@@ -6940,7 +6940,7 @@
         "fiveYears": 147.1,
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00878",
@@ -7005,7 +7005,7 @@
       "themes": [
         "科技主題型"
       ],
-      "aumBillionTwd": 1235,
+      "aumBillionTwd": 1261,
       "beneficiaries": 317952,
       "ytdAverageValueMillionTwd": 842.228,
       "ytdAverageVolume": 20797497,
@@ -7013,7 +7013,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00881",
@@ -7058,7 +7058,7 @@
       "themes": [
         "高股息"
       ],
-      "aumBillionTwd": 305,
+      "aumBillionTwd": 310,
       "beneficiaries": 85995,
       "ytdAverageValueMillionTwd": 172.229,
       "ytdAverageVolume": 11011396,
@@ -7066,7 +7066,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00882",
@@ -7116,7 +7116,7 @@
         "全市場指數",
         "大型權值"
       ],
-      "aumBillionTwd": 114,
+      "aumBillionTwd": 112,
       "beneficiaries": 50308,
       "ytdAverageValueMillionTwd": 101.443,
       "ytdAverageVolume": 5506051,
@@ -7124,7 +7124,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00885",
@@ -7174,7 +7174,7 @@
         "科技主題型",
         "公司治理及ESG"
       ],
-      "aumBillionTwd": 584,
+      "aumBillionTwd": 600,
       "beneficiaries": 173664,
       "ytdAverageValueMillionTwd": 805.842,
       "ytdAverageVolume": 26369335,
@@ -7182,7 +7182,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00891",
@@ -7227,7 +7227,7 @@
       "themes": [
         "科技主題型"
       ],
-      "aumBillionTwd": 134,
+      "aumBillionTwd": 138,
       "beneficiaries": 42328,
       "ytdAverageValueMillionTwd": 108.332,
       "ytdAverageVolume": 2793987,
@@ -7235,7 +7235,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00892",
@@ -7280,7 +7280,7 @@
       "themes": [
         "綠能及電動車"
       ],
-      "aumBillionTwd": 166,
+      "aumBillionTwd": 169,
       "beneficiaries": 58834,
       "ytdAverageValueMillionTwd": 60.302,
       "ytdAverageVolume": 1571452,
@@ -7288,7 +7288,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00893",
@@ -7335,7 +7335,7 @@
         "大型權值",
         "中小型權值"
       ],
-      "aumBillionTwd": 68,
+      "aumBillionTwd": 70,
       "beneficiaries": 25723,
       "ytdAverageValueMillionTwd": 96.038,
       "ytdAverageVolume": 2410557,
@@ -7343,7 +7343,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00894",
@@ -7392,7 +7392,7 @@
       "themes": [
         "綠能及電動車"
       ],
-      "aumBillionTwd": 76,
+      "aumBillionTwd": 77,
       "beneficiaries": 30123,
       "ytdAverageValueMillionTwd": 37.3,
       "ytdAverageVolume": 832936,
@@ -7400,7 +7400,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00895",
@@ -7441,7 +7441,7 @@
       "themes": [
         "綠能及電動車"
       ],
-      "aumBillionTwd": 105,
+      "aumBillionTwd": 108,
       "beneficiaries": 49456,
       "ytdAverageValueMillionTwd": 131.073,
       "ytdAverageVolume": 5211252,
@@ -7449,7 +7449,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00896",
@@ -7502,7 +7502,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00897",
@@ -7547,7 +7547,7 @@
       "themes": [
         "生技"
       ],
-      "aumBillionTwd": 14,
+      "aumBillionTwd": 13,
       "beneficiaries": 10444,
       "ytdAverageValueMillionTwd": 6.449,
       "ytdAverageVolume": 762780,
@@ -7555,7 +7555,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00898",
@@ -7608,7 +7608,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00899",
@@ -7653,7 +7653,7 @@
       "themes": [
         "高股息"
       ],
-      "aumBillionTwd": 302,
+      "aumBillionTwd": 309,
       "beneficiaries": 136017,
       "ytdAverageValueMillionTwd": 209.321,
       "ytdAverageVolume": 13402726,
@@ -7661,7 +7661,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00900",
@@ -7712,7 +7712,7 @@
         "科技主題型",
         "綠能及電動車"
       ],
-      "aumBillionTwd": 28,
+      "aumBillionTwd": 29,
       "beneficiaries": 12302,
       "ytdAverageValueMillionTwd": 24.554,
       "ytdAverageVolume": 693947,
@@ -7720,7 +7720,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00901",
@@ -7777,7 +7777,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00902",
@@ -7830,7 +7830,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00903",
@@ -7879,7 +7879,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00904",
@@ -7932,7 +7932,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00905",
@@ -7987,7 +7987,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00907",
@@ -8044,7 +8044,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00908",
@@ -8093,7 +8093,7 @@
       "themes": [
         "科技主題型"
       ],
-      "aumBillionTwd": 48,
+      "aumBillionTwd": 49,
       "beneficiaries": 28033,
       "ytdAverageValueMillionTwd": 166.912,
       "ytdAverageVolume": 3923589,
@@ -8101,7 +8101,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00909",
@@ -8155,7 +8155,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00910",
@@ -8196,7 +8196,7 @@
       "themes": [
         "科技主題型"
       ],
-      "aumBillionTwd": 15,
+      "aumBillionTwd": 16,
       "beneficiaries": 12226,
       "ytdAverageValueMillionTwd": 27.795,
       "ytdAverageVolume": 569795,
@@ -8204,7 +8204,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00911",
@@ -8246,7 +8246,7 @@
         "因子投資",
         "大型權值"
       ],
-      "aumBillionTwd": 20,
+      "aumBillionTwd": 21,
       "beneficiaries": 8411,
       "ytdAverageValueMillionTwd": 29.019,
       "ytdAverageVolume": 1049512,
@@ -8254,7 +8254,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00912",
@@ -8303,7 +8303,7 @@
       "themes": [
         "科技主題型"
       ],
-      "aumBillionTwd": 21,
+      "aumBillionTwd": 23,
       "beneficiaries": 10206,
       "ytdAverageValueMillionTwd": 60.916,
       "ytdAverageVolume": 1385145,
@@ -8311,7 +8311,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00913",
@@ -8358,7 +8358,7 @@
         "高息低波動",
         "因子投資"
       ],
-      "aumBillionTwd": 167,
+      "aumBillionTwd": 168,
       "beneficiaries": 74742,
       "ytdAverageValueMillionTwd": 197.653,
       "ytdAverageVolume": 7627619,
@@ -8366,7 +8366,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00915",
@@ -8423,7 +8423,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00916",
@@ -8472,7 +8472,7 @@
       "themes": [
         "金融"
       ],
-      "aumBillionTwd": 14,
+      "aumBillionTwd": 15,
       "beneficiaries": 12093,
       "ytdAverageValueMillionTwd": 37.847,
       "ytdAverageVolume": 1633510,
@@ -8480,7 +8480,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00917",
@@ -8527,7 +8527,7 @@
         "因子投資",
         "大型權值"
       ],
-      "aumBillionTwd": 1115,
+      "aumBillionTwd": 1124,
       "beneficiaries": 274598,
       "ytdAverageValueMillionTwd": 1069.967,
       "ytdAverageVolume": 39836400,
@@ -8535,7 +8535,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00918",
@@ -8584,7 +8584,7 @@
       "themes": [
         "高股息"
       ],
-      "aumBillionTwd": 5337,
+      "aumBillionTwd": 5390,
       "beneficiaries": 1357662,
       "ytdAverageValueMillionTwd": 3479.693,
       "ytdAverageVolume": 136341049,
@@ -8592,7 +8592,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00919",
@@ -8650,7 +8650,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00920",
@@ -8703,7 +8703,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00921",
@@ -8748,7 +8748,7 @@
       "themes": [
         "大型權值"
       ],
-      "aumBillionTwd": 828,
+      "aumBillionTwd": 845,
       "beneficiaries": 189128,
       "ytdAverageValueMillionTwd": 615.919,
       "ytdAverageVolume": 19211316,
@@ -8756,7 +8756,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00922",
@@ -8805,7 +8805,7 @@
       "themes": [
         "公司治理及ESG"
       ],
-      "aumBillionTwd": 349,
+      "aumBillionTwd": 355,
       "beneficiaries": 106326,
       "ytdAverageValueMillionTwd": 257.041,
       "ytdAverageVolume": 7747969,
@@ -8813,7 +8813,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00923",
@@ -8859,7 +8859,7 @@
         "因子投資",
         "大型權值"
       ],
-      "aumBillionTwd": 145,
+      "aumBillionTwd": 146,
       "beneficiaries": 56433,
       "ytdAverageValueMillionTwd": 94.967,
       "ytdAverageVolume": 3188253,
@@ -8867,7 +8867,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00924",
@@ -8916,7 +8916,7 @@
       "themes": [
         "因子投資"
       ],
-      "aumBillionTwd": 22,
+      "aumBillionTwd": 23,
       "beneficiaries": 9595,
       "ytdAverageValueMillionTwd": 26.181,
       "ytdAverageVolume": 1088633,
@@ -8924,7 +8924,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00926",
@@ -8967,7 +8967,7 @@
       "indexName": "臺灣指數公司特選臺灣上市上櫃半導體收益指數",
       "listingDate": "2023-06-06",
       "themes": [],
-      "aumBillionTwd": 506,
+      "aumBillionTwd": 537,
       "beneficiaries": 122864,
       "ytdAverageValueMillionTwd": 810.742,
       "ytdAverageVolume": 24803369,
@@ -8975,7 +8975,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00927",
@@ -9025,7 +9025,7 @@
         "高股息",
         "科技主題型"
       ],
-      "aumBillionTwd": 1352,
+      "aumBillionTwd": 1381,
       "beneficiaries": 412428,
       "ytdAverageValueMillionTwd": 1182.503,
       "ytdAverageVolume": 51775344,
@@ -9033,7 +9033,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00929",
@@ -9092,7 +9092,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00930",
@@ -9143,7 +9143,7 @@
         "等權重",
         "公司治理及ESG"
       ],
-      "aumBillionTwd": 21,
+      "aumBillionTwd": 22,
       "beneficiaries": 14072,
       "ytdAverageValueMillionTwd": 24.784,
       "ytdAverageVolume": 1550363,
@@ -9151,7 +9151,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00932",
@@ -9200,7 +9200,7 @@
       "themes": [
         "高股息"
       ],
-      "aumBillionTwd": 114,
+      "aumBillionTwd": 116,
       "beneficiaries": 48263,
       "ytdAverageValueMillionTwd": 103.859,
       "ytdAverageVolume": 4297354,
@@ -9208,7 +9208,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00934",
@@ -9258,7 +9258,7 @@
         "大型權值",
         "科技主題型"
       ],
-      "aumBillionTwd": 446,
+      "aumBillionTwd": 462,
       "beneficiaries": 117402,
       "ytdAverageValueMillionTwd": 673.752,
       "ytdAverageVolume": 13646633,
@@ -9266,7 +9266,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00935",
@@ -9325,7 +9325,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00936",
@@ -9382,7 +9382,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00938",
@@ -9428,7 +9428,7 @@
         "高股息",
         "因子投資"
       ],
-      "aumBillionTwd": 254,
+      "aumBillionTwd": 256,
       "beneficiaries": 104910,
       "ytdAverageValueMillionTwd": 178.654,
       "ytdAverageVolume": 10683514,
@@ -9436,7 +9436,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00939",
@@ -9486,7 +9486,7 @@
         "高股息",
         "因子投資"
       ],
-      "aumBillionTwd": 673,
+      "aumBillionTwd": 682,
       "beneficiaries": 330920,
       "ytdAverageValueMillionTwd": 614.907,
       "ytdAverageVolume": 59661270,
@@ -9494,7 +9494,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00940",
@@ -9543,7 +9543,7 @@
       "themes": [
         "科技主題型"
       ],
-      "aumBillionTwd": 122,
+      "aumBillionTwd": 124,
       "beneficiaries": 49235,
       "ytdAverageValueMillionTwd": 64.137,
       "ytdAverageVolume": 2752849,
@@ -9551,7 +9551,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00941",
@@ -9606,7 +9606,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00943",
@@ -9664,7 +9664,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00944",
@@ -9719,7 +9719,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00945B",
@@ -9773,7 +9773,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00946",
@@ -9822,7 +9822,7 @@
       "themes": [
         "科技主題型"
       ],
-      "aumBillionTwd": 97,
+      "aumBillionTwd": 100,
       "beneficiaries": 38802,
       "ytdAverageValueMillionTwd": 299.681,
       "ytdAverageVolume": 9985516,
@@ -9830,7 +9830,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.043Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00947",
@@ -9883,7 +9883,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.557Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00949",
@@ -9940,7 +9940,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00951",
@@ -9986,7 +9986,7 @@
         "因子投資",
         "科技主題型"
       ],
-      "aumBillionTwd": 44,
+      "aumBillionTwd": 45,
       "beneficiaries": 22881,
       "ytdAverageValueMillionTwd": 55.396,
       "ytdAverageVolume": 3557203,
@@ -9994,7 +9994,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00952",
@@ -10037,7 +10037,7 @@
       "indexName": "ICE 1-5年BB-B級成熟市場信用優息美元非投資等級債券指數",
       "listingDate": "2024-08-21",
       "themes": [],
-      "aumBillionTwd": 418,
+      "aumBillionTwd": 415,
       "beneficiaries": 49112,
       "ytdAverageValueMillionTwd": 338.685,
       "ytdAverageVolume": 35055781,
@@ -10045,7 +10045,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00953B",
@@ -10094,7 +10094,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00954",
@@ -10147,7 +10147,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00956",
@@ -10196,7 +10196,7 @@
       "themes": [
         "大型權值"
       ],
-      "aumBillionTwd": 11,
+      "aumBillionTwd": 12,
       "beneficiaries": 10048,
       "ytdAverageValueMillionTwd": 21.934,
       "ytdAverageVolume": 1309924,
@@ -10204,7 +10204,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00960",
@@ -10254,7 +10254,7 @@
         "高股息",
         "公司治理及ESG"
       ],
-      "aumBillionTwd": 51,
+      "aumBillionTwd": 53,
       "beneficiaries": 24088,
       "ytdAverageValueMillionTwd": 73.679,
       "ytdAverageVolume": 6360567,
@@ -10262,7 +10262,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00961",
@@ -10320,7 +10320,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00962",
@@ -10377,7 +10377,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00963",
@@ -10434,7 +10434,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00964",
@@ -10484,7 +10484,7 @@
         "大型權值",
         "科技主題型"
       ],
-      "aumBillionTwd": 110,
+      "aumBillionTwd": 109,
       "beneficiaries": 36646,
       "ytdAverageValueMillionTwd": 142.311,
       "ytdAverageVolume": 5599677,
@@ -10492,7 +10492,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00965",
@@ -10550,7 +10550,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00971",
@@ -10608,7 +10608,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00972",
@@ -10666,7 +10666,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009800",
@@ -10723,7 +10723,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009801",
@@ -10769,7 +10769,7 @@
         "因子投資",
         "大型權值"
       ],
-      "aumBillionTwd": 98,
+      "aumBillionTwd": 100,
       "beneficiaries": 40661,
       "ytdAverageValueMillionTwd": 109.719,
       "ytdAverageVolume": 6757445,
@@ -10777,7 +10777,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009802",
@@ -10827,7 +10827,7 @@
         "因子投資",
         "大型權值"
       ],
-      "aumBillionTwd": 36,
+      "aumBillionTwd": 37,
       "beneficiaries": 18000,
       "ytdAverageValueMillionTwd": 48.607,
       "ytdAverageVolume": 2626471,
@@ -10835,7 +10835,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009803",
@@ -10884,7 +10884,7 @@
       "themes": [
         "大型權值"
       ],
-      "aumBillionTwd": 35,
+      "aumBillionTwd": 36,
       "beneficiaries": 16700,
       "ytdAverageValueMillionTwd": 34.681,
       "ytdAverageVolume": 1718313,
@@ -10892,7 +10892,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009804",
@@ -10941,7 +10941,7 @@
       "themes": [
         "科技主題型"
       ],
-      "aumBillionTwd": 105,
+      "aumBillionTwd": 106,
       "beneficiaries": 55547,
       "ytdAverageValueMillionTwd": 225.474,
       "ytdAverageVolume": 14867909,
@@ -10949,7 +10949,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009805",
@@ -10995,7 +10995,7 @@
         "全市場指數",
         "大型權值"
       ],
-      "aumBillionTwd": 12,
+      "aumBillionTwd": 13,
       "beneficiaries": 4405,
       "ytdAverageValueMillionTwd": 23.508,
       "ytdAverageVolume": 934334,
@@ -11003,7 +11003,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009808",
@@ -11061,7 +11061,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009809",
@@ -11110,7 +11110,7 @@
       "themes": [
         "全市場指數"
       ],
-      "aumBillionTwd": 160,
+      "aumBillionTwd": 165,
       "beneficiaries": 70874,
       "ytdAverageValueMillionTwd": 300.806,
       "ytdAverageVolume": 14962470,
@@ -11118,7 +11118,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00980A",
@@ -11175,7 +11175,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009810",
@@ -11232,7 +11232,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009811",
@@ -11289,7 +11289,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009812",
@@ -11346,7 +11346,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009813",
@@ -11393,7 +11393,7 @@
       "indexName": "臺灣指數公司特選臺灣TOP 50指數",
       "listingDate": "2026-02-03",
       "themes": [],
-      "aumBillionTwd": 1605,
+      "aumBillionTwd": 1653,
       "beneficiaries": 894799,
       "ytdAverageValueMillionTwd": 3019.062,
       "ytdAverageVolume": 241046525,
@@ -11401,7 +11401,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009816",
@@ -11454,7 +11454,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009817",
@@ -11512,7 +11512,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009818",
@@ -11569,7 +11569,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009819",
@@ -11614,7 +11614,7 @@
       "themes": [
         "大型權值"
       ],
-      "aumBillionTwd": 2641,
+      "aumBillionTwd": 2742,
       "beneficiaries": 980043,
       "ytdAverageValueMillionTwd": 6821.903,
       "ytdAverageVolume": 261680731,
@@ -11622,7 +11622,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00981A",
@@ -11677,7 +11677,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00981T",
@@ -11724,7 +11724,7 @@
         "大型權值",
         "科技主題型"
       ],
-      "aumBillionTwd": 134,
+      "aumBillionTwd": 137,
       "beneficiaries": 43271,
       "ytdAverageValueMillionTwd": 299.166,
       "ytdAverageVolume": 29621936,
@@ -11732,7 +11732,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009820",
@@ -11775,7 +11775,7 @@
       "indexName": "NYSE TIP全球稀土與關鍵資源指數",
       "listingDate": "2026-06-17",
       "themes": [],
-      "aumBillionTwd": 98,
+      "aumBillionTwd": 99,
       "beneficiaries": 74781,
       "ytdAverageValueMillionTwd": 728.607,
       "ytdAverageVolume": 48194694,
@@ -11783,7 +11783,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.558Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009821",
@@ -11828,14 +11828,14 @@
       "themes": [
         "科技主題型"
       ],
-      "aumBillionTwd": 69,
+      "aumBillionTwd": 70,
       "beneficiaries": 56288,
       "ytdAverageValueMillionTwd": 403.682,
       "ytdAverageVolume": 40304967,
       "close": 10.34,
       "performance": {
         "date": null,
-        "observedAt": "2026-07-15T15:46:19.559Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date",
         "source": "twse-etfortune-products"
       },
@@ -11882,7 +11882,7 @@
         "大型權值",
         "中小型權值"
       ],
-      "aumBillionTwd": 495,
+      "aumBillionTwd": 511,
       "beneficiaries": 178803,
       "ytdAverageValueMillionTwd": 931.622,
       "ytdAverageVolume": 47823115,
@@ -11890,7 +11890,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.559Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00982A",
@@ -11945,7 +11945,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.559Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00982D",
@@ -11989,7 +11989,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.559Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00982T",
@@ -12043,7 +12043,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.559Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00983A",
@@ -12090,7 +12090,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.559Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00983D",
@@ -12133,7 +12133,7 @@
         "因子投資",
         "全市場指數"
       ],
-      "aumBillionTwd": 97,
+      "aumBillionTwd": 100,
       "beneficiaries": 60826,
       "ytdAverageValueMillionTwd": 148.337,
       "ytdAverageVolume": 10559794,
@@ -12141,7 +12141,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.559Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00984A",
@@ -12196,7 +12196,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.559Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00984D",
@@ -12237,7 +12237,7 @@
       "themes": [
         "大型權值"
       ],
-      "aumBillionTwd": 99,
+      "aumBillionTwd": 102,
       "beneficiaries": 48942,
       "ytdAverageValueMillionTwd": 155.481,
       "ytdAverageVolume": 8735129,
@@ -12245,7 +12245,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.559Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00985A",
@@ -12302,7 +12302,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.559Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00985B",
@@ -12351,7 +12351,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.559Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00986A",
@@ -12396,7 +12396,7 @@
       "themes": [
         "大型權值"
       ],
-      "aumBillionTwd": 26,
+      "aumBillionTwd": 27,
       "beneficiaries": 19077,
       "ytdAverageValueMillionTwd": 111.64,
       "ytdAverageVolume": 8194407,
@@ -12404,7 +12404,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.559Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00987A",
@@ -12447,7 +12447,7 @@
         "中小型權值",
         "科技主題型"
       ],
-      "aumBillionTwd": 599,
+      "aumBillionTwd": 606,
       "beneficiaries": 240394,
       "ytdAverageValueMillionTwd": 1157.008,
       "ytdAverageVolume": 62846081,
@@ -12455,7 +12455,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.559Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00988A",
@@ -12512,7 +12512,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.559Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00989A",
@@ -12557,7 +12557,7 @@
       "themes": [
         "科技主題型"
       ],
-      "aumBillionTwd": 422,
+      "aumBillionTwd": 427,
       "beneficiaries": 125242,
       "ytdAverageValueMillionTwd": 672.646,
       "ytdAverageVolume": 44347459,
@@ -12565,7 +12565,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.559Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00990A",
@@ -12606,7 +12606,7 @@
       "themes": [
         "大型權值"
       ],
-      "aumBillionTwd": 753,
+      "aumBillionTwd": 785,
       "beneficiaries": 309754,
       "ytdAverageValueMillionTwd": 1473.47,
       "ytdAverageVolume": 92239807,
@@ -12614,7 +12614,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.559Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00991A",
@@ -12663,7 +12663,7 @@
       "themes": [
         "科技主題型"
       ],
-      "aumBillionTwd": 403,
+      "aumBillionTwd": 415,
       "beneficiaries": 190477,
       "ytdAverageValueMillionTwd": 1292.455,
       "ytdAverageVolume": 81792230,
@@ -12671,7 +12671,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.559Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00992A",
@@ -12713,7 +12713,7 @@
         "因子投資",
         "全市場指數"
       ],
-      "aumBillionTwd": 101,
+      "aumBillionTwd": 104,
       "beneficiaries": 51599,
       "ytdAverageValueMillionTwd": 329.802,
       "ytdAverageVolume": 29467041,
@@ -12721,7 +12721,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.559Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00993A",
@@ -12772,7 +12772,7 @@
         "大型權值",
         "中小型權值"
       ],
-      "aumBillionTwd": 49,
+      "aumBillionTwd": 50,
       "beneficiaries": 32013,
       "ytdAverageValueMillionTwd": 164.258,
       "ytdAverageVolume": 10561037,
@@ -12780,7 +12780,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.559Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00994A",
@@ -12830,7 +12830,7 @@
         "大型權值",
         "中小型權值"
       ],
-      "aumBillionTwd": 49,
+      "aumBillionTwd": 51,
       "beneficiaries": 27119,
       "ytdAverageValueMillionTwd": 171.529,
       "ytdAverageVolume": 12815505,
@@ -12838,7 +12838,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.559Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00995A",
@@ -12888,7 +12888,7 @@
         "大型權值",
         "中小型權值"
       ],
-      "aumBillionTwd": 46,
+      "aumBillionTwd": 48,
       "beneficiaries": 25924,
       "ytdAverageValueMillionTwd": 233.433,
       "ytdAverageVolume": 18233466,
@@ -12896,7 +12896,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.559Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00996A",
@@ -12946,7 +12946,7 @@
         "大型權值",
         "中小型權值"
       ],
-      "aumBillionTwd": 152,
+      "aumBillionTwd": 154,
       "beneficiaries": 74413,
       "ytdAverageValueMillionTwd": 465.241,
       "ytdAverageVolume": 38172356,
@@ -12954,7 +12954,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.559Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00997A",
@@ -12999,7 +12999,7 @@
       "themes": [
         "高股息"
       ],
-      "aumBillionTwd": 126,
+      "aumBillionTwd": 129,
       "beneficiaries": 103484,
       "ytdAverageValueMillionTwd": 663.851,
       "ytdAverageVolume": 62557043,
@@ -13007,7 +13007,7 @@
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-07-15T15:46:19.559Z",
+        "observedAt": "2026-07-16T03:46:38.044Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00999A",
@@ -14342,9 +14342,8 @@
       {
         "ticker": "006208",
         "kind": "holdings",
-        "status": "failed_preserved_previous",
-        "error": "Request timeout after 15000ms",
-        "preservedRows": 50,
+        "status": "loaded",
+        "rows": 50,
         "url": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208"
       }
     ]
@@ -14370,7 +14369,7 @@
         "change": -0.5,
         "transaction": 41440,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260715&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260716&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14384,7 +14383,7 @@
         "change": -0.15,
         "transaction": 48771,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260715&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260716&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14398,7 +14397,7 @@
         "change": 0.25,
         "transaction": 23157,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260715&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260716&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14412,7 +14411,7 @@
         "change": 0.4,
         "transaction": 34242,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260715&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260716&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14426,7 +14425,7 @@
         "change": -1.1,
         "transaction": 75167,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260715&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260716&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14440,7 +14439,7 @@
         "change": 0.2,
         "transaction": 32508,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260715&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260716&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14454,7 +14453,7 @@
         "change": 0.3,
         "transaction": 18792,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260715&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260716&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14468,7 +14467,7 @@
         "change": -0.25,
         "transaction": 45066,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260715&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260716&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14482,7 +14481,7 @@
         "change": -0.65,
         "transaction": 122272,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260715&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260716&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14496,7 +14495,7 @@
         "change": 1.25,
         "transaction": 23173,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260715&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260716&stockNo=0056"
       },
       {
         "ticker": "006208",
@@ -14510,7 +14509,7 @@
         "change": 3.45,
         "transaction": 10326,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260715&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260716&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -14524,7 +14523,7 @@
         "change": -1.35,
         "transaction": 14952,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260715&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260716&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -14538,7 +14537,7 @@
         "change": -0.95,
         "transaction": 12930,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260715&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260716&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -14552,7 +14551,7 @@
         "change": 0,
         "transaction": 13629,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260715&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260716&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -14566,7 +14565,7 @@
         "change": -4.85,
         "transaction": 22832,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260715&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260716&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -14580,7 +14579,7 @@
         "change": -0.35,
         "transaction": 14879,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260715&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260716&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -14594,7 +14593,7 @@
         "change": -0.45,
         "transaction": 9339,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260715&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260716&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -14608,7 +14607,7 @@
         "change": 1.05,
         "transaction": 14389,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260715&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260716&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -14622,7 +14621,7 @@
         "change": -3.95,
         "transaction": 44342,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260715&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260716&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -14636,7 +14635,7 @@
         "change": 3.8,
         "transaction": 10339,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260715&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260716&stockNo=006208"
       },
       {
         "ticker": "00878",
@@ -14650,7 +14649,7 @@
         "change": -0.18,
         "transaction": 22292,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260715&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260716&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -14664,7 +14663,7 @@
         "change": -0.1,
         "transaction": 21825,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260715&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260716&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -14678,7 +14677,7 @@
         "change": 0.11,
         "transaction": 13700,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260715&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260716&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -14692,7 +14691,7 @@
         "change": 0.16,
         "transaction": 21440,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260715&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260716&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -14706,7 +14705,7 @@
         "change": -0.52,
         "transaction": 32919,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260715&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260716&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -14720,7 +14719,7 @@
         "change": 0.23,
         "transaction": 18358,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260715&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260716&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -14734,7 +14733,7 @@
         "change": -0.01,
         "transaction": 13873,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260715&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260716&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -14748,7 +14747,7 @@
         "change": -0.06,
         "transaction": 23833,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260715&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260716&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -14762,7 +14761,7 @@
         "change": -0.41,
         "transaction": 50909,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260715&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260716&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -14776,11 +14775,11 @@
         "change": 0.49,
         "transaction": 17648,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260715&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260716&stockNo=00878"
       }
     ],
-    "queryDate": "20260715",
-    "updatedAt": "2026-07-15T15:46:20.967Z",
+    "queryDate": "20260716",
+    "updatedAt": "2026-07-16T03:46:39.413Z",
     "source": "twse-stock-day"
   },
   "navSeries": {
@@ -14838,9 +14837,8 @@
       {
         "ticker": "006208",
         "kind": "nav",
-        "status": "failed_preserved_previous",
-        "error": "Request timeout after 15000ms",
-        "preservedRows": 1,
+        "status": "loaded",
+        "rows": 1,
         "url": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208"
       }
     ]
