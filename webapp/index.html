@@ -34,6 +34,8 @@
         <a href="#contactPanel">預約</a>
       </nav>
       <div class="header-actions">
+        <button class="secondary-button mini-button" id="lineLoginBtn" type="button" hidden>LINE 登入</button>
+        <button class="secondary-button mini-button" id="logoutBtn" type="button" hidden>登出</button>
         <button class="icon-button" id="sampleBtn" type="button" title="套用範例資料" aria-label="套用範例資料">範</button>
         <button class="icon-button" id="saveBtn" type="button" title="儲存目前資料" aria-label="儲存目前資料">存</button>
       </div>
@@ -52,6 +54,14 @@
 
     <main class="site-main" id="top">
       <section id="landingView" class="view is-active" aria-labelledby="landingTitle">
+        <section class="member-auth-gate" id="memberAuthGate" hidden aria-labelledby="memberAuthTitle">
+          <div>
+            <span class="eyebrow">Chen Dino 會員</span>
+            <h2 id="memberAuthTitle">使用 LINE 登入你的現金流帳本</h2>
+            <p>登入後可在重新整理或換手機時取回家庭收支、ETF 部位與 LINE 記帳資料。</p>
+          </div>
+          <button class="primary-button" id="memberLineLoginBtn" type="button">使用 LINE 登入</button>
+        </section>
         <section class="hero-section fullbleed" aria-label="小資現金流健檢">
           <div class="section-inner hero-inner">
             <div class="hero-copy" data-animate>
@@ -156,7 +166,7 @@
               <div class="flow-aside">
                 <span class="eyebrow">3 分鐘免費健檢</span>
                 <h2 id="quickCheckTitle">現金流分步健檢</h2>
-                <p>不用登入。資料會先存在這台瀏覽器；你同意後，才加密保存報告方便後續重新開啟。</p>
+                <p>第一次登入只需要完成一次；之後會直接開啟你的家庭收支與 LINE 帳本。</p>
                 <div class="flow-progress" aria-label="填寫進度">
                   <div class="flow-progress-bar" id="flowProgressBar"></div>
                 </div>
@@ -355,7 +365,7 @@
             <button class="workspace-tab" data-goto="upgradeView" type="button">方案 / 諮詢</button>
           </div>
           <div class="workspace-actions">
-            <button class="text-link-button" data-goto="landingView" data-focus-section="quickCheckPanel" type="button">返回首頁改答案</button>
+            <button class="text-link-button" data-goto="landingView" data-focus-section="quickCheckPanel" type="button">重新健檢</button>
             <button class="text-link-button" data-goto="freeReportView" type="button">返回健檢結果</button>
           </div>
         </nav>

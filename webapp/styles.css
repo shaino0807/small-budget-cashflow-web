@@ -1777,6 +1777,28 @@ a:hover {
   color: rgba(255, 253, 248, 0.82);
 }
 
+.member-auth-gate {
+  width: min(1200px, calc(100% - 32px));
+  margin: 28px auto 0;
+  padding: 24px clamp(20px, 4vw, 40px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  border: 1px solid rgba(17, 128, 111, 0.22);
+  border-radius: 12px;
+  background: #eef8f5;
+}
+
+.member-auth-gate h2 {
+  margin-top: 4px;
+}
+
+.member-auth-gate p {
+  margin-top: 6px;
+  color: var(--muted);
+}
+
 .hero-motion-strip {
   position: relative;
   display: grid;
@@ -2495,6 +2517,15 @@ a:hover {
 }
 
 @media (max-width: 640px) {
+  .member-auth-gate {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .member-auth-gate .primary-button {
+    width: 100%;
+  }
+
   .brand-nav {
     grid-template-columns: minmax(0, 1fr) auto;
     padding-right: 108px;

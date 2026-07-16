@@ -527,7 +527,9 @@ async function handleLineWebhook(rawBody, options = {}) {
             replyText = "請輸入 ETF 代碼與投入金額，例如：買 0056 10000。";
           } else if (parsed.command === "prompt_binding") {
             commandResult = { command: parsed.command };
-            replyText = `請先開啟現金流網站完成免費健檢，在報告的「LINE 懶人記帳同步」取得 6 位數碼，再傳送「綁定 123456」。\n${String(process.env.SITE_PUBLIC_BASE_URL || "https://shaino0807.github.io/small-budget-cashflow-web/")}`;
+            replyText = process.env.LINE_LIFF_URL
+              ? `請開啟會員帳本，LINE 會自動登入並同步你的記帳資料。\n${process.env.LINE_LIFF_URL}`
+              : `請先開啟現金流網站完成免費健檢，在報告的「LINE 懶人記帳同步」取得 6 位數碼，再傳送「綁定 123456」。\n${String(process.env.SITE_PUBLIC_BASE_URL || "https://shaino0807.github.io/small-budget-cashflow-web/")}`;
           } else if (parsed.command === "prompt_update_last") {
             commandResult = { command: parsed.command };
             replyText = "請在後面加上正確金額，例如：修改上一筆 80。";

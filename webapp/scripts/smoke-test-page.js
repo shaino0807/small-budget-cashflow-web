@@ -352,6 +352,17 @@ async function main() {
       bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
     }))()`);
 
+    await send(ws, "Runtime.evaluate", { expression: `document.body.dataset.appReady = "reloading"` });
+    await send(ws, "Page.reload", { ignoreCache: true });
+    await waitForPageReady(ws);
+    await wait(1000);
+    const f5Persistence = await evalValue(ws, `(() => ({
+      activeView: document.querySelector(".view.is-active")?.id,
+      reportId: state.reportMeta?.reportId || null,
+      hasSessionAccess: Boolean(state.reportMeta?.accessCode),
+      income: Number(document.querySelector("#monthlyIncome")?.value || 0)
+    }))()`);
+
     await send(ws, "Runtime.evaluate", {
       expression: `window.goTo("databaseView")`
     });
@@ -387,6 +398,7 @@ async function main() {
       freeReport,
       lineApplied,
       workspaceJump,
+      f5Persistence,
       database,
       passed: consoleErrors.length === 0
         && runtimeErrors.length === 0
@@ -439,6 +451,10 @@ async function main() {
         && workspaceJump.hasHoldingEditor
         && workspaceJump.hasBackHome
         && workspaceJump.bodyOverflow === 0
+        && f5Persistence.activeView === "inputView"
+        && Boolean(f5Persistence.reportId)
+        && f5Persistence.hasSessionAccess
+        && f5Persistence.income === 42000
         && database.activeView === "databaseView"
         && database.etfRows > 0
         && database.bodyOverflow === 0

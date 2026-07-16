@@ -6,6 +6,7 @@ const apiBase = "https://api.line.me";
 const dataBase = "https://api-data.line.me";
 const menuName = `Chen Dino 現金流記帳 ${process.env.LINE_RICH_MENU_VERSION || "v1"}`;
 const siteUrl = String(process.env.SITE_PUBLIC_BASE_URL || "https://shaino0807.github.io/small-budget-cashflow-web/");
+const memberUrl = String(process.env.LINE_LIFF_URL || siteUrl);
 const imageArg = process.argv.find((value) => value.startsWith("--image="));
 const imagePath = path.resolve(imageArg ? imageArg.slice("--image=".length) : path.join(__dirname, "..", "assets", "line-rich-menu.png"));
 const dryRun = process.argv.includes("--dry-run");
@@ -21,8 +22,8 @@ const richMenu = {
     { bounds: { x: 833, y: 0, width: 834, height: 421 }, action: { type: "message", label: "記一筆收入", text: "記一筆收入" } },
     { bounds: { x: 1667, y: 0, width: 833, height: 421 }, action: { type: "message", label: "ETF 配置", text: "ETF 配置" } },
     { bounds: { x: 0, y: 421, width: 833, height: 422 }, action: { type: "message", label: "本月摘要", text: "本月摘要" } },
-    { bounds: { x: 833, y: 421, width: 834, height: 422 }, action: { type: "uri", label: "完整報告", uri: siteUrl } },
-    { bounds: { x: 1667, y: 421, width: 833, height: 422 }, action: { type: "message", label: "綁定網頁", text: "綁定網頁帳號" } }
+    { bounds: { x: 833, y: 421, width: 834, height: 422 }, action: { type: "uri", label: "完整報告", uri: memberUrl } },
+    { bounds: { x: 1667, y: 421, width: 833, height: 422 }, action: { type: "uri", label: "會員帳本", uri: memberUrl } }
   ]
 };
 

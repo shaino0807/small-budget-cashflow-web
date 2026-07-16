@@ -1,9 +1,11 @@
 const http = require("http");
 const { execFile } = require("child_process");
+const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
-const { createStore, lineLedgerRetentionDays } = require("./customer-store");
+const { authSessionDays, createStore, lineLedgerRetentionDays } = require("./customer-store");
 const { buildCheckout, createMerchantTradeNo, ecpayConfig, productCatalog, productFor, verifyNotification } = require("./ecpay");
+const { authorizationUrl, createPkceValues, exchangeAuthorizationCode, lineLoginReadiness, verifyLineIdToken } = require("./line-auth");
 const { handleLineWebhook, lineReadiness, parseLedgerMessageWithAi, verifyLineSignature } = require("./line-bot");
 
 const root = __dirname;
@@ -12,6 +14,7 @@ const allowedOrigins = String(process.env.ALLOWED_ORIGINS || "http://localhost:5
   .split(",").map((item) => item.trim()).filter(Boolean);
 const marketRefreshMinutes = Math.max(1, Math.min(1440, Number(process.env.MARKET_REFRESH_MINUTES || 15)));
 const actionDispatchMinutes = Math.max(1, Math.min(1440, Number(process.env.ACTION_DISPATCH_MINUTES || 15)));
+const authCookieName = "__Host-cashflow_session";
 let updatePromise = null;
 let lastActionDispatchAt = 0;
 let customerStore = null;
@@ -205,10 +208,59 @@ function accessCode(req, url) {
   return String(req.headers["x-report-access-code"] || url.searchParams.get("accessCode") || "");
 }
 
+function cookies(req) {
+  return String(req.headers.cookie || "").split(";").reduce((result, part) => {
+    const index = part.indexOf("=");
+    if (index <= 0) return result;
+    result[part.slice(0, index).trim()] = decodeURIComponent(part.slice(index + 1).trim());
+    return result;
+  }, {});
+}
+
+function authToken(req) {
+  return cookies(req)[authCookieName] || "";
+}
+
+function memberSession(req, { required = false, touch = true } = {}) {
+  const session = getCustomerStore().authenticatedUser(authToken(req), { touch });
+  if (!session && required) {
+    const error = new Error("請先使用 LINE 登入");
+    error.statusCode = 401;
+    throw error;
+  }
+  return session;
+}
+
+function setAuthCookie(res, session) {
+  res.setHeader("Set-Cookie", `${authCookieName}=${encodeURIComponent(session.token)}; Path=/; Max-Age=${session.maxAgeSeconds}; HttpOnly; Secure; SameSite=Lax`);
+}
+
+function refreshAuthCookie(res, req) {
+  const token = authToken(req);
+  if (token) setAuthCookie(res, { token, maxAgeSeconds: authSessionDays * 86400 });
+}
+
+function clearAuthCookie(res) {
+  res.setHeader("Set-Cookie", `${authCookieName}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`);
+}
+
+function authReturnView(value) {
+  const allowed = new Set(["landingView", "inputView", "freeReportView", "upgradeView", "paidReportView", "simulationView", "calendarView"]);
+  return allowed.has(String(value || "")) ? String(value) : "inputView";
+}
+
+function authRedirectUrl(view = "inputView", extra = {}) {
+  const redirect = new URL(`${sitePublicBaseUrl()}/`);
+  redirect.searchParams.set("view", authReturnView(view));
+  Object.entries(extra).forEach(([key, value]) => redirect.searchParams.set(key, String(value)));
+  return redirect.toString();
+}
+
 function setSecurityHeaders(req, res) {
   const origin = String(req.headers.origin || "");
   if (origin && allowedOrigins.includes(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
     res.setHeader("Vary", "Origin");
   }
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Report-Access-Code, X-Line-Signature, X-Confirm-Delete");
@@ -216,7 +268,7 @@ function setSecurityHeaders(req, res) {
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
-  res.setHeader("Content-Security-Policy", "default-src 'self'; connect-src 'self' https:; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self'; form-action 'self' https://payment-stage.ecpay.com.tw https://payment.ecpay.com.tw; frame-ancestors 'none'");
+  res.setHeader("Content-Security-Policy", "default-src 'self'; connect-src 'self' https:; img-src 'self' data: https://profile.line-scdn.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self' https://static.line-scdn.net; form-action 'self' https://access.line.me https://payment-stage.ecpay.com.tw https://payment.ecpay.com.tw; frame-ancestors 'none'");
 }
 
 function databaseFreshness() {
@@ -299,6 +351,13 @@ async function dispatchGitHubAction() {
   return { configured: true, dispatched: true, repository, workflow, ref };
 }
 
+async function establishLineSession(req, idToken, nonce = "") {
+  const identity = await verifyLineIdToken(idToken, nonce);
+  const user = getCustomerStore().findOrCreateUserByLineId(identity.lineUserId);
+  const session = getCustomerStore().createUserSession(user.id, req.headers["user-agent"] || "");
+  return { user, session };
+}
+
 const server = http.createServer((req, res) => {
   setSecurityHeaders(req, res);
   const requestOrigin = String(req.headers.origin || "");
@@ -324,6 +383,8 @@ const server = http.createServer((req, res) => {
       time: new Date().toISOString(),
       customerStoreConfigured: Boolean(process.env.CUSTOMER_DATA_KEY && process.env.ACCESS_CODE_PEPPER && process.env.ADMIN_API_KEY),
       lineLedgerRetentionDays,
+      authSessionDays,
+      auth: lineLoginReadiness(),
       line: { ...lineReadiness(), aiParser: lineAiParserStatus, richMenu: lineRichMenuStatus },
       payment: paymentReadiness()
     });
@@ -344,6 +405,145 @@ const server = http.createServer((req, res) => {
       .catch((error) => sendJson(res, error.statusCode || 400, { ok: false, error: error.message }));
     return;
   }
+  if (urlPath === "/api/auth/line/start" && req.method === "GET") {
+    try {
+      if (!rateLimit(req, 20, 60000)) return sendJson(res, 429, { ok: false, error: "登入嘗試次數過多，請稍後再試" });
+      const state = crypto.randomBytes(24).toString("base64url");
+      const nonce = crypto.randomBytes(24).toString("base64url");
+      const pkce = createPkceValues();
+      getCustomerStore().createAuthChallenge({
+        state,
+        nonce,
+        codeVerifier: pkce.verifier,
+        returnTo: authReturnView(url.searchParams.get("returnTo"))
+      });
+      res.writeHead(302, {
+        Location: authorizationUrl({ state, nonce, codeChallenge: pkce.challenge }),
+        "Cache-Control": "no-store"
+      });
+      res.end();
+    } catch (error) {
+      sendJson(res, error.statusCode || 500, { ok: false, error: publicStoreError(error) });
+    }
+    return;
+  }
+  if (urlPath === "/api/auth/line/callback" && req.method === "GET") {
+    const state = String(url.searchParams.get("state") || "");
+    const code = String(url.searchParams.get("code") || "");
+    if (url.searchParams.get("error") || !state || !code) {
+      res.writeHead(303, { Location: authRedirectUrl("landingView", { authError: "cancelled" }), "Cache-Control": "no-store" });
+      res.end();
+      return;
+    }
+    let challenge;
+    try {
+      challenge = getCustomerStore().consumeAuthChallenge(state);
+    } catch {
+      res.writeHead(303, { Location: authRedirectUrl("landingView", { authError: "expired" }), "Cache-Control": "no-store" });
+      res.end();
+      return;
+    }
+    exchangeAuthorizationCode({ code, codeVerifier: challenge.codeVerifier })
+      .then((tokens) => establishLineSession(req, tokens.id_token, challenge.nonce))
+      .then(({ session }) => {
+        setAuthCookie(res, session);
+        res.writeHead(303, { Location: authRedirectUrl(challenge.returnTo, { auth: "line" }), "Cache-Control": "no-store" });
+        res.end();
+      })
+      .catch((error) => {
+        console.error(`LINE Login callback 失敗：${String(error.message || error).slice(0, 300)}`);
+        res.writeHead(303, { Location: authRedirectUrl("landingView", { authError: "failed" }), "Cache-Control": "no-store" });
+        res.end();
+      });
+    return;
+  }
+  if (urlPath === "/api/auth/line/liff" && req.method === "POST") {
+    if (!rateLimit(req, 20, 60000)) return sendJson(res, 429, { ok: false, error: "登入嘗試次數過多，請稍後再試" });
+    readJson(req, 20000)
+      .then((body) => establishLineSession(req, String(body.idToken || "")))
+      .then(({ user, session }) => {
+        setAuthCookie(res, session);
+        sendJson(res, 200, { ok: true, user });
+      })
+      .catch((error) => sendJson(res, error.statusCode || 401, { ok: false, error: publicStoreError(error) }));
+    return;
+  }
+  if (urlPath === "/api/auth/session" && req.method === "GET") {
+    try {
+      const readiness = lineLoginReadiness();
+      const session = readiness.configured ? memberSession(req, { touch: true }) : null;
+      if (session) refreshAuthCookie(res, req);
+      sendJson(res, 200, {
+        ok: true,
+        configured: readiness.configured,
+        liffId: readiness.liffId,
+        authenticated: Boolean(session),
+        user: session?.user || null,
+        sessionExpiresAt: session?.sessionExpiresAt || null,
+        sameOrigin: new URL(sitePublicBaseUrl()).origin === new URL(apiPublicBaseUrl()).origin
+      });
+    } catch (error) {
+      sendJson(res, error.statusCode || 500, { ok: false, error: publicStoreError(error) });
+    }
+    return;
+  }
+  if (urlPath === "/api/auth/logout" && req.method === "POST") {
+    try {
+      const session = memberSession(req, { touch: false });
+      if (session) getCustomerStore().revokeUserSession(session.sessionId, session.user.id);
+      clearAuthCookie(res);
+      sendJson(res, 200, { ok: true });
+    } catch (error) {
+      clearAuthCookie(res);
+      sendJson(res, error.statusCode || 500, { ok: false, error: publicStoreError(error) });
+    }
+    return;
+  }
+  if (urlPath === "/api/auth/logout-all" && req.method === "POST") {
+    try {
+      const session = memberSession(req, { required: true, touch: false });
+      const revoked = getCustomerStore().revokeAllUserSessions(session.user.id);
+      clearAuthCookie(res);
+      sendJson(res, 200, { ok: true, revoked });
+    } catch (error) {
+      sendJson(res, error.statusCode || 500, { ok: false, error: publicStoreError(error) });
+    }
+    return;
+  }
+  if (urlPath === "/api/users/me/bootstrap" && req.method === "GET") {
+    try {
+      const session = memberSession(req, { required: true });
+      const bootstrap = getCustomerStore().userBootstrap(session.user.id, url.searchParams.get("month"));
+      sendJson(res, 200, { ok: true, ...bootstrap });
+    } catch (error) {
+      sendJson(res, error.statusCode || 500, { ok: false, error: publicStoreError(error) });
+    }
+    return;
+  }
+  if (urlPath === "/api/users/me/onboarding/complete" && req.method === "POST") {
+    readJson(req, 20000)
+      .then((body) => {
+        const session = memberSession(req, { required: true });
+        const user = getCustomerStore().completeUserOnboarding(session.user.id, String(body.reportId || ""));
+        sendJson(res, 200, { ok: true, user });
+      })
+      .catch((error) => sendJson(res, error.statusCode || 400, { ok: false, error: publicStoreError(error) }));
+    return;
+  }
+  if (urlPath === "/api/users/me/account" && req.method === "DELETE") {
+    try {
+      if (String(req.headers["x-confirm-delete"] || "") !== "DELETE MY ACCOUNT") {
+        return sendJson(res, 400, { ok: false, error: "缺少刪除會員確認" });
+      }
+      const session = memberSession(req, { required: true, touch: false });
+      const deleted = getCustomerStore().deleteUserAccount(session.user.id);
+      clearAuthCookie(res);
+      sendJson(res, deleted ? 200 : 404, deleted ? { ok: true } : { ok: false, error: "找不到會員" });
+    } catch (error) {
+      sendJson(res, error.statusCode || 500, { ok: false, error: publicStoreError(error) });
+    }
+    return;
+  }
   if (urlPath === "/api/line/bindings" && req.method === "POST") {
     if (!rateLimit(req, 8, 60000)) return sendJson(res, 429, { ok: false, error: "LINE 綁定碼建立次數過多，請稍後再試" });
     readJson(req, 10000)
@@ -356,11 +556,14 @@ const server = http.createServer((req, res) => {
   }
   if (urlPath === "/api/line/summary" && req.method === "GET") {
     try {
-      const summary = getCustomerStore().getLineReportSummary({
-        reportId: url.searchParams.get("reportId"),
-        accessCode: accessCode(req, url),
-        monthKey: url.searchParams.get("month") || undefined
-      });
+      const member = memberSession(req);
+      const summary = member
+        ? getCustomerStore().lineCashflowForUser(member.user.id, url.searchParams.get("month") || undefined, 8)
+        : getCustomerStore().getLineReportSummary({
+          reportId: url.searchParams.get("reportId"),
+          accessCode: accessCode(req, url),
+          monthKey: url.searchParams.get("month") || undefined
+        });
       sendJson(res, 200, { ok: true, summary });
     } catch (error) {
       sendJson(res, error.statusCode || 400, { ok: false, error: publicStoreError(error) });
@@ -369,12 +572,15 @@ const server = http.createServer((req, res) => {
   }
   if (urlPath === "/api/users/me/cashflow" && req.method === "GET") {
     try {
-      const cashflow = getCustomerStore().lineCashflowForReport({
-        reportId: url.searchParams.get("reportId"),
-        accessCode: accessCode(req, url),
-        monthKey: url.searchParams.get("month") || undefined,
-        limit: url.searchParams.get("limit") || 20
-      });
+      const member = memberSession(req);
+      const cashflow = member
+        ? getCustomerStore().lineCashflowForUser(member.user.id, url.searchParams.get("month") || undefined, url.searchParams.get("limit") || 20)
+        : getCustomerStore().lineCashflowForReport({
+          reportId: url.searchParams.get("reportId"),
+          accessCode: accessCode(req, url),
+          monthKey: url.searchParams.get("month") || undefined,
+          limit: url.searchParams.get("limit") || 20
+        });
       sendJson(res, 200, { ok: true, cashflow });
     } catch (error) {
       sendJson(res, error.statusCode || 400, { ok: false, error: publicStoreError(error) });
@@ -383,12 +589,15 @@ const server = http.createServer((req, res) => {
   }
   if (urlPath === "/api/ledger/monthly-summary" && req.method === "GET") {
     try {
-      const cashflow = getCustomerStore().lineCashflowForReport({
-        reportId: url.searchParams.get("reportId"),
-        accessCode: accessCode(req, url),
-        monthKey: url.searchParams.get("month") || undefined,
-        limit: 8
-      });
+      const member = memberSession(req);
+      const cashflow = member
+        ? getCustomerStore().lineCashflowForUser(member.user.id, url.searchParams.get("month") || undefined, 8)
+        : getCustomerStore().lineCashflowForReport({
+          reportId: url.searchParams.get("reportId"),
+          accessCode: accessCode(req, url),
+          monthKey: url.searchParams.get("month") || undefined,
+          limit: 8
+        });
       const { entries, ...summary } = cashflow;
       sendJson(res, 200, { ok: true, summary });
     } catch (error) {
@@ -398,12 +607,15 @@ const server = http.createServer((req, res) => {
   }
   if (urlPath === "/api/ledger" && req.method === "GET") {
     try {
-      const cashflow = getCustomerStore().lineCashflowForReport({
-        reportId: url.searchParams.get("reportId"),
-        accessCode: accessCode(req, url),
-        monthKey: url.searchParams.get("month") || undefined,
-        limit: url.searchParams.get("limit") || 20
-      });
+      const member = memberSession(req);
+      const cashflow = member
+        ? getCustomerStore().lineCashflowForUser(member.user.id, url.searchParams.get("month") || undefined, url.searchParams.get("limit") || 20)
+        : getCustomerStore().lineCashflowForReport({
+          reportId: url.searchParams.get("reportId"),
+          accessCode: accessCode(req, url),
+          monthKey: url.searchParams.get("month") || undefined,
+          limit: url.searchParams.get("limit") || 20
+        });
       sendJson(res, 200, { ok: true, month: cashflow.month, entries: cashflow.entries });
     } catch (error) {
       sendJson(res, error.statusCode || 400, { ok: false, error: publicStoreError(error) });
@@ -414,9 +626,8 @@ const server = http.createServer((req, res) => {
     if (!rateLimit(req, 60)) return sendJson(res, 429, { ok: false, error: "記帳請求次數過多" });
     readJson(req, 20000)
       .then((body) => {
-        const entry = getCustomerStore().addLineLedgerEntryForReport({
-          reportId: body.reportId,
-          accessCode: accessCode(req, url),
+        const member = memberSession(req);
+        const input = {
           type: body.type,
           amount: body.amount,
           category: body.category,
@@ -428,7 +639,10 @@ const server = http.createServer((req, res) => {
             requestId: body.requestId || null,
             messageId: body.requestId ? `web:${String(body.requestId).slice(0, 70)}` : null
           }
-        });
+        };
+        const entry = member
+          ? getCustomerStore().addLineLedgerEntryForUser({ userId: member.user.id, ...input })
+          : getCustomerStore().addLineLedgerEntryForReport({ reportId: body.reportId, accessCode: accessCode(req, url), ...input });
         sendJson(res, 201, { ok: true, entry });
       })
       .catch((error) => sendJson(res, error.statusCode || 400, { ok: false, error: publicStoreError(error) }));
@@ -438,12 +652,15 @@ const server = http.createServer((req, res) => {
   if (ledgerEntryMatch && req.method === "PATCH") {
     readJson(req, 20000)
       .then((body) => {
-        const entry = getCustomerStore().updateLineLedgerEntryForReport({
-          reportId: body.reportId,
-          accessCode: accessCode(req, url),
-          entryId: ledgerEntryMatch[1],
-          patch: body.patch || body
-        });
+        const member = memberSession(req);
+        const entry = member
+          ? getCustomerStore().updateLineLedgerEntryForUser({ userId: member.user.id, entryId: ledgerEntryMatch[1], patch: body.patch || body })
+          : getCustomerStore().updateLineLedgerEntryForReport({
+            reportId: body.reportId,
+            accessCode: accessCode(req, url),
+            entryId: ledgerEntryMatch[1],
+            patch: body.patch || body
+          });
         if (!entry) return sendJson(res, 404, { ok: false, error: "找不到這筆記帳明細" });
         sendJson(res, 200, { ok: true, entry });
       })
@@ -452,11 +669,14 @@ const server = http.createServer((req, res) => {
   }
   if (ledgerEntryMatch && req.method === "DELETE") {
     try {
-      const entry = getCustomerStore().deleteLineLedgerEntryForReport({
-        reportId: url.searchParams.get("reportId"),
-        accessCode: accessCode(req, url),
-        entryId: ledgerEntryMatch[1]
-      });
+      const member = memberSession(req);
+      const entry = member
+        ? getCustomerStore().deleteLineLedgerEntryForUser({ userId: member.user.id, entryId: ledgerEntryMatch[1] })
+        : getCustomerStore().deleteLineLedgerEntryForReport({
+          reportId: url.searchParams.get("reportId"),
+          accessCode: accessCode(req, url),
+          entryId: ledgerEntryMatch[1]
+        });
       if (!entry) return sendJson(res, 404, { ok: false, error: "找不到這筆記帳明細" });
       sendJson(res, 200, { ok: true, deleted: entry });
     } catch (error) {
@@ -466,27 +686,33 @@ const server = http.createServer((req, res) => {
   }
   if (urlPath === "/api/profile" && req.method === "PATCH") {
     readJson(req, 20000)
-      .then((body) => sendJson(res, 200, {
-        ok: true,
-        profile: getCustomerStore().updateLineProfileForReport({
-          reportId: body.reportId,
-          accessCode: accessCode(req, url),
-          profile: body.profile || body
-        })
-      }))
+      .then((body) => {
+        const member = memberSession(req);
+        const profile = member
+          ? getCustomerStore().updateLineProfileForUser({ userId: member.user.id, profile: body.profile || body })
+          : getCustomerStore().updateLineProfileForReport({
+            reportId: body.reportId,
+            accessCode: accessCode(req, url),
+            profile: body.profile || body
+          });
+        sendJson(res, 200, { ok: true, profile });
+      })
       .catch((error) => sendJson(res, error.statusCode || 400, { ok: false, error: publicStoreError(error) }));
     return;
   }
   if (urlPath === "/api/holdings" && req.method === "PATCH") {
     readJson(req, 100000)
-      .then((body) => sendJson(res, 200, {
-        ok: true,
-        holdings: getCustomerStore().replaceLineHoldingsForReport({
-          reportId: body.reportId,
-          accessCode: accessCode(req, url),
-          holdings: body.holdings
-        })
-      }))
+      .then((body) => {
+        const member = memberSession(req);
+        const holdings = member
+          ? getCustomerStore().replaceLineHoldingsForUser({ userId: member.user.id, holdings: body.holdings })
+          : getCustomerStore().replaceLineHoldingsForReport({
+            reportId: body.reportId,
+            accessCode: accessCode(req, url),
+            holdings: body.holdings
+          });
+        sendJson(res, 200, { ok: true, holdings });
+      })
       .catch((error) => sendJson(res, error.statusCode || 400, { ok: false, error: publicStoreError(error) }));
     return;
   }
@@ -496,10 +722,13 @@ const server = http.createServer((req, res) => {
       return;
     }
     try {
-      const deleted = getCustomerStore().deleteLineUserDataForReport({
-        reportId: url.searchParams.get("reportId"),
-        accessCode: accessCode(req, url)
-      });
+      const member = memberSession(req);
+      const deleted = member
+        ? getCustomerStore().deleteLineUserDataForUser(member.user.id)
+        : getCustomerStore().deleteLineUserDataForReport({
+          reportId: url.searchParams.get("reportId"),
+          accessCode: accessCode(req, url)
+        });
       sendJson(res, 200, { ok: true, deleted });
     } catch (error) {
       sendJson(res, error.statusCode || 400, { ok: false, error: publicStoreError(error) });
@@ -570,11 +799,13 @@ const server = http.createServer((req, res) => {
     if (!rateLimit(req, 12, 60000)) return sendJson(res, 429, { ok: false, error: "付款建立次數過多，請稍後再試" });
     readJson(req, 20000)
       .then((body) => {
+        const member = memberSession(req);
         const product = productFor(body.productType || "full_report");
         const order = getCustomerStore().createOrder({
           id: createMerchantTradeNo(),
           reportId: body.reportId,
           accessCode: body.accessCode,
+          userId: member?.user.id || null,
           productType: product.productType,
           amount: product.amount,
           currency: "TWD",
@@ -595,11 +826,13 @@ const server = http.createServer((req, res) => {
   const paymentStatusMatch = urlPath.match(/^\/api\/payments\/([A-Z0-9]+)\/status$/i);
   if (paymentStatusMatch && req.method === "GET") {
     try {
+      const member = memberSession(req);
       const order = getCustomerStore().getOrderStatus({
         id: paymentStatusMatch[1],
         reportId: url.searchParams.get("reportId"),
         accessCode: accessCode(req, url),
-        statusToken: String(req.headers["x-payment-status-token"] || url.searchParams.get("statusToken") || "")
+        statusToken: String(req.headers["x-payment-status-token"] || url.searchParams.get("statusToken") || ""),
+        userId: member?.user.id || null
       });
       sendJson(res, order ? 200 : 404, order ? { ok: true, order } : { ok: false, error: "找不到付款訂單" });
     } catch (error) {
@@ -649,7 +882,10 @@ const server = http.createServer((req, res) => {
   if (urlPath === "/api/reports" && req.method === "POST") {
     if (!rateLimit(req, 10, 60000)) return sendJson(res, 429, { ok: false, error: "報告建立次數過多，請稍後再試" });
     readJson(req)
-      .then((body) => sendJson(res, 201, { ok: true, report: getCustomerStore().createReport(body) }))
+      .then((body) => {
+        const member = memberSession(req);
+        sendJson(res, 201, { ok: true, report: getCustomerStore().createReport(body, { userId: member?.user.id || null }) });
+      })
       .catch((error) => sendJson(res, error.statusCode || 400, { ok: false, error: publicStoreError(error) }));
     return;
   }
@@ -657,7 +893,10 @@ const server = http.createServer((req, res) => {
   const reportMatch = urlPath.match(/^\/api\/reports\/([0-9a-f-]+)$/i);
   if (reportMatch && req.method === "GET") {
     try {
-      const report = getCustomerStore().getReport(reportMatch[1], accessCode(req, url));
+      const member = memberSession(req);
+      const report = member
+        ? getCustomerStore().getReportForUser(reportMatch[1], member.user.id)
+        : getCustomerStore().getReport(reportMatch[1], accessCode(req, url));
       sendJson(res, report ? 200 : 404, report ? { ok: true, report } : { ok: false, error: "找不到報告或存取碼不正確" });
     } catch (error) {
       sendJson(res, error.statusCode || 500, { ok: false, error: publicStoreError(error) });
@@ -666,7 +905,10 @@ const server = http.createServer((req, res) => {
   }
   if (reportMatch && req.method === "DELETE") {
     try {
-      const deleted = getCustomerStore().deleteReport(reportMatch[1], accessCode(req, url));
+      const member = memberSession(req);
+      const deleted = member
+        ? getCustomerStore().deleteReportForUser(reportMatch[1], member.user.id)
+        : getCustomerStore().deleteReport(reportMatch[1], accessCode(req, url));
       sendJson(res, deleted ? 200 : 404, deleted ? { ok: true } : { ok: false, error: "找不到報告或存取碼不正確" });
     } catch (error) {
       sendJson(res, error.statusCode || 500, { ok: false, error: publicStoreError(error) });

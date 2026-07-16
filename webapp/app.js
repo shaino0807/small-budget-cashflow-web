@@ -1,4 +1,6 @@
 const storageKey = "cashflow-map-web-state";
+const viewSessionKey = "cashflow-map-active-view";
+const reportAccessSessionKey = "cashflow-map-report-access";
 const inputVersion = "cashflow-input-v2";
 const reportVersion = "cashflow-report-v2";
 const apiBase = String(window.CASHFLOW_API_BASE || "").replace(/\/$/, "");
@@ -11,6 +13,7 @@ const disclaimer = "本 App 僅供教育與財務規劃參考，不構成任何�
 const monthLabels = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
 const monthFields = ["monthlyIncome", "fixedExpense", "insuranceExpense", "loanExpense", "monthlyInvestment"];
 const simulationYearOptions = [10, 15, 20, 25, 30];
+const availableViews = ["landingView", "inputView", "freeReportView", "upgradeView", "paidReportView", "simulationView", "calendarView", "databaseView", "adminView"];
 const industryNames = {
   "01": "水泥工業",
   "02": "食品工業",
@@ -152,7 +155,15 @@ const sampleState = {
 };
 
 let state = loadState();
-let activeView = "landingView";
+let activeView = availableViews.includes(sessionStorage.getItem(viewSessionKey)) ? sessionStorage.getItem(viewSessionKey) : "landingView";
+let authState = {
+  configured: false,
+  checked: false,
+  authenticated: false,
+  liffId: null,
+  user: null,
+  sessionExpiresAt: null
+};
 let etfDatabase = null;
 let etfDataQuality = {
   status: "loading",
@@ -189,7 +200,12 @@ function loadState() {
   const saved = localStorage.getItem(storageKey);
   if (!saved) return normalizeState(structuredClone(defaultState));
   try {
-    return normalizeState({ ...structuredClone(defaultState), ...JSON.parse(saved) });
+    const next = normalizeState({ ...structuredClone(defaultState), ...JSON.parse(saved) });
+    const access = JSON.parse(sessionStorage.getItem(reportAccessSessionKey) || "null");
+    if (next.reportMeta?.reportId && access?.reportId === next.reportMeta.reportId && access.accessCode) {
+      next.reportMeta.accessCode = access.accessCode;
+    }
+    return next;
   } catch {
     return normalizeState(structuredClone(defaultState));
   }
@@ -257,6 +273,12 @@ function persist() {
   const safeState = structuredClone(state);
   safeState.consent.contactValue = "";
   if (safeState.reportMeta) {
+    if (safeState.reportMeta.reportId && safeState.reportMeta.accessCode) {
+      sessionStorage.setItem(reportAccessSessionKey, JSON.stringify({
+        reportId: safeState.reportMeta.reportId,
+        accessCode: safeState.reportMeta.accessCode
+      }));
+    }
     safeState.reportMeta.accessCode = null;
     delete safeState.reportMeta.lineBinding;
   }
@@ -275,12 +297,183 @@ async function apiRequest(pathname, options = {}) {
   const { headers = {}, ...rest } = options;
   const response = await fetch(apiUrl(pathname), {
     cache: "no-store",
+    credentials: "include",
     headers: { "Content-Type": "application/json", ...headers },
     ...rest
   });
   const payload = await response.json().catch(() => ({ ok: false, error: `HTTP ${response.status}` }));
   if (!response.ok || payload.ok === false) throw new Error(payload.error || `HTTP ${response.status}`);
   return payload;
+}
+
+function loadLiffSdk() {
+  if (window.liff) return Promise.resolve(window.liff);
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector('script[data-line-liff="true"]');
+    if (existing) {
+      existing.addEventListener("load", () => resolve(window.liff), { once: true });
+      existing.addEventListener("error", () => reject(new Error("LINE LIFF 載入失敗")), { once: true });
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://static.line-scdn.net/liff/edge/2/sdk.js";
+    script.dataset.lineLiff = "true";
+    script.onload = () => resolve(window.liff);
+    script.onerror = () => reject(new Error("LINE LIFF 載入失敗"));
+    document.head.appendChild(script);
+  });
+}
+
+function applyMemberReport(report) {
+  if (!report?.payload?.input) return;
+  const payload = report.payload;
+  state.profile = { ...state.profile, ...payload.input.profile };
+  state.holdings = (payload.input.holdings || []).map(normalizeHolding);
+  state.monthlyCashflows = normalizeMonthlyCashflows(payload.input.monthlyCashflows, state.profile);
+  state.leadProfile = { ...state.leadProfile, ...payload.input.leadProfile };
+  state.reportMeta = {
+    generatedAt: report.createdAt,
+    inputVersion: report.inputVersion,
+    reportVersion: report.reportVersion,
+    storageStatus: "saved",
+    reportId: report.id,
+    accessCode: null,
+    expiresAt: report.expiresAt,
+    entitlements: report.entitlements || []
+  };
+  applyEntitlements(report.entitlements || []);
+}
+
+function applyMemberBootstrap(bootstrap) {
+  if (bootstrap.report) applyMemberReport(bootstrap.report);
+  if (bootstrap.cashflow) {
+    if (!state.reportMeta) state.reportMeta = {};
+    state.reportMeta.lineSummary = bootstrap.cashflow;
+    state.reportMeta.lineBinding = { status: "linked", linkedAt: bootstrap.cashflow.linkedAt };
+    applyLineSummaryToState(bootstrap.cashflow);
+  }
+  updateProfileInputs();
+  syncQuizInputs();
+  renderMonthlyCashflows();
+  renderHoldings();
+  persist();
+  refreshReports();
+}
+
+function refreshMemberAuthUi() {
+  const loginRequired = authState.configured && !authState.authenticated;
+  const onboardingRequired = authState.configured && authState.authenticated && !authState.user?.onboardingCompleted;
+  q("#memberAuthGate").hidden = !loginRequired;
+  q("#lineLoginBtn").hidden = !loginRequired;
+  q("#memberLineLoginBtn").hidden = !loginRequired;
+  q("#logoutBtn").hidden = !authState.authenticated;
+  q("#quickCheckPanel").hidden = loginRequired;
+  q("#sampleBtn").hidden = loginRequired;
+  q("#saveBtn").hidden = loginRequired;
+  document.querySelectorAll(".app-tabs .tab").forEach((tab) => {
+    if (tab.dataset.view === "landingView") return;
+    if (tab.classList.contains("admin-tab") && new URLSearchParams(location.search).get("admin") === "1") return;
+    tab.hidden = loginRequired || onboardingRequired;
+  });
+  document.body.dataset.memberAuth = !authState.configured
+    ? "legacy"
+    : authState.authenticated
+      ? authState.user?.onboardingCompleted ? "ready" : "onboarding"
+      : "required";
+  if (authState.authenticated) q("#headerStatus").textContent = authState.user?.onboardingCompleted ? "會員現金流帳本" : "首次現金流健檢";
+}
+
+async function authenticateWithLiff() {
+  if (!authState.liffId || authState.authenticated) return false;
+  try {
+    const liff = await loadLiffSdk();
+    await liff.init({ liffId: authState.liffId });
+    if (!liff.isLoggedIn()) return false;
+    const idToken = liff.getIDToken();
+    if (!idToken) return false;
+    const result = await apiRequest("/api/auth/line/liff", {
+      method: "POST",
+      body: JSON.stringify({ idToken })
+    });
+    authState.authenticated = true;
+    authState.user = result.user;
+    return true;
+  } catch (error) {
+    console.error(error);
+    return false;
+  }
+}
+
+async function initializeMemberAuth() {
+  if (!backendAvailable()) {
+    authState.checked = true;
+    refreshMemberAuthUi();
+    return;
+  }
+  try {
+    const session = await apiRequest("/api/auth/session");
+    authState = {
+      configured: Boolean(session.configured),
+      checked: true,
+      authenticated: Boolean(session.authenticated),
+      liffId: session.liffId || null,
+      user: session.user || null,
+      sessionExpiresAt: session.sessionExpiresAt || null
+    };
+    if (authState.configured && !authState.authenticated) {
+      await authenticateWithLiff();
+    }
+    if (authState.authenticated) {
+      const bootstrap = await apiRequest("/api/users/me/bootstrap");
+      authState.user = bootstrap.user;
+      applyMemberBootstrap(bootstrap);
+      const requested = new URLSearchParams(location.search).get("view");
+      activeView = availableViews.includes(requested) ? requested : activeView;
+      if (authState.user.onboardingCompleted && activeView === "landingView") activeView = "inputView";
+      if (!authState.user.onboardingCompleted) activeView = "landingView";
+    } else if (authState.configured) {
+      activeView = "landingView";
+    }
+  } catch (error) {
+    console.error(error);
+    authState.checked = true;
+  }
+  refreshMemberAuthUi();
+}
+
+function beginLineLogin() {
+  if (!authState.configured) return showToast("LINE Login 尚未完成設定");
+  const returnTo = authState.user?.onboardingCompleted ? activeView : "landingView";
+  location.assign(apiUrl(`/api/auth/line/start?returnTo=${encodeURIComponent(returnTo)}`));
+}
+
+function clearMemberBrowserState() {
+  localStorage.removeItem(storageKey);
+  sessionStorage.removeItem(reportAccessSessionKey);
+  sessionStorage.removeItem(viewSessionKey);
+}
+
+async function logoutMember(allDevices = false) {
+  try {
+    await apiRequest(allDevices ? "/api/auth/logout-all" : "/api/auth/logout", { method: "POST", body: "{}" });
+  } finally {
+    clearMemberBrowserState();
+    location.assign(sitePublicBaseUrlForBrowser());
+  }
+}
+
+function sitePublicBaseUrlForBrowser() {
+  return `${location.origin}${location.pathname.replace(/\/[^/]*$/, "/")}`;
+}
+
+async function deleteMemberAccount() {
+  if (!confirm("確定刪除會員帳號、健檢報告、LINE 記帳與 ETF 資料？此動作無法復原。")) return;
+  await apiRequest("/api/users/me/account", {
+    method: "DELETE",
+    headers: { "X-Confirm-Delete": "DELETE MY ACCOUNT" }
+  });
+  clearMemberBrowserState();
+  location.assign(sitePublicBaseUrlForBrowser());
 }
 
 function hasEntitlement(entitlement) {
@@ -316,7 +509,7 @@ async function startCheckout(productType) {
     showToast("付款需要後端服務，請使用正式網站或本地 server。");
     return;
   }
-  if (!state.reportMeta?.reportId || !state.reportMeta?.accessCode) {
+  if (!state.reportMeta?.reportId || (!authState.authenticated && !state.reportMeta?.accessCode)) {
     showToast("請先產生或重新讀回報告，再進行付款。");
     goTo("freeReportView");
     return;
@@ -326,7 +519,7 @@ async function startCheckout(productType) {
       method: "POST",
       body: JSON.stringify({
         reportId: state.reportMeta.reportId,
-        accessCode: state.reportMeta.accessCode,
+        accessCode: state.reportMeta.accessCode || null,
         productType
       })
     });
@@ -351,7 +544,7 @@ async function checkPaymentStatus(orderId = state.payment?.lastOrderId) {
   const headers = {};
   if (state.reportMeta?.accessCode) headers["X-Report-Access-Code"] = state.reportMeta.accessCode;
   if (state.payment?.statusToken) headers["X-Payment-Status-Token"] = state.payment.statusToken;
-  if (!headers["X-Report-Access-Code"] && !headers["X-Payment-Status-Token"]) return null;
+  if (!authState.authenticated && !headers["X-Report-Access-Code"] && !headers["X-Payment-Status-Token"]) return null;
   const result = await apiRequest(`/api/payments/${encodeURIComponent(orderId)}/status?reportId=${encodeURIComponent(state.reportMeta.reportId)}`, { headers });
   state.payment = {
     lastOrderId: result.order.id,
@@ -1801,6 +1994,8 @@ function reportSubmission() {
 }
 
 async function saveGeneratedReport() {
+  const existingLineSummary = state.reportMeta?.lineSummary || null;
+  const existingLineBinding = state.reportMeta?.lineBinding || null;
   state.reportMeta = {
     generatedAt: new Date().toISOString(),
     inputVersion,
@@ -1809,13 +2004,15 @@ async function saveGeneratedReport() {
     reportId: null,
     accessCode: null,
     expiresAt: null,
-    entitlements: []
+    entitlements: [],
+    ...(existingLineSummary ? { lineSummary: existingLineSummary } : {}),
+    ...(existingLineBinding ? { lineBinding: existingLineBinding } : {})
   };
   applyEntitlements([]);
   refreshReports();
   if (!backendAvailable()) {
     persist();
-    return;
+    return null;
   }
   try {
     const result = await apiRequest("/api/reports", {
@@ -1832,15 +2029,25 @@ async function saveGeneratedReport() {
     };
     applyEntitlements(result.report.entitlements || []);
     state.anonymousId = result.report.anonymousId;
+    if (authState.authenticated) {
+      const onboarding = await apiRequest("/api/users/me/onboarding/complete", {
+        method: "POST",
+        body: JSON.stringify({ reportId: result.report.id })
+      });
+      authState.user = onboarding.user;
+      refreshMemberAuthUi();
+    }
     persist();
     refreshReports();
     showToast("報告已加密保存");
+    return result.report;
   } catch (error) {
     state.reportMeta.storageStatus = "save_failed";
     state.reportMeta.storageError = error.message;
     persist();
     refreshReports();
     showToast(`報告已產生，但後臺保存失敗：${error.message}`);
+    return null;
   }
 }
 
@@ -2193,7 +2400,12 @@ function reportRecordHtml() {
         <div class="metric"><span>報告版本</span><strong>${meta.reportVersion}</strong></div>
         <div class="metric"><span>保存狀態</span><strong>${statusText}</strong></div>
       </div>
-      ${meta.reportId ? `
+      ${meta.reportId && authState.authenticated ? `
+        <div class="access-code-box">
+          <p>這份報告已歸戶到你的 LINE 會員帳號。重新整理、關閉後再開或換裝置登入，都會自動讀回最新資料。</p>
+          <code>報告編號：${meta.reportId}</code>
+        </div>
+      ` : meta.reportId ? `
         <div class="access-code-box">
           <p>跨裝置重新開啟需要以下兩項資料。請自行保存，後臺不會顯示原始存取碼。</p>
           <code>報告編號：${meta.reportId}</code>
@@ -2203,9 +2415,11 @@ function reportRecordHtml() {
       ` : ""}
       ${meta.storageError ? `<p class="data-note warning">${escapeHtml(meta.storageError)}</p>` : ""}
       <div class="report-tools">
-        <label>報告編號<input id="restoreReportId" type="text" /></label>
-        <label>存取碼<input id="restoreAccessCode" type="password" /></label>
-        <button class="secondary-button" id="restoreReportBtn" type="button">重新開啟報告</button>
+        ${authState.authenticated ? "" : `
+          <label>報告編號<input id="restoreReportId" type="text" /></label>
+          <label>存取碼<input id="restoreAccessCode" type="password" /></label>
+          <button class="secondary-button" id="restoreReportBtn" type="button">重新開啟報告</button>
+        `}
         <button class="secondary-button" id="downloadReportBtn" type="button">下載報告 JSON</button>
         ${meta.reportId ? `<button class="secondary-button danger-button" id="deleteReportBtn" type="button">刪除後臺報告</button>` : ""}
       </div>
@@ -2230,7 +2444,7 @@ function lineSyncHtml() {
       </section>
     `;
   }
-  if (!meta.accessCode) {
+  if (!meta.accessCode && !authState.authenticated) {
     return `
       <section class="panel line-sync-panel">
         <h3>LINE 懶人記帳同步</h3>
@@ -2279,6 +2493,8 @@ function lineSyncHtml() {
           <button class="secondary-button" data-goto="inputView" data-focus-section="etfAllocationSection" type="button">查看 ETF 部位</button>
           <button class="secondary-button danger-button" id="deleteLineDataBtn" type="button">刪除全部 LINE 財務資料</button>
         </div>
+      ` : authState.authenticated ? `
+        <p class="panel-note">LINE 會員已連結。按「重新整理」讀取本月最新記帳資料。</p>
       ` : `
         <p class="panel-note">尚未綁定 LINE。按下按鈕取得 15 分鐘有效的 6 位數綁定碼。</p>
         ${binding?.status === "pending" ? `
@@ -2290,6 +2506,12 @@ function lineSyncHtml() {
         ` : ""}
         <button class="primary-button" id="createLineBindingBtn" type="button">產生 LINE 綁定碼</button>
       `}
+      ${authState.authenticated ? `
+        <div class="button-row member-account-tools">
+          <button class="secondary-button" id="logoutAllBtn" type="button">登出所有裝置</button>
+          <button class="secondary-button danger-button" id="deleteMemberAccountBtn" type="button">刪除會員帳號</button>
+        </div>
+      ` : ""}
     </section>
   `;
 }
@@ -2392,26 +2614,28 @@ async function createLineBinding() {
 
 async function refreshLineSummary({ silent = false } = {}) {
   const meta = state.reportMeta;
-  if (!backendAvailable() || !meta?.reportId || !meta.accessCode) return null;
+  if (!backendAvailable() || (!authState.authenticated && (!meta?.reportId || !meta.accessCode))) return null;
   try {
-    const result = await apiRequest(`/api/users/me/cashflow?reportId=${encodeURIComponent(meta.reportId)}&limit=20`, {
-      headers: { "X-Report-Access-Code": meta.accessCode }
+    const reportQuery = meta?.reportId ? `&reportId=${encodeURIComponent(meta.reportId)}` : "";
+    const reportHeaders = meta?.accessCode ? { "X-Report-Access-Code": meta.accessCode } : {};
+    const result = await apiRequest(`/api/users/me/cashflow?limit=20${reportQuery}`, {
+      headers: reportHeaders
     });
     if (result.cashflow.linked && !result.cashflow.profile?.updatedAt) {
       const existingHoldings = result.cashflow.holdings || [];
       const [profileResult, holdingsResult] = await Promise.all([
         apiRequest("/api/profile", {
           method: "PATCH",
-          headers: { "X-Report-Access-Code": meta.accessCode },
-          body: JSON.stringify({ reportId: meta.reportId, profile: state.profile })
+          headers: reportHeaders,
+          body: JSON.stringify({ reportId: meta?.reportId || null, profile: state.profile })
         }),
         existingHoldings.length
           ? Promise.resolve({ holdings: existingHoldings })
           : apiRequest("/api/holdings", {
             method: "PATCH",
-            headers: { "X-Report-Access-Code": meta.accessCode },
+            headers: reportHeaders,
             body: JSON.stringify({
-              reportId: meta.reportId,
+              reportId: meta?.reportId || null,
               holdings: state.holdings
                 .filter((holding) => holding.type === "ETF")
                 .map((holding) => ({ ticker: holding.ticker, amount: holdingAmount(holding) }))
@@ -2438,18 +2662,19 @@ async function refreshLineSummary({ silent = false } = {}) {
 
 async function syncWebFinancialData({ silent = false } = {}) {
   const meta = state.reportMeta;
-  if (!backendAvailable() || !meta?.reportId || !meta.accessCode || !meta.lineSummary?.linked) return false;
+  if (!backendAvailable() || (!authState.authenticated && (!meta?.reportId || !meta.accessCode)) || !meta?.lineSummary?.linked) return false;
   try {
+    const reportHeaders = meta?.accessCode ? { "X-Report-Access-Code": meta.accessCode } : {};
     await apiRequest("/api/profile", {
       method: "PATCH",
-      headers: { "X-Report-Access-Code": meta.accessCode },
-      body: JSON.stringify({ reportId: meta.reportId, profile: state.profile })
+      headers: reportHeaders,
+      body: JSON.stringify({ reportId: meta?.reportId || null, profile: state.profile })
     });
     await apiRequest("/api/holdings", {
       method: "PATCH",
-      headers: { "X-Report-Access-Code": meta.accessCode },
+      headers: reportHeaders,
       body: JSON.stringify({
-        reportId: meta.reportId,
+        reportId: meta?.reportId || null,
         holdings: state.holdings
           .filter((holding) => holding.type === "ETF")
           .map((holding) => ({ ticker: holding.ticker, amount: holdingAmount(holding) }))
@@ -2482,14 +2707,16 @@ function clearLineSyncedState(summary) {
 
 async function deleteAllLineData() {
   const meta = state.reportMeta;
-  if (!backendAvailable() || !meta?.reportId || !meta.accessCode) return;
+  if (!backendAvailable() || (!authState.authenticated && (!meta?.reportId || !meta.accessCode))) return;
   const confirmed = window.confirm("確定刪除全部 LINE 記帳、ETF 部位、財務設定與網頁綁定？刪除後無法復原。");
   if (!confirmed) return;
   try {
-    await apiRequest(`/api/users/me/data?reportId=${encodeURIComponent(meta.reportId)}`, {
+    const reportQuery = meta?.reportId ? `?reportId=${encodeURIComponent(meta.reportId)}` : "";
+    const reportHeaders = meta?.accessCode ? { "X-Report-Access-Code": meta.accessCode } : {};
+    await apiRequest(`/api/users/me/data${reportQuery}`, {
       method: "DELETE",
       headers: {
-        "X-Report-Access-Code": meta.accessCode,
+        ...reportHeaders,
         "X-Confirm-Delete": "DELETE LINE DATA"
       }
     });
@@ -2556,13 +2783,15 @@ async function restoreSavedReport() {
 
 async function deleteSavedReport() {
   const meta = state.reportMeta;
-  if (!meta?.reportId || !meta.accessCode) return;
+  if (!meta?.reportId || (!authState.authenticated && !meta.accessCode)) return;
   try {
+    const headers = meta.accessCode ? { "X-Report-Access-Code": meta.accessCode } : {};
     await apiRequest(`/api/reports/${encodeURIComponent(meta.reportId)}`, {
       method: "DELETE",
-      headers: { "X-Report-Access-Code": meta.accessCode }
+      headers
     });
     state.reportMeta = { ...meta, storageStatus: "deleted", reportId: null, accessCode: null };
+    sessionStorage.removeItem(reportAccessSessionKey);
     persist();
     refreshReports();
     showToast("後臺報告已刪除");
@@ -2603,6 +2832,8 @@ function renderFreeReport() {
   q("#createLineBindingBtn")?.addEventListener("click", createLineBinding);
   q("#refreshLineSummaryBtn")?.addEventListener("click", () => refreshLineSummary());
   q("#deleteLineDataBtn")?.addEventListener("click", deleteAllLineData);
+  q("#logoutAllBtn")?.addEventListener("click", () => logoutMember(true));
+  q("#deleteMemberAccountBtn")?.addEventListener("click", deleteMemberAccount);
 }
 
 function renderUpgrade() {
@@ -3220,6 +3451,7 @@ function goTo(viewId) {
     showToast("完整報告、模擬與月曆需先解鎖");
   }
   activeView = viewId;
+  sessionStorage.setItem(viewSessionKey, viewId);
   document.querySelectorAll(".view").forEach((view) => view.classList.toggle("is-active", view.id === viewId));
   document.querySelectorAll(".tab").forEach((tab) => tab.classList.toggle("is-active", tab.dataset.view === viewId));
   if (viewId === "simulationView") requestAnimationFrame(() => drawSimulationChart(latestReport.simulation));
@@ -3241,6 +3473,9 @@ function bindGotoButtons() {
 }
 
 function bindEvents() {
+  q("#lineLoginBtn")?.addEventListener("click", beginLineLogin);
+  q("#memberLineLoginBtn")?.addEventListener("click", beginLineLogin);
+  q("#logoutBtn")?.addEventListener("click", () => logoutMember(false));
   document.querySelectorAll(".tab").forEach((tab) => {
     tab.addEventListener("click", () => goTo(tab.dataset.view));
   });
@@ -3313,7 +3548,11 @@ function bindEvents() {
     if (errors.length) return;
     applyQuickCheck();
     goTo("freeReportView");
-    await saveGeneratedReport();
+    const report = await saveGeneratedReport();
+    if (authState.authenticated && report) {
+      goTo("inputView");
+      showToast("首次健檢完成，已進入你的家庭收支。");
+    }
   });
   q("#generateBtn").addEventListener("click", async () => {
     const errors = detailedValidationErrors();
@@ -3417,6 +3656,8 @@ async function init() {
   await loadEtfDatabase();
   syncInputs();
   bindEvents();
+  await initializeMemberAuth();
+  if (q(`#${activeView}`)) goTo(activeView);
   document.body.dataset.appReady = "true";
   configureConsultationLinks();
   refreshReports();
