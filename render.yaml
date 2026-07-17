@@ -77,7 +77,7 @@ services:
       - key: LINE_RICH_MENU_AUTO_DEPLOY
         value: "1"
       - key: LINE_RICH_MENU_VERSION
-        value: "v2"
+        value: "v3"
       - key: LINE_LEDGER_RETENTION_DAYS
         value: "1095"
       - key: LINE_AI_PARSER_ENABLED
