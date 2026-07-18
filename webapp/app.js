@@ -1,5 +1,6 @@
 const storageKey = "cashflow-map-web-state";
 const viewSessionKey = "cashflow-map-active-view";
+const workspaceSectionSessionKey = "cashflow-map-workspace-section";
 const reportAccessSessionKey = "cashflow-map-report-access";
 const inputVersion = "cashflow-input-v2";
 const reportVersion = "cashflow-report-v2";
@@ -156,6 +157,8 @@ const sampleState = {
 
 let state = loadState();
 let activeView = availableViews.includes(sessionStorage.getItem(viewSessionKey)) ? sessionStorage.getItem(viewSessionKey) : "landingView";
+let activeWorkspaceSection = sessionStorage.getItem(workspaceSectionSessionKey) || "householdCashflowSection";
+let upgradeReturnLocation = { view: "freeReportView", section: activeWorkspaceSection };
 let authState = {
   configured: false,
   checked: false,
@@ -451,6 +454,7 @@ function clearMemberBrowserState() {
   localStorage.removeItem(storageKey);
   sessionStorage.removeItem(reportAccessSessionKey);
   sessionStorage.removeItem(viewSessionKey);
+  sessionStorage.removeItem(workspaceSectionSessionKey);
 }
 
 async function logoutMember(allDevices = false) {
@@ -3445,17 +3449,51 @@ async function loadAdminReport(key, id) {
   }
 }
 
-function goTo(viewId) {
+function syncWorkspaceTabs() {
+  document.querySelectorAll(".workspace-tab").forEach((tab) => {
+    const sectionId = tab.dataset.focusSection || "";
+    const isActive = tab.dataset.goto === activeView
+      && (activeView !== "inputView" || sectionId === activeWorkspaceSection);
+    tab.classList.toggle("is-active", isActive);
+    if (isActive) tab.setAttribute("aria-current", "page");
+    else tab.removeAttribute("aria-current");
+  });
+}
+
+function scrollToWorkspaceSection(sectionId) {
+  if (!sectionId) return;
+  window.setTimeout(() => q(`#${sectionId}`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 180);
+}
+
+function goTo(viewId, sectionId = "") {
   if (["paidReportView", "simulationView", "calendarView"].includes(viewId) && !state.paidUnlocked) {
     viewId = "upgradeView";
     showToast("完整報告、模擬與月曆需先解鎖");
+  }
+  if (viewId === "upgradeView" && activeView !== "upgradeView") {
+    upgradeReturnLocation = { view: activeView, section: activeWorkspaceSection };
+  }
+  if (viewId === "inputView" && sectionId) {
+    activeWorkspaceSection = sectionId;
+    sessionStorage.setItem(workspaceSectionSessionKey, sectionId);
   }
   activeView = viewId;
   sessionStorage.setItem(viewSessionKey, viewId);
   document.querySelectorAll(".view").forEach((view) => view.classList.toggle("is-active", view.id === viewId));
   document.querySelectorAll(".tab").forEach((tab) => tab.classList.toggle("is-active", tab.dataset.view === viewId));
+  syncWorkspaceTabs();
   if (viewId === "simulationView") requestAnimationFrame(() => drawSimulationChart(latestReport.simulation));
   window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function returnFromUpgrade() {
+  const fallbackView = authState.authenticated && authState.user?.onboardingCompleted ? "inputView" : "freeReportView";
+  const targetView = upgradeReturnLocation.view && upgradeReturnLocation.view !== "upgradeView"
+    ? upgradeReturnLocation.view
+    : fallbackView;
+  const targetSection = targetView === "inputView" ? upgradeReturnLocation.section : "";
+  goTo(targetView, targetSection);
+  scrollToWorkspaceSection(targetSection);
 }
 
 function bindGotoButtons() {
@@ -3463,11 +3501,9 @@ function bindGotoButtons() {
     if (button.dataset.gotoBound === "true") return;
     button.dataset.gotoBound = "true";
     button.addEventListener("click", () => {
-      goTo(button.dataset.goto);
       const sectionId = button.dataset.focusSection;
-      if (sectionId) {
-        window.setTimeout(() => q(`#${sectionId}`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 180);
-      }
+      goTo(button.dataset.goto, sectionId || "");
+      scrollToWorkspaceSection(sectionId);
     });
   });
 }
@@ -3476,6 +3512,7 @@ function bindEvents() {
   q("#lineLoginBtn")?.addEventListener("click", beginLineLogin);
   q("#memberLineLoginBtn")?.addEventListener("click", beginLineLogin);
   q("#logoutBtn")?.addEventListener("click", () => logoutMember(false));
+  document.querySelectorAll("[data-upgrade-back]").forEach((button) => button.addEventListener("click", returnFromUpgrade));
   document.querySelectorAll(".tab").forEach((tab) => {
     tab.addEventListener("click", () => goTo(tab.dataset.view));
   });

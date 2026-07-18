@@ -2407,13 +2407,28 @@ a:hover {
   font-weight: 800;
 }
 
-.workspace-tab:hover,
 .workspace-tab.is-active {
   transform: translateY(-2px);
   border-color: rgba(124, 58, 237, 0.28);
   background: var(--primary);
   color: #fff;
   box-shadow: 0 12px 24px rgba(124, 58, 237, 0.18);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .workspace-tab:hover {
+    transform: translateY(-2px);
+    border-color: rgba(124, 58, 237, 0.28);
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 12px 24px rgba(124, 58, 237, 0.18);
+  }
+}
+
+.upgrade-return-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
 }
 
 .workspace-anchor {

@@ -349,7 +349,27 @@ async function main() {
       hasEtfSection: Boolean(document.querySelector("#etfAllocationSection")),
       hasHoldingEditor: Boolean(document.querySelector("#holdingEditor")),
       hasBackHome: Boolean(document.querySelector('#inputView [data-goto="landingView"]')),
+      activeWorkspaceTabs: document.querySelectorAll('#inputView .workspace-tab.is-active').length,
+      activeWorkspaceLabel: document.querySelector('#inputView .workspace-tab.is-active')?.textContent?.trim() || "",
       bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
+    }))()`);
+
+    await send(ws, "Runtime.evaluate", {
+      expression: `document.querySelector('#inputView [data-goto="upgradeView"]')?.click()`
+    });
+    await wait(350);
+    const upgradeNavigation = await evalValue(ws, `(() => ({
+      activeView: document.querySelector(".view.is-active")?.id,
+      backButtonCount: document.querySelectorAll('#upgradeView [data-upgrade-back]').length
+    }))()`);
+    await send(ws, "Runtime.evaluate", {
+      expression: `document.querySelector('#upgradeView .upgrade-return-actions [data-upgrade-back]')?.click()`
+    });
+    await wait(750);
+    const upgradeReturn = await evalValue(ws, `(() => ({
+      activeView: document.querySelector(".view.is-active")?.id,
+      activeWorkspaceTabs: document.querySelectorAll('#inputView .workspace-tab.is-active').length,
+      activeWorkspaceLabel: document.querySelector('#inputView .workspace-tab.is-active')?.textContent?.trim() || ""
     }))()`);
 
     await send(ws, "Runtime.evaluate", { expression: `document.body.dataset.appReady = "reloading"` });
@@ -398,6 +418,8 @@ async function main() {
       freeReport,
       lineApplied,
       workspaceJump,
+      upgradeNavigation,
+      upgradeReturn,
       f5Persistence,
       database,
       passed: consoleErrors.length === 0
@@ -450,7 +472,14 @@ async function main() {
         && workspaceJump.hasEtfSection
         && workspaceJump.hasHoldingEditor
         && workspaceJump.hasBackHome
+        && workspaceJump.activeWorkspaceTabs === 1
+        && workspaceJump.activeWorkspaceLabel === "ETF 部位配置"
         && workspaceJump.bodyOverflow === 0
+        && upgradeNavigation.activeView === "upgradeView"
+        && upgradeNavigation.backButtonCount === 2
+        && upgradeReturn.activeView === "inputView"
+        && upgradeReturn.activeWorkspaceTabs === 1
+        && upgradeReturn.activeWorkspaceLabel === "ETF 部位配置"
         && f5Persistence.activeView === "inputView"
         && Boolean(f5Persistence.reportId)
         && f5Persistence.hasSessionAccess
