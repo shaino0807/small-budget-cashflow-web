@@ -11,6 +11,8 @@ const screenshotArg = process.argv.find((arg) => arg.startsWith("--screenshot=")
 const screenshotPath = screenshotArg ? path.resolve(screenshotArg.slice("--screenshot=".length)) : "";
 const screenshotViewArg = process.argv.find((arg) => arg.startsWith("--screenshot-view="));
 const screenshotView = screenshotViewArg ? screenshotViewArg.slice("--screenshot-view=".length) : "landingView";
+const screenshotSectionArg = process.argv.find((arg) => arg.startsWith("--screenshot-section="));
+const screenshotSection = screenshotSectionArg ? screenshotSectionArg.slice("--screenshot-section=".length) : "";
 const viewportArg = process.argv.find((arg) => arg.startsWith("--viewport="));
 const viewportMatch = viewportArg?.match(/^(?:--viewport=)(\d+)x(\d+)$/i);
 const viewportWidth = viewportMatch ? Number(viewportMatch[1]) : 390;
@@ -259,9 +261,42 @@ async function main() {
     const advancedInput = await evalValue(ws, `(() => ({
       activeView: document.querySelector(".view.is-active")?.id,
       hasMonthlyEditor: Boolean(document.querySelector("#monthlyCashflowEditor")),
+      visibleMonthRows: document.querySelectorAll("#monthlyCashflowEditor .month-row").length,
+      monthTabCount: document.querySelectorAll("#monthlyCashflowEditor [data-select-month]").length,
+      activeMonthTabs: document.querySelectorAll("#monthlyCashflowEditor .month-tab.is-active").length,
+      activeMonth: Number(document.querySelector("#monthlyCashflowEditor .month-tab.is-active")?.dataset.selectMonth || 0),
       hasHoldingEditor: Boolean(document.querySelector("#holdingEditor")),
       title: document.querySelector("#inputTitle")?.textContent || ""
     }))()`);
+
+    await send(ws, "Runtime.evaluate", {
+      expression: `(() => {
+        const currentMonth = new Date().getMonth() + 1;
+        const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
+        document.querySelector('[data-select-month="' + nextMonth + '"]')?.click();
+        const input = document.querySelector('#monthlyCashflowEditor [data-month-field="monthlyIncome"]');
+        input.value = "1234";
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      })()`
+    });
+    await wait(250);
+    const monthSwitching = await evalValue(ws, `(() => {
+      const currentMonth = new Date().getMonth() + 1;
+      const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
+      return {
+        selectedMonth: Number(document.querySelector("#monthlyCashflowEditor .month-row")?.dataset.month || 0),
+        expectedMonth: nextMonth,
+        visibleMonthRows: document.querySelectorAll("#monthlyCashflowEditor .month-row").length,
+        activeMonthTabs: document.querySelectorAll("#monthlyCashflowEditor .month-tab.is-active").length,
+        activeHasData: document.querySelector("#monthlyCashflowEditor .month-tab.is-active")?.classList.contains("has-data") || false,
+        status: document.querySelector("#selectedMonthStatus")?.textContent || "",
+        storedMonth: Number(sessionStorage.getItem("cashflow-map-selected-month") || 0),
+        bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
+      };
+    })()`);
+    await send(ws, "Runtime.evaluate", {
+      expression: `document.querySelector('[data-select-month="' + (new Date().getMonth() + 1) + '"]')?.click()`
+    });
     await send(ws, "Runtime.evaluate", { expression: `window.goTo("landingView")` });
     await wait(250);
 
@@ -455,8 +490,10 @@ async function main() {
       await send(ws, "Runtime.evaluate", {
         expression: `(() => {
           const viewId = ${JSON.stringify(screenshotView)};
+          const sectionId = ${JSON.stringify(screenshotSection)};
           if (viewId === "dashboardView") document.body.dataset.memberAuth = "ready";
-          window.goTo(viewId);
+          window.goTo(viewId, sectionId);
+          if (sectionId) scrollToWorkspaceSection(sectionId);
         })()`
       });
       await wait(500);
@@ -474,6 +511,7 @@ async function main() {
       landing,
       requiredValidation,
       advancedInput,
+      monthSwitching,
       consentStep,
       freeReport,
       lineApplied,
@@ -508,8 +546,19 @@ async function main() {
         && requiredValidation.errorCount >= 1
         && advancedInput.activeView === "inputView"
         && advancedInput.hasMonthlyEditor
+        && advancedInput.visibleMonthRows === 1
+        && advancedInput.monthTabCount === 12
+        && advancedInput.activeMonthTabs === 1
+        && advancedInput.activeMonth === new Date().getMonth() + 1
         && advancedInput.hasHoldingEditor
         && advancedInput.title.includes("財務資料")
+        && monthSwitching.selectedMonth === monthSwitching.expectedMonth
+        && monthSwitching.visibleMonthRows === 1
+        && monthSwitching.activeMonthTabs === 1
+        && monthSwitching.activeHasData
+        && monthSwitching.status === "已有資料"
+        && monthSwitching.storedMonth === monthSwitching.expectedMonth
+        && monthSwitching.bodyOverflow === 0
         && consentStep.step === "6"
         && consentStep.consentVisible
         && freeReport.activeView === "freeReportView"

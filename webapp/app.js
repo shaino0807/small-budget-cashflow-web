@@ -2,6 +2,7 @@ const storageKey = "cashflow-map-web-state";
 const viewSessionKey = "cashflow-map-active-view";
 const workspaceSectionSessionKey = "cashflow-map-workspace-section";
 const memberNavSessionKey = "cashflow-map-member-nav";
+const monthEditorSessionKey = "cashflow-map-selected-month";
 const reportAccessSessionKey = "cashflow-map-report-access";
 const inputVersion = "cashflow-input-v2";
 const reportVersion = "cashflow-report-v2";
@@ -161,6 +162,7 @@ let state = loadState();
 let activeView = availableViews.includes(sessionStorage.getItem(viewSessionKey)) ? sessionStorage.getItem(viewSessionKey) : "landingView";
 let activeWorkspaceSection = sessionStorage.getItem(workspaceSectionSessionKey) || "householdCashflowSection";
 let activeMemberNav = memberNavItems.includes(sessionStorage.getItem(memberNavSessionKey)) ? sessionStorage.getItem(memberNavSessionKey) : "overview";
+let selectedCashflowMonth = clamp(Number(sessionStorage.getItem(monthEditorSessionKey)) || new Date().getMonth() + 1, 1, 12);
 let upgradeReturnLocation = { view: "freeReportView", section: activeWorkspaceSection };
 let authState = {
   configured: false,
@@ -459,6 +461,7 @@ function clearMemberBrowserState() {
   sessionStorage.removeItem(viewSessionKey);
   sessionStorage.removeItem(workspaceSectionSessionKey);
   sessionStorage.removeItem(memberNavSessionKey);
+  sessionStorage.removeItem(monthEditorSessionKey);
 }
 
 async function logoutMember(allDevices = false) {
@@ -1557,29 +1560,96 @@ function syncInputs() {
 function renderMonthlyCashflows() {
   const root = q("#monthlyCashflowEditor");
   if (!root) return;
-  root.innerHTML = monthLabels.map((label, index) => {
-    const month = index + 1;
-    const row = state.monthlyCashflows?.[month] || {};
-    return `
-      <div class="month-row" data-month="${month}">
-        <strong>${label}</strong>
-        <input data-month-field="monthlyIncome" type="number" min="0" step="1000" placeholder="收入" value="${escapeHtml(row.monthlyIncome)}" />
-        <input data-month-field="fixedExpense" type="number" min="0" step="1000" placeholder="固定支出" value="${escapeHtml(row.fixedExpense)}" />
-        <input data-month-field="insuranceExpense" type="number" min="0" step="500" placeholder="保險" value="${escapeHtml(row.insuranceExpense)}" />
-        <input data-month-field="loanExpense" type="number" min="0" step="1000" placeholder="貸款" value="${escapeHtml(row.loanExpense)}" />
-        <input data-month-field="monthlyInvestment" type="number" min="0" step="1000" placeholder="投資" value="${escapeHtml(row.monthlyInvestment)}" />
+  const row = state.monthlyCashflows?.[selectedCashflowMonth] || {};
+  const fieldLabels = {
+    monthlyIncome: "月收入",
+    fixedExpense: "固定支出",
+    insuranceExpense: "保險",
+    loanExpense: "貸款",
+    monthlyInvestment: "投資"
+  };
+  const fieldSteps = { monthlyIncome: 1000, fixedExpense: 1000, insuranceExpense: 500, loanExpense: 1000, monthlyInvestment: 1000 };
+  root.innerHTML = `
+    <div class="month-switcher">
+      <button class="month-step-button" data-month-step="-1" type="button" title="上一個月" aria-label="上一個月">‹</button>
+      <div class="month-tabs" role="tablist" aria-label="選擇月份">
+        ${monthLabels.map((label, index) => {
+          const month = index + 1;
+          const hasData = hasMonthlyInput(state.monthlyCashflows?.[month]);
+          const isActive = month === selectedCashflowMonth;
+          return `
+            <button class="month-tab ${hasData ? "has-data" : ""} ${isActive ? "is-active" : ""}" data-select-month="${month}" type="button" role="tab" aria-selected="${isActive}" aria-controls="monthlyCashflowFields">
+              <span>${label}</span><i aria-hidden="true"></i>
+            </button>
+          `;
+        }).join("")}
       </div>
-    `;
-  }).join("");
+      <button class="month-step-button" data-month-step="1" type="button" title="下一個月" aria-label="下一個月">›</button>
+    </div>
+    <div class="month-editor-head">
+      <div>
+        <strong>${monthLabels[selectedCashflowMonth - 1]}現金流</strong>
+        <span id="selectedMonthStatus">${hasMonthlyInput(row) ? "已有資料" : "尚未填寫"}</span>
+      </div>
+      <button class="text-link-button" id="clearSelectedMonthBtn" type="button">清空本月</button>
+    </div>
+    <div class="month-row" id="monthlyCashflowFields" data-month="${selectedCashflowMonth}" role="tabpanel">
+      ${monthFields.map((field) => `
+        <label>${fieldLabels[field]}
+          <input data-month-field="${field}" type="number" min="0" step="${fieldSteps[field]}" inputmode="numeric" value="${escapeHtml(row[field])}" />
+        </label>
+      `).join("")}
+    </div>
+  `;
+
+  requestAnimationFrame(() => centerActiveMonthTab("auto"));
+
+  root.querySelectorAll("[data-select-month]").forEach((button) => {
+    button.addEventListener("click", () => selectCashflowMonth(Number(button.dataset.selectMonth)));
+  });
+  root.querySelectorAll("[data-month-step]").forEach((button) => {
+    button.addEventListener("click", () => selectCashflowMonth(selectedCashflowMonth + Number(button.dataset.monthStep)));
+  });
 
   root.querySelectorAll("[data-month-field]").forEach((input) => {
     input.addEventListener("input", (event) => {
       const month = Number(event.target.closest(".month-row").dataset.month);
       const field = event.target.dataset.monthField;
       state.monthlyCashflows[month][field] = event.target.value === "" ? "" : Number(event.target.value || 0);
+      syncMonthEditorIndicators(month);
       refreshReports();
     });
   });
+  q("#clearSelectedMonthBtn")?.addEventListener("click", clearSelectedMonth);
+}
+
+function selectCashflowMonth(month) {
+  selectedCashflowMonth = month < 1 ? 12 : month > 12 ? 1 : month;
+  sessionStorage.setItem(monthEditorSessionKey, selectedCashflowMonth);
+  renderMonthlyCashflows();
+}
+
+function centerActiveMonthTab(behavior = "smooth") {
+  const tabs = q("#monthlyCashflowEditor .month-tabs");
+  const active = tabs?.querySelector(".month-tab.is-active");
+  if (!tabs || !active) return;
+  const left = active.offsetLeft - (tabs.clientWidth - active.offsetWidth) / 2;
+  tabs.scrollTo({ left: Math.max(0, left), behavior });
+}
+
+function syncMonthEditorIndicators(month) {
+  const hasData = hasMonthlyInput(state.monthlyCashflows?.[month]);
+  q(`[data-select-month="${month}"]`)?.classList.toggle("has-data", hasData);
+  const status = q("#selectedMonthStatus");
+  if (status && month === selectedCashflowMonth) status.textContent = hasData ? "已有資料" : "尚未填寫";
+}
+
+function clearSelectedMonth() {
+  state.monthlyCashflows[selectedCashflowMonth] = Object.fromEntries(monthFields.map((field) => [field, ""]));
+  renderMonthlyCashflows();
+  refreshReports();
+  persist();
+  showToast(`已清空 ${monthLabels[selectedCashflowMonth - 1]}現金流`);
 }
 
 function applyProfileToMonths() {
@@ -3592,7 +3662,12 @@ function syncMemberBottomNav() {
 
 function scrollToWorkspaceSection(sectionId) {
   if (!sectionId) return;
-  window.setTimeout(() => q(`#${sectionId}`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 180);
+  window.setTimeout(() => {
+    q(`#${sectionId}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (sectionId === "monthlyCashflowSection") {
+      centerActiveMonthTab();
+    }
+  }, 180);
 }
 
 function goTo(viewId, sectionId = "", memberNav = "") {

@@ -188,19 +188,120 @@ h3 {
 
 .monthly-editor {
   display: grid;
-  gap: 8px;
+  gap: 14px;
   margin-top: 12px;
 }
 
-.month-row {
+.month-switcher {
   display: grid;
-  grid-template-columns: 44px repeat(5, minmax(0, 1fr));
+  grid-template-columns: 38px minmax(0, 1fr) 38px;
   gap: 8px;
   align-items: center;
 }
 
-.month-row strong {
-  font-size: 14px;
+.month-tabs {
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+  padding: 2px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+}
+
+.month-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.month-tab,
+.month-step-button {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.76);
+  color: var(--muted);
+}
+
+.month-step-button {
+  display: grid;
+  width: 38px;
+  min-height: 42px;
+  place-items: center;
+  border-radius: 10px;
+  color: var(--brand-dark);
+  font-size: 25px;
+  line-height: 1;
+}
+
+.month-tab {
+  position: relative;
+  display: grid;
+  width: 48px;
+  min-width: 48px;
+  min-height: 42px;
+  place-items: center;
+  padding: 4px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.month-tab i {
+  position: absolute;
+  right: 5px;
+  top: 5px;
+  display: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand-green);
+}
+
+.month-tab.has-data i {
+  display: block;
+}
+
+.month-tab.is-active {
+  border-color: var(--brand-dark);
+  background: var(--brand-dark);
+  color: #fff;
+}
+
+.month-tab.is-active i {
+  background: var(--brand-mint);
+}
+
+.month-editor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.month-editor-head > div {
+  display: grid;
+  gap: 2px;
+}
+
+.month-editor-head span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.month-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  align-items: start;
+}
+
+.month-row label {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .month-row input {
@@ -1322,7 +1423,7 @@ td:first-child {
   }
 
   .month-row {
-    grid-template-columns: 40px repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .trust-strip {
@@ -2913,6 +3014,11 @@ body[data-member-auth="ready"] .brand p {
 
   .dashboard-shortcuts {
     grid-template-columns: 1fr;
+  }
+
+  .monthly-cashflow-head .subhead-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .toast {
