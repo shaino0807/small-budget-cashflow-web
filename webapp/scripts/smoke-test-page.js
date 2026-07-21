@@ -9,6 +9,13 @@ const targetUrl = process.argv[2] || "http://127.0.0.1:5188/";
 const shouldServe = process.argv.includes("--serve");
 const screenshotArg = process.argv.find((arg) => arg.startsWith("--screenshot="));
 const screenshotPath = screenshotArg ? path.resolve(screenshotArg.slice("--screenshot=".length)) : "";
+const screenshotViewArg = process.argv.find((arg) => arg.startsWith("--screenshot-view="));
+const screenshotView = screenshotViewArg ? screenshotViewArg.slice("--screenshot-view=".length) : "landingView";
+const viewportArg = process.argv.find((arg) => arg.startsWith("--viewport="));
+const viewportMatch = viewportArg?.match(/^(?:--viewport=)(\d+)x(\d+)$/i);
+const viewportWidth = viewportMatch ? Number(viewportMatch[1]) : 390;
+const viewportHeight = viewportMatch ? Number(viewportMatch[2]) : 844;
+const mobileViewport = viewportWidth <= 640;
 const chromePath = process.env.CHROME_PATH || [
   "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
   "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
@@ -134,7 +141,7 @@ async function main() {
       "--disable-gpu-compositing",
       "--in-process-gpu",
       "--no-sandbox",
-      "--window-size=390,844",
+      `--window-size=${viewportWidth},${viewportHeight}`,
       "about:blank"
     ], { windowsHide: true, stdio: "ignore" });
 
@@ -191,10 +198,10 @@ async function main() {
     await send(ws, "Network.enable");
     await send(ws, "Page.enable");
     await send(ws, "Emulation.setDeviceMetricsOverride", {
-      width: 390,
-      height: 844,
-      deviceScaleFactor: 2,
-      mobile: true
+      width: viewportWidth,
+      height: viewportHeight,
+      deviceScaleFactor: mobileViewport ? 2 : 1,
+      mobile: mobileViewport
     });
     await send(ws, "Emulation.setUserAgentOverride", {
       userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
@@ -341,7 +348,42 @@ async function main() {
     })()`);
 
     await send(ws, "Runtime.evaluate", {
-      expression: `document.querySelector('#freeReport [data-focus-section="etfAllocationSection"]')?.click()`
+      expression: `(() => {
+        document.body.dataset.memberAuth = "ready";
+        window.goTo("dashboardView", "", "overview");
+        renderDashboard();
+      })()`
+    });
+    await wait(350);
+    const dashboard = await evalValue(ws, `(() => ({
+      activeView: document.querySelector(".view.is-active")?.id,
+      period: document.querySelector("#dashboardPeriod")?.textContent || "",
+      income: document.querySelector('[data-dashboard-metric="income"] strong')?.textContent || "",
+      expense: document.querySelector('[data-dashboard-metric="expense"] strong')?.textContent || "",
+      investment: document.querySelector('[data-dashboard-metric="investment"] strong')?.textContent || "",
+      remaining: document.querySelector('[data-dashboard-metric="remaining"] strong')?.textContent || "",
+      recentEntries: document.querySelectorAll("#dashboardRecentEntries .dashboard-entry").length,
+      reminderCount: document.querySelectorAll(".dashboard-reminder").length,
+      bottomNavCount: document.querySelectorAll(".member-nav-item").length,
+      bottomNavDisplay: getComputedStyle(document.querySelector(".member-bottom-nav")).display,
+      activeBottomTabs: document.querySelectorAll(".member-nav-item.is-active").length,
+      activeBottomLabel: document.querySelector(".member-nav-item.is-active span:last-child")?.textContent || "",
+      headerHeight: Math.round(document.querySelector(".brand-nav")?.getBoundingClientRect().height || 0),
+      bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
+    }))()`);
+
+    await send(ws, "Runtime.evaluate", {
+      expression: `document.querySelector('[data-member-nav="ledger"]')?.click()`
+    });
+    await wait(350);
+    const ledgerNavigation = await evalValue(ws, `(() => ({
+      activeView: document.querySelector(".view.is-active")?.id,
+      activeBottomTabs: document.querySelectorAll(".member-nav-item.is-active").length,
+      activeBottomLabel: document.querySelector(".member-nav-item.is-active span:last-child")?.textContent || ""
+    }))()`);
+
+    await send(ws, "Runtime.evaluate", {
+      expression: `document.querySelector('[data-member-nav="invest"]')?.click()`
     });
     await wait(750);
     const workspaceJump = await evalValue(ws, `(() => ({
@@ -383,6 +425,18 @@ async function main() {
       income: Number(document.querySelector("#monthlyIncome")?.value || 0)
     }))()`);
 
+    await send(ws, "Runtime.evaluate", { expression: `window.goTo("dashboardView", "", "overview")` });
+    await send(ws, "Page.reload", { ignoreCache: true });
+    await waitForPageReady(ws);
+    await wait(1000);
+    const dashboardF5Persistence = await evalValue(ws, `(() => ({
+      activeView: document.querySelector(".view.is-active")?.id,
+      activeBottomTabs: document.querySelectorAll(".member-nav-item.is-active").length,
+      activeBottomLabel: document.querySelector(".member-nav-item.is-active span:last-child")?.textContent || "",
+      hasMetrics: document.querySelectorAll("#dashboardView .dashboard-metric").length === 4,
+      bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
+    }))()`);
+
     await send(ws, "Runtime.evaluate", {
       expression: `window.goTo("databaseView")`
     });
@@ -398,7 +452,13 @@ async function main() {
     }))()`);
 
     if (screenshotPath) {
-      await send(ws, "Runtime.evaluate", { expression: `window.goTo("landingView")` });
+      await send(ws, "Runtime.evaluate", {
+        expression: `(() => {
+          const viewId = ${JSON.stringify(screenshotView)};
+          if (viewId === "dashboardView") document.body.dataset.memberAuth = "ready";
+          window.goTo(viewId);
+        })()`
+      });
       await wait(500);
       const shot = await send(ws, "Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
       fs.writeFileSync(screenshotPath, Buffer.from(shot.data, "base64"));
@@ -406,7 +466,7 @@ async function main() {
 
     const result = {
       url: targetUrl,
-      viewport: "390x844 mobile",
+      viewport: `${viewportWidth}x${viewportHeight} ${mobileViewport ? "mobile" : "desktop"}`,
       consoleErrors,
       runtimeErrors,
       failedRequests: failures,
@@ -417,10 +477,13 @@ async function main() {
       consentStep,
       freeReport,
       lineApplied,
+      dashboard,
+      ledgerNavigation,
       workspaceJump,
       upgradeNavigation,
       upgradeReturn,
       f5Persistence,
+      dashboardF5Persistence,
       database,
       passed: consoleErrors.length === 0
         && runtimeErrors.length === 0
@@ -468,6 +531,23 @@ async function main() {
         && lineApplied.lineAmount === 10000
         && lineApplied.recentEntries === 1
         && lineApplied.privacyDelete
+        && dashboard.activeView === "dashboardView"
+        && dashboard.period.includes("年")
+        && /50,000/.test(dashboard.income)
+        && /65/.test(dashboard.expense)
+        && /10,000/.test(dashboard.investment)
+        && /39,935/.test(dashboard.remaining)
+        && dashboard.recentEntries === 1
+        && dashboard.reminderCount >= 1
+        && dashboard.bottomNavCount === 5
+        && dashboard.bottomNavDisplay === (mobileViewport ? "grid" : "none")
+        && dashboard.activeBottomTabs === 1
+        && dashboard.activeBottomLabel === "總覽"
+        && dashboard.headerHeight <= 66
+        && dashboard.bodyOverflow === 0
+        && ledgerNavigation.activeView === "dashboardView"
+        && ledgerNavigation.activeBottomTabs === 1
+        && ledgerNavigation.activeBottomLabel === "記帳"
         && workspaceJump.activeView === "inputView"
         && workspaceJump.hasEtfSection
         && workspaceJump.hasHoldingEditor
@@ -484,6 +564,11 @@ async function main() {
         && Boolean(f5Persistence.reportId)
         && f5Persistence.hasSessionAccess
         && f5Persistence.income === 42000
+        && dashboardF5Persistence.activeView === "dashboardView"
+        && dashboardF5Persistence.activeBottomTabs === 1
+        && dashboardF5Persistence.activeBottomLabel === "總覽"
+        && dashboardF5Persistence.hasMetrics
+        && dashboardF5Persistence.bodyOverflow === 0
         && database.activeView === "databaseView"
         && database.etfRows > 0
         && database.bodyOverflow === 0

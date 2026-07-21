@@ -347,6 +347,18 @@
         </section>
       </section>
 
+      <section id="dashboardView" class="view app-view member-dashboard" aria-labelledby="dashboardTitle">
+        <div class="section-title dashboard-heading">
+          <div>
+            <span class="dashboard-period" id="dashboardPeriod">本月</span>
+            <h2 id="dashboardTitle">本月總覽</h2>
+            <p>先看本月剩多少，再決定要記帳、調整預算或檢查投資。</p>
+          </div>
+          <button class="secondary-button mini-button" id="refreshDashboardBtn" type="button" aria-label="重新整理本月總覽">更新</button>
+        </div>
+        <div id="dashboardContent"></div>
+      </section>
+
       <section id="inputView" class="view app-view" aria-labelledby="inputTitle">
         <div class="section-title">
           <div>
@@ -527,6 +539,29 @@
         <section class="panel" id="adminReportDetail" hidden></section>
       </section>
     </main>
+
+    <nav class="member-bottom-nav" aria-label="會員主要功能">
+      <button class="member-nav-item" data-member-nav="overview" data-goto="dashboardView" type="button">
+        <span class="member-nav-icon" aria-hidden="true">⌂</span>
+        <span>總覽</span>
+      </button>
+      <button class="member-nav-item" data-member-nav="ledger" data-goto="dashboardView" data-focus-section="dashboardRecentEntries" type="button">
+        <span class="member-nav-icon" aria-hidden="true">＋</span>
+        <span>記帳</span>
+      </button>
+      <button class="member-nav-item" data-member-nav="budget" data-goto="inputView" data-focus-section="monthlyCashflowSection" type="button">
+        <span class="member-nav-icon" aria-hidden="true">▤</span>
+        <span>預算</span>
+      </button>
+      <button class="member-nav-item" data-member-nav="invest" data-goto="inputView" data-focus-section="etfAllocationSection" type="button">
+        <span class="member-nav-icon" aria-hidden="true">↗</span>
+        <span>投資</span>
+      </button>
+      <button class="member-nav-item" data-member-nav="report" data-goto="freeReportView" type="button">
+        <span class="member-nav-icon" aria-hidden="true">◎</span>
+        <span>報告</span>
+      </button>
+    </nav>
 
     <footer class="disclaimer">
       本網站僅供教育與財務規劃參考，不構成任何投資建議、買賣建議或保證報酬。所有投資皆有風險，使用者應自行判斷並承擔投資結果。

@@ -1,6 +1,7 @@
 const storageKey = "cashflow-map-web-state";
 const viewSessionKey = "cashflow-map-active-view";
 const workspaceSectionSessionKey = "cashflow-map-workspace-section";
+const memberNavSessionKey = "cashflow-map-member-nav";
 const reportAccessSessionKey = "cashflow-map-report-access";
 const inputVersion = "cashflow-input-v2";
 const reportVersion = "cashflow-report-v2";
@@ -14,7 +15,8 @@ const disclaimer = "本 App 僅供教育與財務規劃參考，不構成任何�
 const monthLabels = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
 const monthFields = ["monthlyIncome", "fixedExpense", "insuranceExpense", "loanExpense", "monthlyInvestment"];
 const simulationYearOptions = [10, 15, 20, 25, 30];
-const availableViews = ["landingView", "inputView", "freeReportView", "upgradeView", "paidReportView", "simulationView", "calendarView", "databaseView", "adminView"];
+const availableViews = ["landingView", "dashboardView", "inputView", "freeReportView", "upgradeView", "paidReportView", "simulationView", "calendarView", "databaseView", "adminView"];
+const memberNavItems = ["overview", "ledger", "budget", "invest", "report"];
 const industryNames = {
   "01": "水泥工業",
   "02": "食品工業",
@@ -158,6 +160,7 @@ const sampleState = {
 let state = loadState();
 let activeView = availableViews.includes(sessionStorage.getItem(viewSessionKey)) ? sessionStorage.getItem(viewSessionKey) : "landingView";
 let activeWorkspaceSection = sessionStorage.getItem(workspaceSectionSessionKey) || "householdCashflowSection";
+let activeMemberNav = memberNavItems.includes(sessionStorage.getItem(memberNavSessionKey)) ? sessionStorage.getItem(memberNavSessionKey) : "overview";
 let upgradeReturnLocation = { view: "freeReportView", section: activeWorkspaceSection };
 let authState = {
   configured: false,
@@ -432,7 +435,7 @@ async function initializeMemberAuth() {
       applyMemberBootstrap(bootstrap);
       const requested = new URLSearchParams(location.search).get("view");
       activeView = availableViews.includes(requested) ? requested : activeView;
-      if (authState.user.onboardingCompleted && activeView === "landingView") activeView = "inputView";
+      if (authState.user.onboardingCompleted && activeView === "landingView") activeView = "dashboardView";
       if (!authState.user.onboardingCompleted) activeView = "landingView";
     } else if (authState.configured) {
       activeView = "landingView";
@@ -455,6 +458,7 @@ function clearMemberBrowserState() {
   sessionStorage.removeItem(reportAccessSessionKey);
   sessionStorage.removeItem(viewSessionKey);
   sessionStorage.removeItem(workspaceSectionSessionKey);
+  sessionStorage.removeItem(memberNavSessionKey);
 }
 
 async function logoutMember(allDevices = false) {
@@ -1741,6 +1745,7 @@ function refreshReports() {
   latestReport = buildReport();
   renderHeader();
   renderQuickResult();
+  renderDashboard();
   renderDatabaseView();
   renderFreeReport();
   renderUpgrade();
@@ -1750,8 +1755,117 @@ function refreshReports() {
 }
 
 function renderHeader() {
-  q("#headerStatus").textContent = state.paidUnlocked ? "完整報告已解鎖" : "免費健檢";
+  q("#headerStatus").textContent = authState.authenticated
+    ? authState.user?.onboardingCompleted ? "會員現金流帳本" : "首次現金流健檢"
+    : state.paidUnlocked ? "完整報告已解鎖" : "免費健檢";
   document.querySelectorAll(".paid-tab").forEach((tab) => tab.classList.toggle("is-locked", !state.paidUnlocked));
+}
+
+function dashboardSnapshot() {
+  const now = new Date();
+  const monthNumber = now.getMonth() + 1;
+  const currentMonthKey = `${now.getFullYear()}-${String(monthNumber).padStart(2, "0")}`;
+  const summary = state.reportMeta?.lineSummary;
+  const usesLineSummary = Boolean(summary?.linked && summary.month === currentMonthKey);
+  const row = state.monthlyCashflows?.[monthNumber] || {};
+  const hasMonthData = hasMonthlyInput(row);
+  const profile = hasMonthData ? monthlyProfile(monthNumber) : state.profile;
+  const income = usesLineSummary ? Number(summary.income || 0) : Number(profile.monthlyIncome || 0);
+  const expense = usesLineSummary
+    ? Number(summary.expense || 0)
+    : Number(profile.fixedExpense || 0) + Number(profile.insuranceExpense || 0) + Number(profile.loanExpense || 0);
+  const investment = usesLineSummary ? Number(summary.investment || 0) : Number(profile.monthlyInvestment || 0);
+  const remaining = usesLineSummary && Number.isFinite(Number(summary.remaining))
+    ? Number(summary.remaining)
+    : income - expense - investment;
+  return {
+    monthLabel: `${now.getFullYear()} 年 ${monthNumber} 月`,
+    income,
+    expense,
+    investment,
+    remaining,
+    recentEntries: usesLineSummary ? summary.recentEntries || [] : [],
+    hasMonthData: hasMonthData || usesLineSummary,
+    usesLineSummary
+  };
+}
+
+function dashboardReminders(snapshot) {
+  const reminders = [];
+  if (snapshot.remaining < 0) reminders.push({ level: "urgent", text: `本月支出與投資超過收入 ${formatMoney(Math.abs(snapshot.remaining))}，先確認非必要支出。` });
+  if (!snapshot.hasMonthData) reminders.push({ level: "normal", text: "本月預算尚未確認，先填收入與固定支出。", view: "inputView", section: "monthlyCashflowSection", label: "填本月預算", nav: "budget" });
+  if (!hasEnteredHoldings(state.holdings)) reminders.push({ level: "normal", text: "ETF 部位尚未填寫，報告中的配息與集中度會不完整。", view: "inputView", section: "etfAllocationSection", label: "新增 ETF 部位", nav: "invest" });
+  if (!snapshot.usesLineSummary) reminders.push({ level: "normal", text: "尚無本月 LINE 記帳摘要；在官方 LINE 輸入一筆收支後即可同步。" });
+  if (!reminders.length) reminders.push({ level: "done", text: "本月資料已同步，目前沒有待處理提醒。" });
+  return reminders;
+}
+
+function renderDashboard() {
+  const root = q("#dashboardContent");
+  if (!root) return;
+  const snapshot = dashboardSnapshot();
+  const reminders = dashboardReminders(snapshot);
+  q("#dashboardPeriod").textContent = snapshot.monthLabel;
+  root.innerHTML = `
+    <div class="dashboard-metrics" aria-label="本月現金流摘要">
+      <article class="dashboard-metric income" data-dashboard-metric="income"><span>本月總收入</span><strong>${formatMoney(snapshot.income)}</strong></article>
+      <article class="dashboard-metric expense" data-dashboard-metric="expense"><span>本月總支出</span><strong>${formatMoney(snapshot.expense)}</strong></article>
+      <article class="dashboard-metric investment" data-dashboard-metric="investment"><span>投資總額</span><strong>${formatMoney(snapshot.investment)}</strong></article>
+      <article class="dashboard-metric remaining ${snapshot.remaining < 0 ? "is-negative" : ""}" data-dashboard-metric="remaining"><span>剩餘現金流</span><strong>${formatMoney(snapshot.remaining)}</strong></article>
+    </div>
+    <div class="dashboard-grid">
+      <section class="dashboard-section" id="dashboardRecentEntries" aria-labelledby="dashboardRecentTitle">
+        <div class="dashboard-section-head">
+          <div>
+            <span class="dashboard-kicker">LINE 同步</span>
+            <h3 id="dashboardRecentTitle">最近記帳</h3>
+          </div>
+          <span class="dashboard-status">${snapshot.usesLineSummary ? "已同步" : "等待資料"}</span>
+        </div>
+        ${snapshot.recentEntries.length ? `
+          <div class="dashboard-entry-list">
+            ${snapshot.recentEntries.slice(0, 6).map((entry) => `
+              <article class="dashboard-entry">
+                <span>${escapeHtml(lineEntryText(entry))}</span>
+                <strong class="entry-${escapeHtml(entry.type)}">${entry.type === "expense" ? "−" : "+"}${formatMoney(entry.amount)}</strong>
+              </article>
+            `).join("")}
+          </div>
+        ` : `
+          <div class="dashboard-empty">
+            <strong>本月還沒有 LINE 記帳</strong>
+            <p>回到官方 LINE 輸入「買早餐 65」或「賺 3000」，再按上方重新整理。</p>
+          </div>
+        `}
+      </section>
+      <section class="dashboard-section" aria-labelledby="dashboardReminderTitle">
+        <div class="dashboard-section-head">
+          <div>
+            <span class="dashboard-kicker">下一步</span>
+            <h3 id="dashboardReminderTitle">待處理提醒</h3>
+          </div>
+        </div>
+        <div class="dashboard-reminders">
+          ${reminders.map((item) => `
+            <article class="dashboard-reminder ${item.level}">
+              <span class="reminder-dot" aria-hidden="true"></span>
+              <p>${escapeHtml(item.text)}</p>
+              ${item.view ? `<button class="text-link-button" data-goto="${item.view}" data-focus-section="${item.section}" data-member-nav="${item.nav}" type="button">${item.label}</button>` : ""}
+            </article>
+          `).join("")}
+        </div>
+      </section>
+    </div>
+    <section class="dashboard-shortcuts" aria-label="常用功能">
+      <button data-goto="inputView" data-focus-section="monthlyCashflowSection" data-member-nav="budget" type="button"><span>預算</span><strong>查看月份現金流</strong></button>
+      <button data-goto="inputView" data-focus-section="etfAllocationSection" data-member-nav="invest" type="button"><span>投資</span><strong>管理 ETF 部位</strong></button>
+      <button data-goto="freeReportView" data-member-nav="report" type="button"><span>報告</span><strong>查看健檢結果</strong></button>
+    </section>
+    <div class="dashboard-secondary-actions">
+      <button class="text-link-button" data-goto="landingView" data-focus-section="quickCheckPanel" type="button">重新做五題健檢</button>
+    </div>
+  `;
+  bindGotoButtons();
 }
 
 function updateProfileInputs() {
@@ -3460,12 +3574,28 @@ function syncWorkspaceTabs() {
   });
 }
 
+function memberNavForLocation(viewId, sectionId = "") {
+  if (viewId === "dashboardView") return sectionId === "dashboardRecentEntries" ? "ledger" : "overview";
+  if (viewId === "inputView") return sectionId === "etfAllocationSection" ? "invest" : "budget";
+  if (["freeReportView", "upgradeView", "paidReportView", "simulationView", "calendarView"].includes(viewId)) return "report";
+  return "";
+}
+
+function syncMemberBottomNav() {
+  document.querySelectorAll(".member-nav-item").forEach((item) => {
+    const isActive = item.dataset.memberNav === activeMemberNav;
+    item.classList.toggle("is-active", isActive);
+    if (isActive) item.setAttribute("aria-current", "page");
+    else item.removeAttribute("aria-current");
+  });
+}
+
 function scrollToWorkspaceSection(sectionId) {
   if (!sectionId) return;
   window.setTimeout(() => q(`#${sectionId}`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 180);
 }
 
-function goTo(viewId, sectionId = "") {
+function goTo(viewId, sectionId = "", memberNav = "") {
   if (["paidReportView", "simulationView", "calendarView"].includes(viewId) && !state.paidUnlocked) {
     viewId = "upgradeView";
     showToast("完整報告、模擬與月曆需先解鎖");
@@ -3477,17 +3607,24 @@ function goTo(viewId, sectionId = "") {
     activeWorkspaceSection = sectionId;
     sessionStorage.setItem(workspaceSectionSessionKey, sectionId);
   }
+  const resolvedSection = viewId === "inputView" ? sectionId || activeWorkspaceSection : sectionId;
+  const nextMemberNav = memberNavItems.includes(memberNav) ? memberNav : memberNavForLocation(viewId, resolvedSection);
+  if (nextMemberNav) {
+    activeMemberNav = nextMemberNav;
+    sessionStorage.setItem(memberNavSessionKey, activeMemberNav);
+  }
   activeView = viewId;
   sessionStorage.setItem(viewSessionKey, viewId);
   document.querySelectorAll(".view").forEach((view) => view.classList.toggle("is-active", view.id === viewId));
   document.querySelectorAll(".tab").forEach((tab) => tab.classList.toggle("is-active", tab.dataset.view === viewId));
   syncWorkspaceTabs();
+  syncMemberBottomNav();
   if (viewId === "simulationView") requestAnimationFrame(() => drawSimulationChart(latestReport.simulation));
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function returnFromUpgrade() {
-  const fallbackView = authState.authenticated && authState.user?.onboardingCompleted ? "inputView" : "freeReportView";
+  const fallbackView = authState.authenticated && authState.user?.onboardingCompleted ? "dashboardView" : "freeReportView";
   const targetView = upgradeReturnLocation.view && upgradeReturnLocation.view !== "upgradeView"
     ? upgradeReturnLocation.view
     : fallbackView;
@@ -3502,7 +3639,7 @@ function bindGotoButtons() {
     button.dataset.gotoBound = "true";
     button.addEventListener("click", () => {
       const sectionId = button.dataset.focusSection;
-      goTo(button.dataset.goto, sectionId || "");
+      goTo(button.dataset.goto, sectionId || "", button.dataset.memberNav || "");
       scrollToWorkspaceSection(sectionId);
     });
   });
@@ -3512,6 +3649,7 @@ function bindEvents() {
   q("#lineLoginBtn")?.addEventListener("click", beginLineLogin);
   q("#memberLineLoginBtn")?.addEventListener("click", beginLineLogin);
   q("#logoutBtn")?.addEventListener("click", () => logoutMember(false));
+  q("#refreshDashboardBtn")?.addEventListener("click", () => refreshLineSummary());
   document.querySelectorAll("[data-upgrade-back]").forEach((button) => button.addEventListener("click", returnFromUpgrade));
   document.querySelectorAll(".tab").forEach((tab) => {
     tab.addEventListener("click", () => goTo(tab.dataset.view));
@@ -3587,8 +3725,8 @@ function bindEvents() {
     goTo("freeReportView");
     const report = await saveGeneratedReport();
     if (authState.authenticated && report) {
-      goTo("inputView");
-      showToast("首次健檢完成，已進入你的家庭收支。");
+      goTo("dashboardView", "", "overview");
+      showToast("首次健檢完成，已建立你的本月總覽。");
     }
   });
   q("#generateBtn").addEventListener("click", async () => {
@@ -3694,7 +3832,7 @@ async function init() {
   syncInputs();
   bindEvents();
   await initializeMemberAuth();
-  if (q(`#${activeView}`)) goTo(activeView);
+  if (q(`#${activeView}`)) goTo(activeView, "", activeMemberNav);
   document.body.dataset.appReady = "true";
   configureConsultationLinks();
   refreshReports();
