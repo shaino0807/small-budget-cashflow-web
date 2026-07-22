@@ -750,7 +750,6 @@ main {
 }
 
 .prescription-panel,
-.lead-cta-panel,
 .trust-panel {
   display: grid;
   gap: 14px;
@@ -2541,6 +2540,107 @@ a:hover {
   height: 1px;
 }
 
+#freeReport {
+  display: block;
+}
+
+.report-value-sequence {
+  display: grid;
+  gap: 18px;
+}
+
+.report-value-overview {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.8fr) minmax(0, 1.2fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.report-value-overview > * {
+  min-width: 0;
+}
+
+.report-cashflow-summary {
+  display: grid;
+  gap: 18px;
+  align-content: start;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.report-block-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.report-cashflow-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+}
+
+.report-cashflow-grid article {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 14px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.report-cashflow-grid span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.report-cashflow-grid strong {
+  color: var(--brand-dark);
+  font-family: "Syne", "DM Sans", sans-serif;
+  font-size: 22px;
+  overflow-wrap: anywhere;
+}
+
+.report-cashflow-grid .is-negative strong {
+  color: #9f1d16;
+}
+
+.report-upgrade-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 22px;
+  border: 1px solid rgba(124, 58, 237, 0.22);
+  border-radius: var(--radius);
+  background: rgba(124, 58, 237, 0.07);
+}
+
+.report-upgrade-cta > div {
+  display: grid;
+  gap: 6px;
+}
+
+.report-upgrade-cta p {
+  max-width: 720px;
+  color: var(--muted);
+}
+
+.report-upgrade-cta .primary-button {
+  flex: 0 0 auto;
+}
+
+.report-detail-stack {
+  margin-top: 28px;
+  padding-top: 28px;
+  border-top: 1px solid rgba(4, 52, 44, 0.14);
+}
+
 .member-dashboard {
   min-height: calc(100vh - 150px);
 }
@@ -2878,6 +2978,10 @@ body[data-member-auth="ready"] .brand p {
   .dashboard-grid {
     grid-template-columns: 1fr;
   }
+
+  .report-value-overview {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 640px) {
@@ -2943,6 +3047,10 @@ body[data-member-auth="ready"] .brand p {
   }
 
   body[data-member-auth="ready"] .workspace-nav {
+    display: none;
+  }
+
+  #freeReport > .workspace-nav {
     display: none;
   }
 
@@ -3019,6 +3127,24 @@ body[data-member-auth="ready"] .brand p {
   .monthly-cashflow-head .subhead-actions {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #freeReport .report-score-panel .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #freeReport .report-score-panel .score-circle {
+    width: 132px;
+    height: 132px;
+  }
+
+  .report-upgrade-cta {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .report-upgrade-cta .primary-button {
+    width: 100%;
   }
 
   .toast {

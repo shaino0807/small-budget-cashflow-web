@@ -324,9 +324,11 @@ async function main() {
     await wait(1200);
     const freeReport = await evalValue(ws, `(() => {
       const text = document.querySelector("#freeReport")?.innerText || "";
+      const workspaceNav = document.querySelector("#freeReport > .workspace-nav");
       return {
         activeView: document.querySelector(".view.is-active")?.id,
-        hasWorkspaceNav: text.includes("健檢結果") && text.includes("ETF 部位配置"),
+        hasWorkspaceNav: Boolean(workspaceNav),
+        workspaceNavDisplay: workspaceNav ? getComputedStyle(workspaceNav).display : "missing",
         hasMissingEtfPrompt: text.includes("需先填 ETF 部位") && text.includes("補 ETF 部位配置"),
         hasPrescription: text.includes("本月最該做的 3 件事"),
         hasFirstAction: text.includes("先處理"),
@@ -335,6 +337,13 @@ async function main() {
         hasNumbers: /5,000|10,000|NT|\\$/.test(text),
         hasLineSyncPanel: Boolean(document.querySelector("#freeReport .line-sync-panel")),
         hasLineBindingAction: Boolean(document.querySelector("#freeReport #createLineBindingBtn")),
+        hasHeaderSalesButton: Boolean(document.querySelector("#freeReportView > .section-title [data-goto='upgradeView']")),
+        cashflowMetricCount: document.querySelectorAll("#freeReport .report-cashflow-grid article").length,
+        upgradeButtonCount: document.querySelectorAll("#freeReport .report-upgrade-cta [data-goto='upgradeView']").length,
+        scoreOrder: [...document.querySelectorAll("#freeReport [data-report-block]")].findIndex((item) => item.dataset.reportBlock === "score"),
+        cashflowOrder: [...document.querySelectorAll("#freeReport [data-report-block]")].findIndex((item) => item.dataset.reportBlock === "cashflow"),
+        actionsOrder: [...document.querySelectorAll("#freeReport [data-report-block]")].findIndex((item) => item.dataset.reportBlock === "actions"),
+        upgradeOrder: [...document.querySelectorAll("#freeReport [data-report-block]")].findIndex((item) => item.dataset.reportBlock === "upgrade"),
         bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
       };
     })()`);
@@ -431,8 +440,9 @@ async function main() {
       bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
     }))()`);
 
+    await send(ws, "Runtime.evaluate", { expression: `window.goTo("freeReportView", "", "report")` });
     await send(ws, "Runtime.evaluate", {
-      expression: `document.querySelector('#inputView [data-goto="upgradeView"]')?.click()`
+      expression: `document.querySelector('#freeReport .report-upgrade-cta [data-goto="upgradeView"]')?.click()`
     });
     await wait(350);
     const upgradeNavigation = await evalValue(ws, `(() => ({
@@ -563,6 +573,7 @@ async function main() {
         && consentStep.consentVisible
         && freeReport.activeView === "freeReportView"
         && freeReport.hasWorkspaceNav
+        && (mobileViewport ? freeReport.workspaceNavDisplay === "none" : freeReport.workspaceNavDisplay !== "none")
         && freeReport.hasMissingEtfPrompt
         && freeReport.hasPrescription
         && freeReport.hasFirstAction
@@ -571,6 +582,13 @@ async function main() {
         && freeReport.hasNumbers
         && freeReport.hasLineSyncPanel
         && freeReport.hasLineBindingAction
+        && !freeReport.hasHeaderSalesButton
+        && freeReport.cashflowMetricCount === 4
+        && freeReport.upgradeButtonCount === 1
+        && freeReport.scoreOrder >= 0
+        && freeReport.cashflowOrder > freeReport.scoreOrder
+        && freeReport.actionsOrder > freeReport.cashflowOrder
+        && freeReport.upgradeOrder > freeReport.actionsOrder
         && freeReport.bodyOverflow === 0
         && lineApplied.income === 50000
         && lineApplied.expense === 65
@@ -606,10 +624,10 @@ async function main() {
         && workspaceJump.bodyOverflow === 0
         && upgradeNavigation.activeView === "upgradeView"
         && upgradeNavigation.backButtonCount === 2
-        && upgradeReturn.activeView === "inputView"
+        && upgradeReturn.activeView === "freeReportView"
         && upgradeReturn.activeWorkspaceTabs === 1
-        && upgradeReturn.activeWorkspaceLabel === "ETF 部位配置"
-        && f5Persistence.activeView === "inputView"
+        && upgradeReturn.activeWorkspaceLabel === "健檢結果"
+        && f5Persistence.activeView === "freeReportView"
         && Boolean(f5Persistence.reportId)
         && f5Persistence.hasSessionAccess
         && f5Persistence.income === 42000

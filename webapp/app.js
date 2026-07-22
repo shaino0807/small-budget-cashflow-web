@@ -2304,8 +2304,7 @@ function workspaceNavHtml(active = "freeReportView", activeSection = "") {
     { view: "freeReportView", label: "健檢結果" },
     { view: "inputView", label: "家庭收支", section: "householdCashflowSection" },
     { view: "inputView", label: "ETF 部位配置", section: "etfAllocationSection" },
-    { view: "inputView", label: "月份現金流", section: "monthlyCashflowSection" },
-    { view: "upgradeView", label: "方案 / 諮詢" }
+    { view: "inputView", label: "月份現金流", section: "monthlyCashflowSection" }
   ];
   return `
     <nav class="workspace-nav" aria-label="報告工作台導覽">
@@ -2330,20 +2329,11 @@ function decorateHoldingDependentReport(report) {
   const metricValues = score.querySelectorAll(".metric strong");
   if (metricValues[1]) metricValues[1].textContent = "需先填 ETF 部位";
   if (metricValues[2]) metricValues[2].textContent = "尚未填寫";
-  score.insertAdjacentHTML("beforeend", `
-    <div class="missing-data-callout">
-      <div>
-        <strong>ETF 部位還沒填，所以高股息依賴與年配息只能先保留。</strong>
-        <p>補上目前持有的 ETF、個股與金額後，這兩個數值才會變成可判讀的健檢結果。</p>
-      </div>
-      <button class="secondary-button mini-button" data-goto="inputView" data-focus-section="etfAllocationSection" type="button">補 ETF 部位配置</button>
-    </div>
-  `);
 }
 
 function scoreHtml(report) {
   return `
-    <section class="score-panel">
+    <section class="score-panel report-score-panel" id="reportScore" data-report-block="score">
       <span class="badge">${report.status}</span>
       <div class="score-circle" style="--score:${report.score}">
         <strong>${report.score}</strong>
@@ -2492,7 +2482,7 @@ function stockExposureHtml(report) {
 function beginnerPrescriptionHtml(report) {
   const item = report.prescription;
   return `
-    <section class="panel prescription-panel">
+    <section class="panel prescription-panel" id="reportPriorityActions" data-report-block="actions">
       <span class="eyebrow">免費報告先給你方向</span>
       <h3>本月最該做的 3 件事</h3>
       <div class="prescription-grid">
@@ -2553,19 +2543,50 @@ function trustSourceHtml() {
   `;
 }
 
-function leadCtaHtml() {
+function reportCashflowSummaryHtml() {
+  const snapshot = dashboardSnapshot();
   return `
-    <section class="panel lead-cta-panel">
-      <span class="eyebrow">下一步</span>
-      <h3>把健檢結果留下來，先判斷這個月的第一步</h3>
-      <p>先看這筆錢該存、該還，還是能開始投資；不需要先懂 ETF 或股票名詞。</p>
-      <div class="cta-grid">
-        <a class="primary-button cta-link" href="#contactPanel">LINE 傳我你的健檢結果，我幫你看第一步</a>
-        <a class="secondary-button cta-link" href="#contactPanel">領「每月 5,000 / 10,000 分配表」</a>
-        <a class="secondary-button cta-link" href="#contactPanel">預約 30 分鐘現金流健檢</a>
-        <a class="secondary-button cta-link" href="#contactPanel">我想知道我的錢該先存、先還，還是能投資</a>
-        <a class="secondary-button cta-link" href="#contactPanel">IG 看小資買股常見錯誤</a>
+    <section class="report-cashflow-summary" id="reportCashflowSummary" data-report-block="cashflow">
+      <div class="report-block-heading">
+        <div>
+          <span class="eyebrow">${escapeHtml(snapshot.monthLabel)}</span>
+          <h3>本月現金流</h3>
+        </div>
+        <span class="dashboard-status">${snapshot.usesLineSummary ? "LINE 已同步" : "依目前填寫"}</span>
       </div>
+      <div class="report-cashflow-grid">
+        <article><span>收入</span><strong>${formatMoney(snapshot.income)}</strong></article>
+        <article><span>支出</span><strong>${formatMoney(snapshot.expense)}</strong></article>
+        <article><span>投資</span><strong>${formatMoney(snapshot.investment)}</strong></article>
+        <article class="${snapshot.remaining < 0 ? "is-negative" : ""}"><span>剩餘</span><strong>${formatMoney(snapshot.remaining)}</strong></article>
+      </div>
+      <button class="text-link-button" data-goto="inputView" data-focus-section="monthlyCashflowSection" data-member-nav="budget" type="button">調整月份資料</button>
+    </section>
+  `;
+}
+
+function missingHoldingCalloutHtml(report) {
+  if (hasEnteredHoldings(report.holdings)) return "";
+  return `
+    <section class="missing-data-callout report-missing-holdings">
+      <div>
+        <strong>ETF 指標還缺部位資料</strong>
+        <p>補上代號與金額後，才會計算高股息依賴與年配息。</p>
+      </div>
+      <button class="secondary-button mini-button" data-goto="inputView" data-focus-section="etfAllocationSection" type="button">補 ETF 部位配置</button>
+    </section>
+  `;
+}
+
+function reportUpgradeCtaHtml() {
+  return `
+    <section class="report-upgrade-cta" id="reportUpgradeCta" data-report-block="upgrade">
+      <div>
+        <span class="eyebrow">需要更完整的規劃時</span>
+        <h3>查看完整月份規劃與諮詢方案</h3>
+        <p>免費分數與三個行動會繼續保留；升級後再查看壓力測試、資產模擬與完整處理順序。</p>
+      </div>
+      <button class="primary-button" data-goto="upgradeView" data-member-nav="report" type="button">查看完整方案</button>
     </section>
   `;
 }
@@ -2992,12 +3013,19 @@ function renderFreeReport() {
   const report = latestReport;
   q("#freeReport").innerHTML = `
     ${workspaceNavHtml("freeReportView")}
-    ${scoreHtml(report)}
-    <div class="stack">
-      ${reportRecordHtml()}
-      ${lineSyncHtml()}
+    <div class="report-value-sequence">
+      <div class="report-value-overview">
+        ${scoreHtml(report)}
+        ${reportCashflowSummaryHtml()}
+      </div>
       ${state.leadProfile.checkType === "stock" ? stockSafetyHtml(report) : ""}
       ${beginnerPrescriptionHtml(report)}
+      ${missingHoldingCalloutHtml(report)}
+      ${reportUpgradeCtaHtml()}
+    </div>
+    <div class="stack report-detail-stack" id="freeReportDetails">
+      ${reportRecordHtml()}
+      ${lineSyncHtml()}
       ${breakdownHtml(report)}
       ${risksHtml(report, false)}
       ${trustSourceHtml()}
@@ -3009,7 +3037,6 @@ function renderFreeReport() {
         <h3>現金流預覽</h3>
         <p>目前每月可用現金流約 ${formatMoney(investableCashflow(report.profile))}。月份月曆與 ETF 配息壓力測試需升級後查看。</p>
       </section>
-      ${leadCtaHtml()}
     </div>
   `;
   decorateHoldingDependentReport(report);
