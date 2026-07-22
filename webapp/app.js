@@ -753,13 +753,14 @@ function enrichHoldingsFromDatabase() {
         dataDate: stock.latestPrice?.date || holding.dataDate
       };
     }
+    const officialYield = estimatedDividendYield(etf.ticker, 0);
     return {
       ...holding,
       name: etf.shortName,
       type: etfDisplayType(etf, holding.type === "個股" ? "ETF" : holding.type),
       sector: etf.themes?.[0] || etf.displayClassification?.primary || etf.assetTypes?.[0] || holding.sector,
-      dividendYield: estimatedDividendYield(etf.ticker, holding.dividendYield),
-      yieldSource: "official_distributions",
+      dividendYield: officialYield || Number(holding.dividendYield || 0),
+      yieldSource: officialYield > 0 ? "official_distributions" : holding.yieldSource === "official_distributions" ? undefined : holding.yieldSource,
       dataSource: "official_snapshot",
       dataDate: etf.performance?.date
     };
@@ -1685,51 +1686,80 @@ function renderHoldings() {
     const officialEtf = findEtf(holding.ticker);
     const officialStock = findStock(holding.ticker);
     const amount = holdingAmount(holding);
-    const yieldLabel = holding.yieldSource === "official_distributions" ? "官方配息估算" : "手動";
+    const resolvedName = officialEtf?.shortName || officialStock?.shortName || holding.name || "等待輸入代號";
+    const resolvedType = officialStock && !officialEtf ? "個股" : holding.type || "ETF";
+    const hasOfficialData = Boolean(officialEtf || officialStock);
+    const hasOfficialYield = Boolean(officialEtf && holding.yieldSource === "official_distributions" && Number(holding.dividendYield) > 0);
+    const hasLineLots = (holding.lots || []).some((lot) => lot.source === "line");
+    const lookupFailed = String(holding.ticker || "").length >= 4 && !hasOfficialData;
+    const yieldLabel = hasOfficialYield ? "官方配息估算" : Number(holding.dividendYield) > 0 ? "手動" : "配息資料待更新";
+    const yieldDetail = Number(holding.dividendYield) > 0 ? `${yieldLabel} ${pct(holding.dividendYield, 2)}` : yieldLabel;
     const row = document.createElement("div");
     row.className = "holding-row";
     row.innerHTML = `
-      <label>代號<input data-field="ticker" value="${escapeHtml(holding.ticker)}" inputmode="numeric" /></label>
-      <label>名稱<input data-field="name" value="${escapeHtml(officialEtf?.shortName || officialStock?.shortName || holding.name)}" readonly /></label>
-      <label>類型
-        <select data-field="type">
-          ${["ETF", "市值型", "股票型ETF", "高股息", "個股", "債券", "貨幣", "REITs", "原物料", "多資產", "槓桿型", "反向型", "海外", "主題"].map((type) => `<option ${holding.type === type ? "selected" : ""}>${type}</option>`).join("")}
-        </select>
-      </label>
-      <label>總金額<input data-total-amount value="${formatMoney(amount)}" readonly /></label>
-      <label>殖利率<input data-field="dividendYield" type="number" min="0" step="0.01" value="${holding.dividendYield}" ${officialEtf ? "readonly" : ""} /></label>
-      <button class="icon-button" data-remove="${index}" type="button" title="刪除" aria-label="刪除">×</button>
-      <div class="lot-editor">
-        <div class="lot-title">
-          <strong>分批買入</strong>
-          <button class="secondary-button mini-button" data-add-lot="${index}" type="button">新增一筆</button>
+      <div class="holding-primary">
+        <label>代號<input data-field="ticker" value="${escapeHtml(holding.ticker)}" inputmode="numeric" autocomplete="off" placeholder="例如 0056" /></label>
+        <label>投入金額<input data-holding-amount type="number" min="0" step="1000" value="${amount || ""}" ${hasLineLots ? "readonly" : ""} placeholder="例如 10000" /></label>
+        <div class="holding-identity ${lookupFailed ? "is-warning" : ""}">
+          <span>${hasOfficialData ? "系統已帶入" : lookupFailed ? "找不到官方資料" : "等待查詢"}</span>
+          <strong>${escapeHtml(resolvedName)}</strong>
+          <small>${escapeHtml(resolvedType)}${officialEtf ? Number(holding.dividendYield) > 0 ? ` · 殖利率 ${pct(holding.dividendYield, 2)}` : " · 配息資料待更新" : ""}</small>
         </div>
-        ${(holding.lots || []).map((lot, lotIndex) => `
-          <div class="lot-row ${lot.source === "line" ? "is-line-synced" : ""}" data-lot="${lotIndex}">
-            <label>買入點位${lot.source === "line" ? `<span class="mini-tag">LINE 同步</span>` : ""}<input data-lot-field="price" type="number" min="0" step="0.01" value="${lot.price}" ${lot.source === "line" ? "readonly" : ""} /></label>
-            <label>投入金額<input data-lot-field="amount" type="number" min="0" step="1000" value="${lot.amount}" ${lot.source === "line" ? "readonly" : ""} /></label>
-            <button class="icon-button" data-remove-lot="${lotIndex}" type="button" title="${lot.source === "line" ? "LINE 同步部位需從 LINE 記帳更新" : "刪除買入項目"}" aria-label="${lot.source === "line" ? "LINE 同步部位" : "刪除買入項目"}" ${lot.source === "line" ? "disabled" : ""}>×</button>
-          </div>
-        `).join("")}
+        <button class="icon-button" data-remove="${index}" type="button" title="刪除部位" aria-label="刪除部位">×</button>
       </div>
-      ${officialEtf
-        ? `<small class="data-note">ETF：${officialEtf.issuer} · 資料日 ${officialEtf.performance.date} · 殖利率 ${yieldLabel} ${pct(holding.dividendYield, 2)}</small>`
-        : officialStock
-          ? `<small class="data-note">股票：${officialStock.market} · ${industryDisplayName(officialStock.industry)} · ${officialStock.latestPrice?.date || "官方端點未提供交易日"}</small>`
-          : `<small class="data-note warning">尚未對應官方 ETF 或股票主檔</small>`}
+      ${hasLineLots ? `<small class="holding-line-note">此金額由 LINE 同步，請從 LINE 對話更新。</small>` : ""}
+      <details class="holding-advanced" ${lookupFailed ? "open" : ""}>
+        <summary>進階編輯</summary>
+        <div class="holding-advanced-fields">
+          <label>名稱<input data-field="name" value="${escapeHtml(resolvedName === "等待輸入代號" ? "" : resolvedName)}" ${hasOfficialData ? "readonly" : ""} /></label>
+          <label>類型
+            <select data-field="type" ${hasOfficialData ? "disabled" : ""}>
+              ${["ETF", "市值型", "股票型ETF", "高股息", "個股", "債券", "貨幣", "REITs", "原物料", "多資產", "槓桿型", "反向型", "海外", "主題"].map((type) => `<option ${resolvedType === type ? "selected" : ""}>${type}</option>`).join("")}
+            </select>
+          </label>
+          <label>殖利率<input data-field="dividendYield" type="number" min="0" step="0.01" value="${holding.dividendYield}" ${hasOfficialYield ? "readonly" : ""} /></label>
+        </div>
+        <div class="lot-editor">
+          <div class="lot-title">
+            <strong>分批買入</strong>
+            <button class="secondary-button mini-button" data-add-lot="${index}" type="button">新增一筆</button>
+          </div>
+          ${(holding.lots || []).map((lot, lotIndex) => `
+            <div class="lot-row ${lot.source === "line" ? "is-line-synced" : ""}" data-lot="${lotIndex}">
+              <label>買入點位${lot.source === "line" ? `<span class="mini-tag">LINE 同步</span>` : ""}<input data-lot-field="price" type="number" min="0" step="0.01" value="${lot.price}" ${lot.source === "line" ? "readonly" : ""} /></label>
+              <label>投入金額<input data-lot-field="amount" type="number" min="0" step="1000" value="${lot.amount}" ${lot.source === "line" ? "readonly" : ""} /></label>
+              <button class="icon-button" data-remove-lot="${lotIndex}" type="button" title="${lot.source === "line" ? "LINE 同步部位需從 LINE 記帳更新" : "刪除買入項目"}" aria-label="${lot.source === "line" ? "LINE 同步部位" : "刪除買入項目"}" ${lot.source === "line" ? "disabled" : ""}>×</button>
+            </div>
+          `).join("")}
+        </div>
+        ${officialEtf
+          ? `<small class="data-note">${officialEtf.issuer} · 資料日 ${officialEtf.performance.date} · ${yieldDetail}</small>`
+          : officialStock
+            ? `<small class="data-note">${officialStock.market} · ${industryDisplayName(officialStock.industry)} · ${officialStock.latestPrice?.date || "官方端點未提供交易日"}</small>`
+            : `<small class="data-note warning">可手動補上名稱、類型與殖利率。</small>`}
+      </details>
     `;
     root.append(row);
+  });
+
+  root.querySelectorAll("[data-holding-amount]").forEach((input) => {
+    input.addEventListener("input", (event) => {
+      const row = event.target.closest(".holding-row");
+      const index = [...root.querySelectorAll(":scope > .holding-row")].indexOf(row);
+      setManualHoldingAmount(state.holdings[index], Number(event.target.value || 0));
+      refreshReports();
+    });
   });
 
   root.querySelectorAll("input, select").forEach((input) => {
     input.addEventListener("input", (event) => {
       const row = event.target.closest(".holding-row");
-      const index = [...root.children].indexOf(row);
+      const index = [...root.querySelectorAll(":scope > .holding-row")].indexOf(row);
       const field = event.target.dataset.field;
       if (!field) return;
       const numeric = ["amount", "dividendYield", "expenseRatio"].includes(field);
       state.holdings[index][field] = numeric ? Number(event.target.value || 0) : String(event.target.value).trim();
-      if (field === "ticker" && String(event.target.value).trim().length >= 4) {
+      if (field === "ticker" && (findEtf(event.target.value) || findStock(event.target.value))) {
         state.holdings[index].ticker = String(event.target.value).trim();
         enrichHoldingsFromDatabase();
         if (mergeDuplicateHoldings()) showToast("已合併相同代號的持股");
@@ -1740,10 +1770,22 @@ function renderHoldings() {
     });
   });
 
+  root.querySelectorAll('[data-field="ticker"]').forEach((input) => {
+    input.addEventListener("change", (event) => {
+      const row = event.target.closest(".holding-row");
+      const index = [...root.querySelectorAll(":scope > .holding-row")].indexOf(row);
+      state.holdings[index].ticker = String(event.target.value).trim();
+      enrichHoldingsFromDatabase();
+      if (mergeDuplicateHoldings()) showToast("已合併相同代號的持股");
+      renderHoldings();
+      refreshReports();
+    });
+  });
+
   root.querySelectorAll("[data-lot-field]").forEach((input) => {
     input.addEventListener("input", (event) => {
       const row = event.target.closest(".holding-row");
-      const index = [...root.children].indexOf(row);
+      const index = [...root.querySelectorAll(":scope > .holding-row")].indexOf(row);
       const lotIndex = Number(event.target.closest(".lot-row").dataset.lot);
       const field = event.target.dataset.lotField;
       state.holdings[index].lots[lotIndex][field] = Number(event.target.value || 0);
@@ -1766,7 +1808,7 @@ function renderHoldings() {
   root.querySelectorAll("[data-remove-lot]").forEach((button) => {
     button.addEventListener("click", () => {
       const row = button.closest(".holding-row");
-      const index = [...root.children].indexOf(row);
+      const index = [...root.querySelectorAll(":scope > .holding-row")].indexOf(row);
       state.holdings[index].lots.splice(Number(button.dataset.removeLot), 1);
       if (!state.holdings[index].lots.length) state.holdings[index].lots.push({ price: 0, amount: 0 });
       state.holdings[index].amount = holdingAmount(state.holdings[index]);
@@ -1829,6 +1871,27 @@ function renderHeader() {
     ? authState.user?.onboardingCompleted ? "會員現金流帳本" : "首次現金流健檢"
     : state.paidUnlocked ? "完整報告已解鎖" : "免費健檢";
   document.querySelectorAll(".paid-tab").forEach((tab) => tab.classList.toggle("is-locked", !state.paidUnlocked));
+}
+
+function setManualHoldingAmount(holding, nextAmount) {
+  if (!holding || (holding.lots || []).some((lot) => lot.source === "line")) return;
+  const target = Math.max(0, Number(nextAmount || 0));
+  const lots = Array.isArray(holding.lots) && holding.lots.length
+    ? holding.lots
+    : [{ price: latestMarketPrice(holding.ticker) || 0, amount: 0 }];
+  const current = lots.reduce((sum, lot) => sum + Number(lot.amount || 0), 0);
+  let allocated = 0;
+  lots.forEach((lot, index) => {
+    const amount = index === lots.length - 1
+      ? target - allocated
+      : current > 0
+        ? Math.round(target * Number(lot.amount || 0) / current)
+        : index === 0 ? target : 0;
+    lot.amount = Math.max(0, amount);
+    allocated += lot.amount;
+  });
+  holding.lots = lots;
+  holding.amount = target;
 }
 
 function dashboardSnapshot() {
@@ -3856,9 +3919,10 @@ function bindEvents() {
     showToast("已套用範例資料");
   });
   q("#addHoldingBtn").addEventListener("click", () => {
-    state.holdings.push({ ticker: "", name: "新標的", type: "個股", amount: 0, lots: [{ price: 0, amount: 0 }], dividendYield: 3, expenseRatio: 0.2, sector: "未分類" });
+    state.holdings.push({ ticker: "", name: "", type: "ETF", amount: 0, lots: [{ price: 0, amount: 0 }], dividendYield: 0, expenseRatio: 0, sector: "未分類ETF" });
     renderHoldings();
     refreshReports();
+    q("#holdingEditor .holding-row:last-child [data-field='ticker']")?.focus();
   });
   q("#applyProfileToMonthsBtn").addEventListener("click", applyProfileToMonths);
   q("#clearMonthsBtn").addEventListener("click", clearMonthlyCashflows);

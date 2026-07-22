@@ -271,6 +271,49 @@ async function main() {
 
     await send(ws, "Runtime.evaluate", {
       expression: `(() => {
+        document.querySelector("#addHoldingBtn")?.click();
+        let value = "";
+        for (const character of "00919") {
+          value += character;
+          const ticker = document.querySelector("#holdingEditor .holding-row:last-child [data-field='ticker']");
+          ticker.value = value;
+          ticker.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+      })()`
+    });
+    await wait(300);
+    await send(ws, "Runtime.evaluate", {
+      expression: `(() => {
+        const amount = document.querySelector("#holdingEditor .holding-row:last-child [data-holding-amount]");
+        amount.value = "10000";
+        amount.dispatchEvent(new Event("input", { bubbles: true }));
+      })()`
+    });
+    await wait(250);
+    const simpleHoldingEditor = await evalValue(ws, `(() => {
+      const row = document.querySelector("#holdingEditor .holding-row:last-child");
+      const holding = state.holdings[state.holdings.length - 1];
+      return {
+        addButtonLabel: document.querySelector("#addHoldingBtn")?.textContent.trim() || "",
+        primaryInputCount: row?.querySelectorAll(".holding-primary input").length || 0,
+        ticker: row?.querySelector('[data-field="ticker"]')?.value || "",
+        amount: Number(row?.querySelector("[data-holding-amount]")?.value || 0),
+        identity: row?.querySelector(".holding-identity")?.innerText || "",
+        advancedOpen: row?.querySelector(".holding-advanced")?.open || false,
+        typeLocked: row?.querySelector('[data-field="type"]')?.disabled || false,
+        yieldLocked: row?.querySelector('[data-field="dividendYield"]')?.readOnly || false,
+        storedAmount: Number(holding?.amount || 0),
+        lotAmount: Number(holding?.lots?.[0]?.amount || 0),
+        bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
+      };
+    })()`);
+    await send(ws, "Runtime.evaluate", {
+      expression: `document.querySelector("#holdingEditor .holding-row:last-child [data-remove]")?.click()`
+    });
+    await wait(200);
+
+    await send(ws, "Runtime.evaluate", {
+      expression: `(() => {
         const currentMonth = new Date().getMonth() + 1;
         const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
         document.querySelector('[data-select-month="' + nextMonth + '"]')?.click();
@@ -503,6 +546,10 @@ async function main() {
           const sectionId = ${JSON.stringify(screenshotSection)};
           if (viewId === "dashboardView") document.body.dataset.memberAuth = "ready";
           window.goTo(viewId, sectionId);
+          if (sectionId === "etfAllocationSection" && !document.querySelector("#holdingEditor .holding-row")) {
+            document.querySelector("#sampleBtn")?.click();
+            document.querySelector(".toast")?.remove();
+          }
           if (sectionId) scrollToWorkspaceSection(sectionId);
         })()`
       });
@@ -521,6 +568,7 @@ async function main() {
       landing,
       requiredValidation,
       advancedInput,
+      simpleHoldingEditor,
       monthSwitching,
       consentStep,
       freeReport,
@@ -562,6 +610,19 @@ async function main() {
         && advancedInput.activeMonth === new Date().getMonth() + 1
         && advancedInput.hasHoldingEditor
         && advancedInput.title.includes("財務資料")
+        && simpleHoldingEditor.addButtonLabel.includes("新增部位")
+        && simpleHoldingEditor.primaryInputCount === 2
+        && simpleHoldingEditor.ticker === "00919"
+        && simpleHoldingEditor.amount === 10000
+        && simpleHoldingEditor.identity.includes("系統已帶入")
+        && !simpleHoldingEditor.identity.includes("等待輸入代號")
+        && !simpleHoldingEditor.advancedOpen
+        && simpleHoldingEditor.typeLocked
+        && !simpleHoldingEditor.yieldLocked
+        && simpleHoldingEditor.identity.includes("配息資料待更新")
+        && simpleHoldingEditor.storedAmount === 10000
+        && simpleHoldingEditor.lotAmount === 10000
+        && simpleHoldingEditor.bodyOverflow === 0
         && monthSwitching.selectedMonth === monthSwitching.expectedMonth
         && monthSwitching.visibleMonthRows === 1
         && monthSwitching.activeMonthTabs === 1
