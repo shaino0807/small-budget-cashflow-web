@@ -1254,6 +1254,40 @@ a {
   font-weight: 900;
 }
 
+.price-note {
+  margin-top: -10px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.plan-status {
+  align-self: end;
+  width: fit-content;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+#upgradeView .plan-card.highlight {
+  border-color: rgba(124, 58, 237, 0.48);
+  box-shadow: 0 16px 42px rgba(124, 58, 237, 0.14);
+}
+
+#upgradeView .plan-card.highlight .primary-button,
+#upgradeView .consultation-booking-panel .primary-button {
+  background: #7c3aed;
+  border-color: #7c3aed;
+}
+
+#upgradeView .plan-card.highlight .primary-button:hover,
+#upgradeView .consultation-booking-panel .primary-button:hover {
+  background: #6d28d9;
+  border-color: #6d28d9;
+}
+
 .feature-list {
   display: grid;
   gap: 8px;
@@ -3243,10 +3277,15 @@ body[data-member-auth="ready"] .brand p {
   }
 
   .toast {
-    inset: 72px 14px auto auto;
-    width: max-content;
-    max-width: calc(100vw - 28px);
-    padding: 8px 12px;
-    font-size: 14px;
+    display: none;
+  }
+
+  #headerStatus.is-notification {
+    display: block;
+    max-width: min(54vw, 260px);
+    overflow: hidden;
+    color: var(--brand-green);
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }

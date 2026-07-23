@@ -180,6 +180,8 @@ let etfDataQuality = {
   counts: { etfs: 0, distributions: 0, holdings: 0, stocks: 0, priceSeries: 0, navSeries: 0 }
 };
 let latestReport = null;
+let mobileToastTimer = 0;
+let mobileToastBaseStatus = "";
 
 const profileFields = [
   "monthlyIncome",
@@ -771,18 +773,44 @@ function q(selector) {
   return document.querySelector(selector);
 }
 
+function clearToast() {
+  q(".toast")?.remove();
+  const headerStatus = q("#headerStatus");
+  if (headerStatus?.classList.contains("is-notification")) {
+    headerStatus.textContent = mobileToastBaseStatus || "小資現金流地圖";
+    headerStatus.classList.remove("is-notification");
+    headerStatus.removeAttribute("title");
+  }
+  if (mobileToastTimer) window.clearTimeout(mobileToastTimer);
+  mobileToastTimer = 0;
+}
+
 function showToast(message) {
-  const old = q(".toast");
-  if (old) old.remove();
+  const headerStatus = q("#headerStatus");
+  if (window.matchMedia("(max-width: 640px)").matches && headerStatus) {
+    if (!headerStatus.classList.contains("is-notification")) mobileToastBaseStatus = headerStatus.textContent;
+    if (mobileToastTimer) window.clearTimeout(mobileToastTimer);
+    headerStatus.textContent = message;
+    headerStatus.title = message;
+    headerStatus.classList.add("is-notification");
+    mobileToastTimer = window.setTimeout(clearToast, 2400);
+    return;
+  }
+  clearToast();
   const toast = document.createElement("div");
   toast.className = "toast";
+  toast.setAttribute("role", "status");
   toast.textContent = message;
   document.body.append(toast);
-  setTimeout(() => toast.remove(), 2600);
+  window.setTimeout(() => toast.remove(), 2400);
 }
 
 function formatMoney(value) {
   return money.format(Math.round(value || 0));
+}
+
+function formatTwd(value) {
+  return `NT$${number.format(Math.round(value || 0))}`;
 }
 
 function pct(value, digits = 1) {
@@ -3116,10 +3144,15 @@ function renderFreeReport() {
 
 function renderUpgrade() {
   {
+  const consultationBalanceTwd = Math.max(0, consultationFeeTwd - consultationDepositTwd);
+  const upgradeIntro = q("#upgradeView .section-title p");
+  if (upgradeIntro) {
+    upgradeIntro.textContent = `完整報告 ${formatTwd(fullReportPriceTwd)}；一對一諮詢總費用 ${formatTwd(consultationFeeTwd)}，訂金 ${formatTwd(consultationDepositTwd)} 已包含在總費用內。`;
+  }
   const plans = [
-    { name: "免費報告", price: "NT$0", action: "保留免費版", key: "free", features: ["財務體質分數", "現金流摘要", "3 個優先風險"] },
-    { name: "完整報告", price: formatMoney(fullReportPriceTwd), action: state.paidUnlocked ? "已解鎖" : "前往付款", key: "paid", highlight: true, features: ["整體股票重疊度分析", "高股息依賴與壓力測試", "資產模擬與月份月曆", "PDF/列印匯出"] },
-    { name: "一對一諮詢訂金", price: formatMoney(consultationDepositTwd), action: state.consultingUnlocked ? "已付款" : "支付訂金", key: "consulting", features: [`諮詢費 ${formatMoney(consultationFeeTwd)}`, "IG 或 LINE 預約", "人工檢視 ETF、股票與現金流"] }
+    { name: "免費報告", price: "NT$0", status: "目前方案", key: "free", features: ["財務體質分數", "現金流摘要", "3 個優先風險"] },
+    { name: "完整報告", price: formatTwd(fullReportPriceTwd), action: state.paidUnlocked ? "已解鎖" : "前往付款", key: "paid", highlight: true, features: ["整體股票重疊度分析", "高股息依賴與壓力測試", "資產模擬與月份月曆", "PDF/列印匯出"] },
+    { name: "一對一現金流諮詢", price: formatTwd(consultationFeeTwd), priceNote: "總費用", action: state.consultingUnlocked ? "訂金已支付" : `支付 ${formatTwd(consultationDepositTwd)} 訂金`, key: "consulting", features: [`訂金 ${formatTwd(consultationDepositTwd)} 已包含在總費用內`, `預約確認後再支付尾款 ${formatTwd(consultationBalanceTwd)}`, "人工檢視 ETF、股票與現金流"] }
   ];
   const paymentNotice = state.payment?.message ? `
     <section class="panel payment-status-panel">
@@ -3129,15 +3162,15 @@ function renderUpgrade() {
     </section>
   ` : "";
   const consultationLinks = `
-    <section class="panel consultation-booking-panel">
+    <section class="panel consultation-booking-panel" id="consultationBookingPanel">
       <span class="eyebrow">諮詢預約</span>
-      <h3>訂金 ${formatMoney(consultationDepositTwd)}，諮詢費 ${formatMoney(consultationFeeTwd)}</h3>
-      <p class="panel-note">完成訂金後，可用 IG 或 LINE 接續預約時間。LINE 連結正式提供後，會由 runtime 設定啟用。</p>
+      <h3>一對一現金流諮詢 ${formatTwd(consultationFeeTwd)}</h3>
+      <p class="panel-note">先支付訂金 ${formatTwd(consultationDepositTwd)} 保留名額；訂金已包含在總費用內，預約確認後再支付尾款 ${formatTwd(consultationBalanceTwd)}。</p>
       <div class="cta-grid">
-        <a class="primary-button cta-link" href="${escapeHtml(consultationIgUrl)}" target="_blank" rel="noopener noreferrer">IG 諮詢</a>
         ${consultationLineUrl
-          ? `<a class="secondary-button cta-link" href="${escapeHtml(consultationLineUrl)}" target="_blank" rel="noopener noreferrer">LINE 諮詢</a>`
-          : `<span class="secondary-button cta-link is-disabled" aria-disabled="true">LINE 尚未設定</span>`}
+          ? `<a class="primary-button cta-link" href="${escapeHtml(consultationLineUrl)}" target="_blank" rel="noopener noreferrer">LINE 預約</a>`
+          : ""}
+        <a class="${consultationLineUrl ? "secondary-button" : "primary-button"} cta-link" href="${escapeHtml(consultationIgUrl)}" target="_blank" rel="noopener noreferrer">IG 預約</a>
       </div>
     </section>
   `;
@@ -3145,8 +3178,11 @@ function renderUpgrade() {
     <article class="plan-card ${plan.highlight ? "highlight" : ""}">
       <h3>${plan.name}</h3>
       <div class="price">${plan.price}</div>
+      ${plan.priceNote ? `<span class="price-note">${plan.priceNote}</span>` : ""}
       <ul class="feature-list">${plan.features.map((item) => `<li>${item}</li>`).join("")}</ul>
-      <button class="${plan.highlight ? "primary-button" : "secondary-button"}" data-plan="${plan.key}" type="button">${plan.action}</button>
+      ${plan.status
+        ? `<span class="plan-status" aria-label="${plan.name}${plan.status}">${plan.status}</span>`
+        : `<button class="${plan.highlight ? "primary-button" : "secondary-button"}" data-plan="${plan.key}" type="button">${plan.action}</button>`}
     </article>
   `).join("") + consultationLinks;
 
@@ -3512,7 +3548,7 @@ function renderPaidReport() {
       </section>
       <section class="panel">
         <h3>一對一諮詢</h3>
-        <p>${state.consultingUnlocked ? "已登記一對一健檢方案，可接續安排人工檢視流程。" : "需要人工檢視 ETF、保險與貸款配置時，可升級到 NT$2,980 健檢方案。"}</p>
+        <p>${state.consultingUnlocked ? "諮詢訂金已支付，可接續安排人工檢視流程。" : `需要人工檢視 ETF、保險與貸款配置時，可預約 ${formatTwd(consultationFeeTwd)} 一對一諮詢。`}</p>
         <button class="secondary-button" data-goto="upgradeView" type="button">查看諮詢方案</button>
       </section>
     </div>

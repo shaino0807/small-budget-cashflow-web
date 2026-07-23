@@ -312,6 +312,20 @@ async function main() {
     });
     await wait(200);
 
+    await send(ws, "Runtime.evaluate", { expression: `showToast("通知不遮擋內容")` });
+    await wait(100);
+    const notificationBehavior = await evalValue(ws, `(() => ({
+      desktopToastCount: document.querySelectorAll("body > .toast").length,
+      headerNotification: document.querySelector("#headerStatus")?.classList.contains("is-notification") || false,
+      headerText: document.querySelector("#headerStatus")?.textContent || "",
+      bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
+    }))()`);
+    await send(ws, "Runtime.evaluate", { expression: `clearToast()` });
+    const notificationRestored = await evalValue(ws, `(() => ({
+      desktopToastCount: document.querySelectorAll("body > .toast").length,
+      headerNotification: document.querySelector("#headerStatus")?.classList.contains("is-notification") || false
+    }))()`);
+
     await send(ws, "Runtime.evaluate", {
       expression: `(() => {
         const currentMonth = new Date().getMonth() + 1;
@@ -490,7 +504,18 @@ async function main() {
     await wait(350);
     const upgradeNavigation = await evalValue(ws, `(() => ({
       activeView: document.querySelector(".view.is-active")?.id,
-      backButtonCount: document.querySelectorAll('#upgradeView [data-upgrade-back]').length
+      backButtonCount: document.querySelectorAll('#upgradeView [data-upgrade-back]').length,
+      prices: [...document.querySelectorAll("#upgradeView .plan-card .price")].map((item) => item.textContent.trim()),
+      hasFreeActionButton: Boolean(document.querySelector('#upgradeView [data-plan="free"]')),
+      freeStatus: document.querySelector("#upgradeView .plan-card .plan-status")?.textContent.trim() || "",
+      consultingPrice: [...document.querySelectorAll("#upgradeView .plan-card")].find((card) => card.querySelector("h3")?.textContent.includes("一對一"))?.querySelector(".price")?.textContent.trim() || "",
+      consultingAction: document.querySelector('#upgradeView [data-plan="consulting"]')?.textContent.trim() || "",
+      hasDepositInclusion: document.querySelector("#upgradeView")?.innerText.includes("訂金 NT$200 已包含在總費用內") || false,
+      hasBalance: document.querySelector("#upgradeView")?.innerText.includes("尾款 NT$1,300") || false,
+      hasUnconfiguredLine: document.querySelector("#upgradeView")?.innerText.includes("LINE 尚未設定") || false,
+      lineBookingCount: [...document.querySelectorAll("#upgradeView .consultation-booking-panel a")].filter((item) => item.textContent.includes("LINE")).length,
+      igBookingCount: [...document.querySelectorAll("#upgradeView .consultation-booking-panel a")].filter((item) => item.textContent.includes("IG")).length,
+      bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
     }))()`);
     await send(ws, "Runtime.evaluate", {
       expression: `document.querySelector('#upgradeView .upgrade-return-actions [data-upgrade-back]')?.click()`
@@ -569,6 +594,8 @@ async function main() {
       requiredValidation,
       advancedInput,
       simpleHoldingEditor,
+      notificationBehavior,
+      notificationRestored,
       monthSwitching,
       consentStep,
       freeReport,
@@ -623,6 +650,12 @@ async function main() {
         && simpleHoldingEditor.storedAmount === 10000
         && simpleHoldingEditor.lotAmount === 10000
         && simpleHoldingEditor.bodyOverflow === 0
+        && (!mobileViewport || notificationBehavior.headerText.includes("通知不遮擋內容"))
+        && notificationBehavior.desktopToastCount === (mobileViewport ? 0 : 1)
+        && notificationBehavior.headerNotification === mobileViewport
+        && notificationBehavior.bodyOverflow === 0
+        && notificationRestored.desktopToastCount === 0
+        && !notificationRestored.headerNotification
         && monthSwitching.selectedMonth === monthSwitching.expectedMonth
         && monthSwitching.visibleMonthRows === 1
         && monthSwitching.activeMonthTabs === 1
@@ -685,6 +718,17 @@ async function main() {
         && workspaceJump.bodyOverflow === 0
         && upgradeNavigation.activeView === "upgradeView"
         && upgradeNavigation.backButtonCount === 2
+        && JSON.stringify(upgradeNavigation.prices) === JSON.stringify(["NT$0", "NT$499", "NT$1,500"])
+        && !upgradeNavigation.hasFreeActionButton
+        && upgradeNavigation.freeStatus === "目前方案"
+        && upgradeNavigation.consultingPrice === "NT$1,500"
+        && upgradeNavigation.consultingAction.includes("NT$200")
+        && upgradeNavigation.hasDepositInclusion
+        && upgradeNavigation.hasBalance
+        && !upgradeNavigation.hasUnconfiguredLine
+        && upgradeNavigation.lineBookingCount === 0
+        && upgradeNavigation.igBookingCount === 1
+        && upgradeNavigation.bodyOverflow === 0
         && upgradeReturn.activeView === "freeReportView"
         && upgradeReturn.activeWorkspaceTabs === 1
         && upgradeReturn.activeWorkspaceLabel === "健檢結果"
