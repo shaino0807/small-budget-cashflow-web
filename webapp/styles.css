@@ -1783,7 +1783,7 @@ h3,
   top: 0;
   z-index: 50;
   min-height: 76px;
-  padding: 16px clamp(18px, 4vw, 44px);
+  padding: 10px clamp(18px, 4vw, 44px);
   background: rgba(246, 244, 239, 0.72);
   border-bottom-color: rgba(4, 52, 44, 0.10);
   transition: min-height 220ms ease, padding 220ms ease, background-color 220ms ease, box-shadow 220ms ease;
@@ -1976,11 +1976,19 @@ a:hover {
 
 .eyebrow {
   min-height: 34px;
-  border-color: rgba(159, 225, 203, 0.38);
+  border-color: rgba(29, 158, 117, 0.30);
   border-radius: 999px;
-  background: rgba(159, 225, 203, 0.14);
-  color: var(--brand-mint);
+  background: rgba(29, 158, 117, 0.10);
+  color: #12654e;
   letter-spacing: 0.03em;
+}
+
+.hero-section .eyebrow,
+.solution-section .eyebrow,
+.final-cta-section .eyebrow {
+  border-color: rgba(185, 243, 222, 0.42);
+  background: rgba(185, 243, 222, 0.12);
+  color: #b9f3de;
 }
 
 .hero-copy h2 {
@@ -2082,7 +2090,7 @@ a:hover {
 }
 
 .hero-proof span {
-  color: var(--brand-mint);
+  color: #b9f3de;
   font-weight: 900;
 }
 
@@ -2315,7 +2323,7 @@ a:hover {
 }
 
 .solution-steps strong {
-  color: var(--brand-mint);
+  color: #b9f3de;
   font-size: 32px;
 }
 
@@ -2489,7 +2497,7 @@ a:hover {
 }
 
 .final-cta .contact-card span {
-  color: rgba(255, 255, 255, 0.72);
+  color: rgba(255, 255, 255, 0.86);
 }
 
 .app-view {
@@ -2783,7 +2791,7 @@ a:hover {
 .dashboard-kicker {
   display: block;
   margin-bottom: 4px;
-  color: var(--brand-green);
+  color: #12654e;
   font-size: 12px;
   font-weight: 800;
 }
@@ -2900,7 +2908,7 @@ a:hover {
 
 .dashboard-entry strong {
   flex: 0 0 auto;
-  color: var(--brand-green);
+  color: #12654e;
 }
 
 .dashboard-entry .entry-expense {
@@ -2977,13 +2985,40 @@ a:hover {
 }
 
 .dashboard-shortcuts span {
-  color: var(--brand-green);
+  color: #12654e;
   font-size: 12px;
   font-weight: 800;
 }
 
 .dashboard-secondary-actions {
   margin-top: 22px;
+}
+
+.app-view .panel,
+.app-view .score-panel,
+.app-view .table-panel,
+.app-view .calendar-card {
+  box-shadow: 0 6px 18px rgba(29, 24, 16, 0.06);
+  backdrop-filter: none;
+}
+
+.app-view .panel:hover,
+.app-view .score-panel:hover,
+.app-view .table-panel:hover,
+.app-view .calendar-card:hover {
+  transform: none;
+  border-color: var(--line);
+  box-shadow: 0 6px 18px rgba(29, 24, 16, 0.06);
+}
+
+.app-view .metric,
+.app-view .risk-card {
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.report-detail-stack .panel {
+  box-shadow: none;
 }
 
 body[data-member-auth="ready"] .brand-nav {
@@ -3124,8 +3159,29 @@ body[data-member-auth="ready"] .brand p {
   }
 
   .brand-nav {
+    min-height: 64px;
     grid-template-columns: minmax(0, 1fr) auto;
-    padding-right: 108px;
+    padding: 8px 14px;
+  }
+
+  .brand-nav.is-scrolled {
+    min-height: 58px;
+    padding: 6px 14px;
+  }
+
+  .brand-nav .brand-mark {
+    width: 38px;
+    height: 38px;
+    flex-basis: 38px;
+    border-radius: 10px;
+  }
+
+  .brand-nav .brand h1 {
+    font-size: 20px;
+  }
+
+  .brand-nav .brand p {
+    font-size: 12px;
   }
 
   body[data-member-auth="ready"] {
@@ -3142,16 +3198,68 @@ body[data-member-auth="ready"] .brand p {
     width: min(100% - 28px, 1200px);
   }
 
+  .member-auth-gate {
+    margin-top: 12px;
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .member-auth-gate h2 {
+    font-size: 22px;
+    line-height: 1.18;
+  }
+
+  .member-auth-gate p {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
   .hero-inner {
-    padding-top: 94px;
+    align-items: start;
+    padding: 40px 0 48px;
+  }
+
+  .hero-section {
+    align-items: start;
+    align-content: start;
+  }
+
+  .hero-copy {
+    gap: 16px;
   }
 
   .hero-copy h2 {
-    font-size: 44px;
+    font-size: 40px;
+    line-height: 1.02;
+  }
+
+  .hero-copy p {
+    font-size: 16px;
+    line-height: 1.55;
+  }
+
+  .hero-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hero-actions > * {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .hero-actions > :last-child {
+    grid-column: 1 / -1;
+  }
+
+  .hero-motion-strip {
+    gap: 6px;
+    padding: 10px;
+    font-size: 11px;
   }
 
   .hero-proof {
-    padding: 20px;
+    display: none;
   }
 
   .solution-steps {

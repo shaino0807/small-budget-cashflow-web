@@ -230,6 +230,16 @@ async function main() {
         hasMotionCards: document.querySelectorAll(".motion-cards div").length === 3,
         hasAdvancedInputEntry: text.includes("填家庭收支與 ETF 配置"),
         hasIg: text.includes("@chendino080077"),
+        headerHeight: Math.round(document.querySelector(".brand-nav")?.getBoundingClientRect().height || 0),
+        heroFontSize: parseFloat(getComputedStyle(document.querySelector(".hero-copy h2")).fontSize),
+        heroContentTopGap: Math.round(
+          document.querySelector(".hero-copy")?.getBoundingClientRect().top
+          - document.querySelector(".hero-section")?.getBoundingClientRect().top
+        ),
+        heroProofDisplay: getComputedStyle(document.querySelector(".hero-proof")).display,
+        heroActionsDisplay: getComputedStyle(document.querySelector(".hero-actions")).display,
+        gateEyebrowColor: getComputedStyle(document.querySelector(".member-auth-gate .eyebrow")).color,
+        heroEyebrowColor: getComputedStyle(document.querySelector(".hero-section .eyebrow")).color,
         bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
       };
     })()`);
@@ -266,6 +276,7 @@ async function main() {
       activeMonthTabs: document.querySelectorAll("#monthlyCashflowEditor .month-tab.is-active").length,
       activeMonth: Number(document.querySelector("#monthlyCashflowEditor .month-tab.is-active")?.dataset.selectMonth || 0),
       hasHoldingEditor: Boolean(document.querySelector("#holdingEditor")),
+      panelBackdrop: getComputedStyle(document.querySelector("#etfAllocationSection")).backdropFilter,
       title: document.querySelector("#inputTitle")?.textContent || ""
     }))()`);
 
@@ -401,6 +412,7 @@ async function main() {
         cashflowOrder: [...document.querySelectorAll("#freeReport [data-report-block]")].findIndex((item) => item.dataset.reportBlock === "cashflow"),
         actionsOrder: [...document.querySelectorAll("#freeReport [data-report-block]")].findIndex((item) => item.dataset.reportBlock === "actions"),
         upgradeOrder: [...document.querySelectorAll("#freeReport [data-report-block]")].findIndex((item) => item.dataset.reportBlock === "upgrade"),
+        detailPanelShadow: getComputedStyle(document.querySelector("#freeReport .report-detail-stack .panel")).boxShadow,
         bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
       };
     })()`);
@@ -625,6 +637,13 @@ async function main() {
         && landing.hasMotionCards
         && landing.hasAdvancedInputEntry
         && landing.hasIg
+        && landing.headerHeight <= (mobileViewport ? 66 : 78)
+        && (!mobileViewport || landing.heroFontSize === 40)
+        && (!mobileViewport || landing.heroContentTopGap <= 80)
+        && landing.heroProofDisplay === (mobileViewport ? "none" : "grid")
+        && landing.heroActionsDisplay === (mobileViewport ? "grid" : "flex")
+        && landing.gateEyebrowColor === "rgb(18, 101, 78)"
+        && landing.heroEyebrowColor === "rgb(185, 243, 222)"
         && landing.bodyOverflow === 0
         && requiredValidation.step === "1"
         && requiredValidation.errorsVisible
@@ -636,6 +655,7 @@ async function main() {
         && advancedInput.activeMonthTabs === 1
         && advancedInput.activeMonth === new Date().getMonth() + 1
         && advancedInput.hasHoldingEditor
+        && advancedInput.panelBackdrop === "none"
         && advancedInput.title.includes("財務資料")
         && simpleHoldingEditor.addButtonLabel.includes("新增部位")
         && simpleHoldingEditor.primaryInputCount === 2
@@ -683,6 +703,7 @@ async function main() {
         && freeReport.cashflowOrder > freeReport.scoreOrder
         && freeReport.actionsOrder > freeReport.cashflowOrder
         && freeReport.upgradeOrder > freeReport.actionsOrder
+        && freeReport.detailPanelShadow === "none"
         && freeReport.bodyOverflow === 0
         && lineApplied.income === 50000
         && lineApplied.expense === 65
