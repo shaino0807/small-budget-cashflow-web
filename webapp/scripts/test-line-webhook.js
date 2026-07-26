@@ -366,7 +366,13 @@ async function main() {
       throw new Error(`Confirmed data deletion failed: ${JSON.stringify(confirmedDelete)}`);
     }
     const afterPrivacyDelete = await request(`/api/users/me/cashflow?reportId=${encodeURIComponent(reportId)}`, { method: "GET", headers: reportAccess });
-    if (afterPrivacyDelete.status !== 409) throw new Error(`Deleted LINE data remained linked: ${JSON.stringify(afterPrivacyDelete)}`);
+    if (
+      afterPrivacyDelete.status !== 200
+      || afterPrivacyDelete.body.cashflow?.linked !== false
+      || afterPrivacyDelete.body.cashflow?.entries?.length !== 0
+    ) {
+      throw new Error(`Deleted LINE data remained linked: ${JSON.stringify(afterPrivacyDelete)}`);
+    }
     const invalid = await request("/api/line/webhook", {
       body,
       headers: { "x-line-signature": "invalid-signature" }
