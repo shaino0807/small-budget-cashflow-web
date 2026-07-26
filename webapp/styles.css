@@ -1994,7 +1994,7 @@ a:hover {
 .hero-copy h2 {
   min-height: clamp(150px, 19vw, 236px);
   color: #fffdf8;
-  font-size: clamp(44px, 8vw, 96px);
+  font-size: clamp(44px, 6.6vw, 80px);
   line-height: 0.96;
   letter-spacing: 0;
 }

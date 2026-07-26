@@ -777,7 +777,7 @@ function clearToast() {
   q(".toast")?.remove();
   const headerStatus = q("#headerStatus");
   if (headerStatus?.classList.contains("is-notification")) {
-    headerStatus.textContent = mobileToastBaseStatus || "小資現金流地圖";
+    headerStatus.textContent = mobileToastBaseStatus || "個人現金流管理";
     headerStatus.classList.remove("is-notification");
     headerStatus.removeAttribute("title");
   }
@@ -1897,7 +1897,7 @@ function refreshReports() {
 function renderHeader() {
   q("#headerStatus").textContent = authState.authenticated
     ? authState.user?.onboardingCompleted ? "會員現金流帳本" : "首次現金流健檢"
-    : state.paidUnlocked ? "完整報告已解鎖" : "免費健檢";
+    : state.paidUnlocked ? "完整報告已解鎖" : "個人現金流管理";
   document.querySelectorAll(".paid-tab").forEach((tab) => tab.classList.toggle("is-locked", !state.paidUnlocked));
 }
 
@@ -2055,7 +2055,7 @@ function syncQuizInputs() {
   const stockMode = state.leadProfile.checkType === "stock";
   q("#cashflowQuiz").hidden = stockMode;
   q("#stockQuiz").hidden = !stockMode;
-  q("#quickCheckTitle").textContent = stockMode ? "5 題股票安全健檢" : "5 題現金流健檢";
+  q("#quickCheckTitle").textContent = stockMode ? "股票投資安全評估" : "現金流基礎評估";
   q("#quickGenerateBtn").textContent = stockMode ? "產生股票安全報告" : "產生免費報告";
   document.querySelectorAll("[data-check-type]").forEach((button) => {
     button.classList.toggle("is-selected", button.dataset.checkType === state.leadProfile.checkType);

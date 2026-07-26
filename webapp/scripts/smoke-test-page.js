@@ -230,6 +230,30 @@ async function main() {
         hasMotionCards: document.querySelectorAll(".motion-cards div").length === 3,
         hasAdvancedInputEntry: text.includes("填家庭收支與 ETF 配置"),
         hasIg: text.includes("@chendino080077"),
+        headerStatus: document.querySelector("#headerStatus")?.textContent,
+        painKicker: document.querySelector("#painPoints .section-kicker")?.textContent,
+        painTitle: document.querySelector("#painPoints .section-heading h2")?.textContent,
+        solutionTitle: document.querySelector("#solutionPanel h2")?.textContent,
+        quickCheckTitle: document.querySelector("#quickCheckTitle")?.textContent,
+        serviceTitle: document.querySelector("#servicePanel .section-heading h2")?.textContent,
+        testimonialTitle: document.querySelector("#testimonialPanel h2")?.textContent,
+        contactTitle: document.querySelector("#contactTitle")?.textContent,
+        formQuestionTitles: [...document.querySelectorAll("#quickCheckPanel [data-flow-step] > h3")].map((item) => item.textContent.trim()),
+        memberTitles: [
+          "#dashboardTitle",
+          "#inputTitle",
+          "#freeTitle",
+          "#upgradeTitle",
+          "#paidTitle",
+          "#simulationTitle",
+          "#calendarTitle"
+        ].map((selector) => document.querySelector(selector)?.textContent?.trim()),
+        internalCopyLeaked: [
+          "使用者回饋後先改這裡",
+          "首頁不要再像工具箱",
+          "新的網站流程",
+          "正式 LINE / 表單網址提供後"
+        ].some((copy) => text.includes(copy)),
         headerHeight: Math.round(document.querySelector(".brand-nav")?.getBoundingClientRect().height || 0),
         heroFontSize: parseFloat(getComputedStyle(document.querySelector(".hero-copy h2")).fontSize),
         heroContentTopGap: Math.round(
@@ -626,7 +650,7 @@ async function main() {
         && badResponses.length === 0
         && landing.activeView === "landingView"
         && landing.brand === "Chen Dino"
-        && landing.heroTitle.includes("先知道")
+        && landing.heroTitle.includes("掌握本月現金流")
         && landing.hasPain
         && landing.hasSolution
         && landing.hasFlow
@@ -637,6 +661,32 @@ async function main() {
         && landing.hasMotionCards
         && landing.hasAdvancedInputEntry
         && landing.hasIg
+        && landing.headerStatus === "個人現金流管理"
+        && landing.painKicker === "常見現金流困境"
+        && landing.painTitle === "複雜的財務資訊，往往使決策失去優先順序"
+        && landing.solutionTitle === "依序完成資料輸入，逐步建立現金流分析"
+        && landing.quickCheckTitle === "現金流基礎評估"
+        && landing.serviceTitle === "從基礎健檢到完整規劃，依需求取得合適分析"
+        && landing.testimonialTitle === "清楚的分析流程，協助使用者掌握下一步"
+        && landing.contactTitle === "進一步釐清您的現金流與資產配置"
+        && landing.formQuestionTitles.join("|") === [
+          "請填寫每月平均收入",
+          "請估算每月必要支出",
+          "請填寫目前可運用存款",
+          "請評估貸款與保險支出壓力",
+          "請選擇目前優先改善的財務目標",
+          "確認資料保存並產生健檢報告"
+        ].join("|")
+        && landing.memberTitles.join("|") === [
+          "本月總覽",
+          "家庭財務資料",
+          "現金流健檢報告",
+          "專業分析方案",
+          "完整財務分析報告",
+          "資產成長模擬",
+          "現金流與配息月曆"
+        ].join("|")
+        && !landing.internalCopyLeaked
         && landing.headerHeight <= (mobileViewport ? 66 : 78)
         && (!mobileViewport || landing.heroFontSize === 40)
         && (!mobileViewport || landing.heroContentTopGap <= 80)
@@ -656,7 +706,7 @@ async function main() {
         && advancedInput.activeMonth === new Date().getMonth() + 1
         && advancedInput.hasHoldingEditor
         && advancedInput.panelBackdrop === "none"
-        && advancedInput.title.includes("財務資料")
+        && advancedInput.title.includes("家庭財務資料")
         && simpleHoldingEditor.addButtonLabel.includes("新增部位")
         && simpleHoldingEditor.primaryInputCount === 2
         && simpleHoldingEditor.ticker === "00919"
