@@ -1932,16 +1932,18 @@ function dashboardSnapshot() {
   const hasMonthData = hasMonthlyInput(row);
   const profile = hasMonthData ? monthlyProfile(monthNumber) : state.profile;
   const income = usesLineSummary ? Number(summary.income || 0) : Number(profile.monthlyIncome || 0);
+  const investmentIncome = usesLineSummary ? Number(summary.investmentIncome || 0) : 0;
   const expense = usesLineSummary
     ? Number(summary.expense || 0)
     : Number(profile.fixedExpense || 0) + Number(profile.insuranceExpense || 0) + Number(profile.loanExpense || 0);
   const investment = usesLineSummary ? Number(summary.investment || 0) : Number(profile.monthlyInvestment || 0);
   const remaining = usesLineSummary && Number.isFinite(Number(summary.remaining))
     ? Number(summary.remaining)
-    : income - expense - investment;
+    : income + investmentIncome - expense - investment;
   return {
     monthLabel: `${now.getFullYear()} 年 ${monthNumber} 月`,
     income,
+    investmentIncome,
     expense,
     investment,
     remaining,
@@ -1970,8 +1972,9 @@ function renderDashboard() {
   root.innerHTML = `
     <div class="dashboard-metrics" aria-label="本月現金流摘要">
       <article class="dashboard-metric income" data-dashboard-metric="income"><span>本月總收入</span><strong>${formatMoney(snapshot.income)}</strong></article>
+      <article class="dashboard-metric investment-income" data-dashboard-metric="investment-income"><span>投資流入</span><strong>${formatMoney(snapshot.investmentIncome)}</strong></article>
       <article class="dashboard-metric expense" data-dashboard-metric="expense"><span>本月總支出</span><strong>${formatMoney(snapshot.expense)}</strong></article>
-      <article class="dashboard-metric investment" data-dashboard-metric="investment"><span>投資總額</span><strong>${formatMoney(snapshot.investment)}</strong></article>
+      <article class="dashboard-metric investment" data-dashboard-metric="investment"><span>投資買入</span><strong>${formatMoney(snapshot.investment)}</strong></article>
       <article class="dashboard-metric remaining ${snapshot.remaining < 0 ? "is-negative" : ""}" data-dashboard-metric="remaining"><span>剩餘現金流</span><strong>${formatMoney(snapshot.remaining)}</strong></article>
     </div>
     <div class="dashboard-grid">
@@ -1988,7 +1991,7 @@ function renderDashboard() {
             ${snapshot.recentEntries.slice(0, 6).map((entry) => `
               <article class="dashboard-entry">
                 <span>${escapeHtml(lineEntryText(entry))}</span>
-                <strong class="entry-${escapeHtml(entry.type)}">${entry.type === "expense" ? "−" : "+"}${formatMoney(entry.amount)}</strong>
+                <strong class="entry-${escapeHtml(entry.type)}">${lineEntrySignedAmount(entry)}</strong>
               </article>
             `).join("")}
           </div>
@@ -2728,10 +2731,15 @@ function reportRecordHtml() {
 }
 
 function lineEntryText(entry) {
-  const type = { income: "收入", expense: "支出", investment: "投資" }[entry.type] || "記帳";
+  const type = { income: "收入", expense: "支出", investment: "投資買入", investment_income: "投資流入" }[entry.type] || "記帳";
   const subject = entry.ticker || entry.note || entry.category || type;
   const date = new Date(entry.occurredAt).toLocaleDateString("zh-TW", { month: "numeric", day: "numeric" });
   return `${date} · ${type} · ${subject}`;
+}
+
+function lineEntrySignedAmount(entry) {
+  const sign = ["expense", "investment"].includes(entry.type) ? "−" : "+";
+  return `${sign}${formatMoney(entry.amount)}`;
 }
 
 function lineSyncHtml() {
@@ -2766,8 +2774,9 @@ function lineSyncHtml() {
       ${summary?.linked ? `
         <div class="metrics compact-metrics">
           <div class="metric"><span>本月總收入</span><strong>${formatMoney(summary.income)}</strong></div>
+          <div class="metric"><span>投資流入</span><strong>${formatMoney(summary.investmentIncome)}</strong></div>
           <div class="metric"><span>本月總支出</span><strong>${formatMoney(summary.expense)}</strong></div>
-          <div class="metric"><span>投資總額</span><strong>${formatMoney(summary.investment)}</strong></div>
+          <div class="metric"><span>投資買入</span><strong>${formatMoney(summary.investment)}</strong></div>
           <div class="metric"><span>剩餘現金流</span><strong>${formatMoney(summary.remaining)}</strong></div>
         </div>
         ${(summary.etfPositions || []).length ? `
@@ -2782,7 +2791,7 @@ function lineSyncHtml() {
           <div class="line-recent-entries">
             <strong>最近明細</strong>
             ${(summary.recentEntries || []).map((entry) => `
-              <div class="kv"><span>${escapeHtml(lineEntryText(entry))}</span><strong>${formatMoney(entry.amount)}</strong></div>
+              <div class="kv"><span>${escapeHtml(lineEntryText(entry))}</span><strong>${lineEntrySignedAmount(entry)}</strong></div>
             `).join("")}
           </div>
         ` : ""}

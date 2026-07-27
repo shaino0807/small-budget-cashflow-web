@@ -10,6 +10,9 @@ const dbPath = path.join(dataDir, "customers.sqlite");
 const retentionDays = Math.max(1, Math.min(3650, Number(process.env.CUSTOMER_RETENTION_DAYS || 365)));
 const lineLedgerRetentionDays = Math.max(30, Math.min(3650, Number(process.env.LINE_LEDGER_RETENTION_DAYS || 1095)));
 const authSessionDays = Math.max(1, Math.min(90, Number(process.env.AUTH_SESSION_DAYS || 30)));
+const linePendingInputMinutes = Math.max(5, Math.min(120, Number(process.env.LINE_PENDING_INPUT_MINUTES || 30)));
+const lineUndoMinutes = Math.max(1, Math.min(30, Number(process.env.LINE_UNDO_MINUTES || 10)));
+const lineLedgerTypes = ["expense", "income", "investment", "investment_income"];
 
 function requiredSecret(name, minimumLength = 32) {
   const value = String(process.env[name] || "");
@@ -169,6 +172,23 @@ function initialize() {
       UNIQUE(line_user_hash, source_message_id)
     );
     CREATE INDEX IF NOT EXISTS idx_line_command_receipts_created ON line_command_receipts(created_at DESC);
+    CREATE TABLE IF NOT EXISTS line_pending_inputs (
+      line_user_hash TEXT PRIMARY KEY,
+      input_type TEXT NOT NULL,
+      label TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      expires_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_line_pending_inputs_expiry ON line_pending_inputs(expires_at);
+    CREATE TABLE IF NOT EXISTS line_undo_targets (
+      line_user_hash TEXT PRIMARY KEY,
+      entry_ids TEXT NOT NULL,
+      label TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      expires_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_line_undo_targets_expiry ON line_undo_targets(expires_at);
     CREATE TABLE IF NOT EXISTS line_profiles (
       line_user_hash TEXT PRIMARY KEY,
       user_id TEXT UNIQUE,
@@ -488,6 +508,123 @@ function createStore() {
     }
   }
 
+  function pendingLineInputByHash(lineUserHash) {
+    const now = new Date().toISOString();
+    db.prepare("DELETE FROM line_pending_inputs WHERE line_user_hash = ? AND expires_at <= ?").run(lineUserHash, now);
+    const row = db.prepare("SELECT * FROM line_pending_inputs WHERE line_user_hash = ?").get(lineUserHash);
+    return row ? {
+      type: row.input_type,
+      label: row.label,
+      createdAt: row.created_at,
+      expiresAt: row.expires_at
+    } : null;
+  }
+
+  function startLinePendingInput({ lineUserId, type, label, sourceMessageId }) {
+    if (!lineUserId) throw new Error("缺少 LINE 使用者");
+    const normalizedType = String(type || "").trim().slice(0, 40);
+    const normalizedLabel = String(label || "目前項目").trim().slice(0, 80);
+    if (!normalizedType) throw new Error("待輸入類型不正確");
+    const lineUserHash = accessHash(`line:${lineUserId}`);
+    return runLineCommandOnce({
+      lineUserHash,
+      sourceMessageId,
+      commandType: `start_pending_${normalizedType}`,
+      action: () => {
+        const previous = pendingLineInputByHash(lineUserHash);
+        db.prepare("DELETE FROM line_undo_targets WHERE line_user_hash = ?").run(lineUserHash);
+        const now = new Date();
+        const expiresAt = new Date(now.getTime() + linePendingInputMinutes * 60000).toISOString();
+        db.prepare(`
+          INSERT INTO line_pending_inputs (line_user_hash, input_type, label, created_at, updated_at, expires_at)
+          VALUES (?, ?, ?, ?, ?, ?)
+          ON CONFLICT(line_user_hash) DO UPDATE SET
+            input_type = excluded.input_type,
+            label = excluded.label,
+            created_at = excluded.created_at,
+            updated_at = excluded.updated_at,
+            expires_at = excluded.expires_at
+        `).run(lineUserHash, normalizedType, normalizedLabel, now.toISOString(), now.toISOString(), expiresAt);
+        return {
+          pending: { type: normalizedType, label: normalizedLabel, expiresAt },
+          canceled: previous
+        };
+      }
+    });
+  }
+
+  function clearLinePendingInput({ lineUserId }) {
+    if (!lineUserId) throw new Error("缺少 LINE 使用者");
+    const lineUserHash = accessHash(`line:${lineUserId}`);
+    const pending = pendingLineInputByHash(lineUserHash);
+    if (pending) db.prepare("DELETE FROM line_pending_inputs WHERE line_user_hash = ?").run(lineUserHash);
+    return pending;
+  }
+
+  function markLineUndoTarget({ lineUserId, entries = [] }) {
+    if (!lineUserId) throw new Error("缺少 LINE 使用者");
+    const normalized = (Array.isArray(entries) ? entries : [entries]).filter((entry) => entry?.id);
+    const lineUserHash = accessHash(`line:${lineUserId}`);
+    if (!normalized.length) {
+      db.prepare("DELETE FROM line_undo_targets WHERE line_user_hash = ?").run(lineUserHash);
+      return null;
+    }
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + lineUndoMinutes * 60000).toISOString();
+    const first = normalized[0];
+    const label = normalized.length > 1
+      ? `${normalized.length} 筆記帳`
+      : String(first.ticker || first.note || first.category || first.type || "剛才的記帳").slice(0, 80);
+    db.prepare(`
+      INSERT INTO line_undo_targets (line_user_hash, entry_ids, label, created_at, expires_at)
+      VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT(line_user_hash) DO UPDATE SET
+        entry_ids = excluded.entry_ids,
+        label = excluded.label,
+        created_at = excluded.created_at,
+        expires_at = excluded.expires_at
+    `).run(lineUserHash, JSON.stringify(normalized.map((entry) => entry.id)), label, now.toISOString(), expiresAt);
+    return { label, expiresAt };
+  }
+
+  function cancelCurrentLineInput({ lineUserId, sourceMessageId }) {
+    if (!lineUserId) throw new Error("缺少 LINE 使用者");
+    const lineUserHash = accessHash(`line:${lineUserId}`);
+    return runLineCommandOnce({
+      lineUserHash,
+      sourceMessageId,
+      commandType: "cancel_current",
+      action: () => {
+        const pending = pendingLineInputByHash(lineUserHash);
+        if (pending) {
+          db.prepare("DELETE FROM line_pending_inputs WHERE line_user_hash = ?").run(lineUserHash);
+          return { kind: "pending", label: pending.label };
+        }
+        const now = new Date().toISOString();
+        db.prepare("DELETE FROM line_undo_targets WHERE line_user_hash = ? AND expires_at <= ?").run(lineUserHash, now);
+        const target = db.prepare("SELECT * FROM line_undo_targets WHERE line_user_hash = ?").get(lineUserHash);
+        if (!target) return { kind: "none" };
+        db.prepare("DELETE FROM line_undo_targets WHERE line_user_hash = ?").run(lineUserHash);
+        let entryIds = [];
+        try {
+          entryIds = JSON.parse(target.entry_ids);
+        } catch {
+          entryIds = [];
+        }
+        const entries = entryIds
+          .map((entryId) => deleteLineLedgerEntryByHash({ lineUserHash, entryId }))
+          .filter(Boolean);
+        if (!entries.length) return { kind: "none" };
+        return {
+          kind: "entry",
+          label: target.label,
+          entry: entries[0],
+          entries
+        };
+      }
+    });
+  }
+
   function lineSummaryByHash(lineUserHash, monthKey = taipeiMonthKey()) {
     const range = taipeiMonthRange(monthKey);
     const rows = db.prepare(`
@@ -501,12 +638,14 @@ function createStore() {
       income: 0,
       expense: 0,
       investment: 0,
-      counts: { income: 0, expense: 0, investment: 0 }
+      investmentIncome: 0,
+      counts: { income: 0, expense: 0, investment: 0, investment_income: 0 }
     };
     rows.forEach((row) => {
       if (row.type === "income") summary.income = Number(row.total || 0);
       if (row.type === "expense") summary.expense = Number(row.total || 0);
       if (row.type === "investment") summary.investment = Number(row.total || 0);
+      if (row.type === "investment_income") summary.investmentIncome = Number(row.total || 0);
       if (summary.counts[row.type] !== undefined) summary.counts[row.type] = Number(row.count || 0);
     });
     summary.expenseCategories = db.prepare(`
@@ -536,7 +675,7 @@ function createStore() {
     summary.profile = lineProfileByHash(lineUserHash);
     summary.holdings = summary.etfPositions.map((position) => ({ ticker: position.ticker, amount: position.amount }));
     summary.recentEntries = lineEntriesByHash(lineUserHash, range.monthKey, 8);
-    summary.remaining = summary.income - summary.expense - summary.investment;
+    summary.remaining = summary.income + summary.investmentIncome - summary.expense - summary.investment;
     return summary;
   }
 
@@ -776,6 +915,8 @@ function createStore() {
       db.prepare("DELETE FROM line_holdings WHERE line_user_hash = ?").run(row.line_user_hash);
       db.prepare("DELETE FROM line_profiles WHERE line_user_hash = ?").run(row.line_user_hash);
       db.prepare("DELETE FROM line_command_receipts WHERE line_user_hash = ?").run(row.line_user_hash);
+      db.prepare("DELETE FROM line_pending_inputs WHERE line_user_hash = ?").run(row.line_user_hash);
+      db.prepare("DELETE FROM line_undo_targets WHERE line_user_hash = ?").run(row.line_user_hash);
       db.prepare("DELETE FROM line_report_bindings WHERE line_user_hash = ?").run(row.line_user_hash);
       db.prepare("DELETE FROM user_sessions WHERE user_id = ?").run(userId);
       db.prepare("DELETE FROM users WHERE id = ?").run(userId);
@@ -977,6 +1118,26 @@ function createStore() {
     return { ...merged, updatedAt: now };
   }
 
+  function rebuildLineProfileByHash(lineUserHash) {
+    const latestAmount = (type, categories) => {
+      const placeholders = categories.map(() => "?").join(", ");
+      const row = db.prepare(`
+        SELECT amount
+        FROM line_ledger_entries
+        WHERE line_user_hash = ? AND entry_type = ? AND category IN (${placeholders})
+        ORDER BY occurred_at DESC, created_at DESC
+        LIMIT 1
+      `).get(lineUserHash, type, ...categories);
+      return Number(row?.amount || 0);
+    };
+    return updateLineProfileByHash(lineUserHash, {
+      monthlyIncome: latestAmount("income", ["固定收入"]),
+      fixedExpense: latestAmount("expense", ["房租", "生活帳單", "固定支出"]),
+      insuranceExpense: latestAmount("expense", ["保險"]),
+      loanExpense: latestAmount("expense", ["貸款"])
+    });
+  }
+
   function replaceLineHoldingsByHash(lineUserHash, holdings = []) {
     if (!Array.isArray(holdings) || holdings.length > 100) throw new Error("ETF 部位格式不正確");
     const normalized = holdings.map((holding) => {
@@ -1001,8 +1162,7 @@ function createStore() {
   }
 
   function addLineLedgerEntryByHash({ lineUserHash, type, amount, category = null, ticker = null, note = "", source = {}, occurredAt = null, profilePatch = null }) {
-    const allowedTypes = ["expense", "income", "investment"];
-    if (!allowedTypes.includes(type)) throw new Error("記帳類型不正確");
+    if (!lineLedgerTypes.includes(type)) throw new Error("記帳類型不正確");
     const numericAmount = Math.round(Number(amount));
     if (!Number.isFinite(numericAmount) || numericAmount <= 0 || numericAmount > 1000000000) throw new Error("金額格式不正確");
     const now = new Date();
@@ -1063,7 +1223,7 @@ function createStore() {
     const row = db.prepare("SELECT * FROM line_ledger_entries WHERE id = ? AND line_user_hash = ?").get(entryId, lineUserHash);
     if (!row) return null;
     const type = patch.type === undefined ? row.entry_type : String(patch.type);
-    if (!["expense", "income", "investment"].includes(type)) throw new Error("記帳類型不正確");
+    if (!lineLedgerTypes.includes(type)) throw new Error("記帳類型不正確");
     const amount = patch.amount === undefined ? Number(row.amount) : Math.round(Number(patch.amount));
     if (!Number.isFinite(amount) || amount <= 0 || amount > 1000000000) throw new Error("金額格式不正確");
     const category = patch.category === undefined ? row.category : (patch.category ? String(patch.category).slice(0, 60) : null);
@@ -1081,6 +1241,7 @@ function createStore() {
       SET entry_type = ?, amount = ?, category = ?, ticker = ?, occurred_at = ?, updated_at = ?, note_cipher = ?
       WHERE id = ? AND line_user_hash = ?
     `).run(type, amount, category, ticker, occurred.toISOString(), now, noteCipher, entryId, lineUserHash);
+    rebuildLineProfileByHash(lineUserHash);
     return publicLineEntry(db.prepare("SELECT * FROM line_ledger_entries WHERE id = ?").get(entryId));
   }
 
@@ -1089,6 +1250,7 @@ function createStore() {
     if (!row) return null;
     if (row.entry_type === "investment" && row.ticker) adjustLineHolding(lineUserHash, row.ticker, -Number(row.amount));
     db.prepare("DELETE FROM line_ledger_entries WHERE id = ? AND line_user_hash = ?").run(entryId, lineUserHash);
+    rebuildLineProfileByHash(lineUserHash);
     return publicLineEntry(row);
   }
 
@@ -1284,6 +1446,8 @@ function createStore() {
       db.prepare("DELETE FROM line_holdings WHERE line_user_hash = ?").run(lineUserHash);
       db.prepare("DELETE FROM line_profiles WHERE line_user_hash = ?").run(lineUserHash);
       db.prepare("DELETE FROM line_command_receipts WHERE line_user_hash = ?").run(lineUserHash);
+      db.prepare("DELETE FROM line_pending_inputs WHERE line_user_hash = ?").run(lineUserHash);
+      db.prepare("DELETE FROM line_undo_targets WHERE line_user_hash = ?").run(lineUserHash);
       db.prepare("DELETE FROM line_report_bindings WHERE line_user_hash = ?").run(lineUserHash);
       return deleted;
     });
@@ -1412,6 +1576,8 @@ function createStore() {
     const changes = db.prepare("DELETE FROM reports WHERE expires_at < ?").run(now.toISOString()).changes;
     db.prepare("DELETE FROM line_command_receipts WHERE created_at < ?")
       .run(new Date(now.getTime() - 90 * 86400000).toISOString());
+    db.prepare("DELETE FROM line_pending_inputs WHERE expires_at < ?").run(now.toISOString());
+    db.prepare("DELETE FROM line_undo_targets WHERE expires_at < ?").run(now.toISOString());
     db.prepare("DELETE FROM line_ledger_entries WHERE occurred_at < ?")
       .run(new Date(now.getTime() - lineLedgerRetentionDays * 86400000).toISOString());
     db.prepare("DELETE FROM auth_challenges WHERE expires_at < ?").run(now.toISOString());
@@ -1427,6 +1593,8 @@ function createStore() {
     applyPaymentNotification,
     authenticatedUser,
     bindLineReport,
+    cancelCurrentLineInput,
+    clearLinePendingInput,
     close: () => db.close(),
     createOrder,
     createLineReportBinding,
@@ -1455,12 +1623,14 @@ function createStore() {
     lineLedgerSummary,
     lineLedgerEntries,
     listReports,
+    markLineUndoTarget,
     purgeExpired,
     consumeAuthChallenge,
     completeUserOnboarding,
     revokeAllUserSessions,
     revokeUserSession,
     setFollowupStatus,
+    startLinePendingInput,
     replaceLineHoldingsForReport,
     replaceLineHoldingsForUser,
     updateIndexedLineLedgerEntry,

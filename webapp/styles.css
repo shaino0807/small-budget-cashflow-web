@@ -2826,8 +2826,12 @@ a:hover {
 }
 
 .dashboard-metric.income::before,
-.dashboard-metric.investment::before {
+.dashboard-metric.investment-income::before {
   background: var(--brand-green);
+}
+
+.dashboard-metric.investment::before {
+  background: #7c3aed;
 }
 
 .dashboard-metric.remaining::before {
@@ -2911,8 +2915,13 @@ a:hover {
   color: #12654e;
 }
 
-.dashboard-entry .entry-expense {
+.dashboard-entry .entry-expense,
+.dashboard-entry .entry-investment {
   color: #9f1d16;
+}
+
+.dashboard-entry .entry-investment_income {
+  color: #12654e;
 }
 
 .dashboard-empty {

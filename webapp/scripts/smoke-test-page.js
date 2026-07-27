@@ -448,17 +448,27 @@ async function main() {
           linked: true,
           month: new Date().getFullYear() + "-" + month,
           income: 50000,
+          investmentIncome: 800,
           expense: 65,
           investment: 10000,
-          counts: { income: 1, expense: 1, investment: 1 },
+          counts: { income: 1, expense: 1, investment: 1, investment_income: 1 },
           etfPositions: [{ ticker: "0056", amount: 10000, count: 1 }],
-          recentEntries: [{
-            type: "investment",
-            amount: 10000,
-            ticker: "0056",
-            note: "0056",
-            occurredAt: new Date().toISOString()
-          }]
+          recentEntries: [
+            {
+              type: "investment_income",
+              amount: 800,
+              ticker: "0056",
+              note: "配息",
+              occurredAt: new Date().toISOString()
+            },
+            {
+              type: "investment",
+              amount: 10000,
+              ticker: "0056",
+              note: "0056",
+              occurredAt: new Date().toISOString()
+            }
+          ]
         };
         state.reportMeta.lineSummary = summary;
         applyLineSummaryToState(summary);
@@ -496,10 +506,12 @@ async function main() {
       activeView: document.querySelector(".view.is-active")?.id,
       period: document.querySelector("#dashboardPeriod")?.textContent || "",
       income: document.querySelector('[data-dashboard-metric="income"] strong')?.textContent || "",
+      investmentIncome: document.querySelector('[data-dashboard-metric="investment-income"] strong')?.textContent || "",
       expense: document.querySelector('[data-dashboard-metric="expense"] strong')?.textContent || "",
       investment: document.querySelector('[data-dashboard-metric="investment"] strong')?.textContent || "",
       remaining: document.querySelector('[data-dashboard-metric="remaining"] strong')?.textContent || "",
       recentEntries: document.querySelectorAll("#dashboardRecentEntries .dashboard-entry").length,
+      recentAmounts: [...document.querySelectorAll("#dashboardRecentEntries .dashboard-entry strong")].map((item) => item.textContent || ""),
       reminderCount: document.querySelectorAll(".dashboard-reminder").length,
       bottomNavCount: document.querySelectorAll(".member-nav-item").length,
       bottomNavDisplay: getComputedStyle(document.querySelector(".member-bottom-nav")).display,
@@ -582,7 +594,7 @@ async function main() {
       activeView: document.querySelector(".view.is-active")?.id,
       activeBottomTabs: document.querySelectorAll(".member-nav-item.is-active").length,
       activeBottomLabel: document.querySelector(".member-nav-item.is-active span:last-child")?.textContent || "",
-      hasMetrics: document.querySelectorAll("#dashboardView .dashboard-metric").length === 4,
+      hasMetrics: document.querySelectorAll("#dashboardView .dashboard-metric").length === 5,
       bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
     }))()`);
 
@@ -761,15 +773,18 @@ async function main() {
         && lineApplied.ticker === "0056"
         && lineApplied.lineLots === 1
         && lineApplied.lineAmount === 10000
-        && lineApplied.recentEntries === 1
+        && lineApplied.recentEntries === 2
         && lineApplied.privacyDelete
         && dashboard.activeView === "dashboardView"
         && dashboard.period.includes("年")
         && /50,000/.test(dashboard.income)
+        && /800/.test(dashboard.investmentIncome)
         && /65/.test(dashboard.expense)
         && /10,000/.test(dashboard.investment)
-        && /39,935/.test(dashboard.remaining)
-        && dashboard.recentEntries === 1
+        && /40,735/.test(dashboard.remaining)
+        && dashboard.recentEntries === 2
+        && dashboard.recentAmounts.some((value) => /\+.*800/.test(value))
+        && dashboard.recentAmounts.some((value) => /−.*10,000/.test(value))
         && dashboard.reminderCount >= 1
         && dashboard.bottomNavCount === 5
         && dashboard.bottomNavDisplay === (mobileViewport ? "grid" : "none")

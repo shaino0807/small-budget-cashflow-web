@@ -64,7 +64,10 @@ async function main() {
     ["繳保險 3000", "expense", 3000, "保險"],
     ["繳房貸 2萬", "expense", 20000, "貸款"],
     ["買 0056 10000", "investment", 10000],
-    ["ETF 00878 5000", "investment", 5000]
+    ["ETF 00878 5000", "investment", 5000],
+    ["0056 配息 800", "investment_income", 800, "投資配息"],
+    ["賣出 0056 收到 12000", "investment_income", 12000, "投資賣出"],
+    ["賣 0056 12000", "investment_income", 12000, "投資賣出"]
   ];
   for (const [text, type, amount, category] of parserCases) {
     const parsed = parseLedgerMessage(text);
@@ -73,6 +76,9 @@ async function main() {
     }
   }
   const commandCases = [
+    ["投資ETF", "prompt_investment"],
+    ["取消", "cancel_current"],
+    ["按錯", "cancel_current"],
     ["查明細", "details"],
     ["修改上一筆 80", "update_last"],
     ["上一筆改成 120", "update_last"],
@@ -108,6 +114,14 @@ async function main() {
     const routedAiParsed = await parseIncomingMessage("午餐 120、飲料 60");
     if (routedAiParsed?.parser !== "ai" || routedAiParsed.entries?.length !== 2) {
       throw new Error(`AI parser routing failed: ${JSON.stringify(routedAiParsed)}`);
+    }
+    const missingAmount = await parseIncomingMessage("想投資 ETF");
+    if (missingAmount?.intent !== "help" || missingAmount.reason !== "missing_investment_details") {
+      throw new Error(`Missing investment amount was not blocked: ${JSON.stringify(missingAmount)}`);
+    }
+    const unrealizedGain = await parseIncomingMessage("股票賺 5000");
+    if (unrealizedGain?.intent !== "help" || unrealizedGain.reason !== "unrealized_investment_gain") {
+      throw new Error(`Unrealized investment gain was recorded: ${JSON.stringify(unrealizedGain)}`);
     }
   } finally {
     delete process.env.OPENAI_API_KEY;
@@ -221,6 +235,49 @@ async function main() {
     if (bound.status !== 200 || bound.body.replies[0]?.parsedIntent !== "binding" || bound.body.replies[0]?.binding !== "linked") {
       throw new Error(`LINE binding webhook failed: ${JSON.stringify(bound)}`);
     }
+    const sendLineForUser = async (id, text, userId = "Utest") => {
+      const lineBody = JSON.stringify({
+        destination: "test",
+        events: [{
+          type: "message",
+          replyToken: "test-reply-token",
+          source: { type: "user", userId },
+          message: { id, type: "text", text }
+        }]
+      });
+      return request("/api/line/webhook", {
+        body: lineBody,
+        headers: { "x-line-signature": signature(lineBody) }
+      });
+    };
+    const pendingInvestment = await sendLineForUser("pending-1", "投資ETF");
+    const switchedToIncome = await sendLineForUser("pending-2", "收入");
+    const canceledIncome = await sendLineForUser("pending-3", "取消");
+    if (
+      pendingInvestment.body.replies[0]?.command !== "prompt_investment"
+      || !pendingInvestment.body.replies[0]?.pending
+      || switchedToIncome.body.replies[0]?.canceled !== "ETF／股票交易"
+      || canceledIncome.body.replies[0]?.command !== "cancel_current"
+      || canceledIncome.body.replies[0]?.canceled !== "pending"
+    ) {
+      throw new Error(`Pending input cancellation failed: ${JSON.stringify({ pendingInvestment, switchedToIncome, canceledIncome })}`);
+    }
+    const recordedForUndo = await sendLineForUser("undo-1", "買 0056 10000");
+    const undone = await sendLineForUser("undo-2", "按錯");
+    const repeatedUndo = await sendLineForUser("undo-3", "按錯");
+    const summaryAfterUndo = await request(`/api/line/summary?reportId=${encodeURIComponent(created.body.report.id)}`, {
+      method: "GET",
+      headers: { "X-Report-Access-Code": created.body.report.accessCode }
+    });
+    if (
+      recordedForUndo.body.replies[0]?.ledgerType !== "investment"
+      || undone.body.replies[0]?.canceled !== "entry"
+      || repeatedUndo.body.replies[0]?.canceled !== "none"
+      || summaryAfterUndo.body.summary?.investment !== 0
+      || summaryAfterUndo.body.summary?.etfPositions?.length
+    ) {
+      throw new Error(`Immediate undo did not restore cashflow and holdings: ${JSON.stringify({ recordedForUndo, undone, summaryAfterUndo })}`);
+    }
     const ledgerMessages = [
       ["3", "固定收入金額 50000"],
       ["4", "買 0056 10000"],
@@ -314,6 +371,22 @@ async function main() {
     const finalPositions = Object.fromEntries((finalSummary.body.summary?.etfPositions || []).map((position) => [position.ticker, position.amount]));
     if (finalSummary.body.summary.investment !== 10000 || finalPositions["0056"] !== 10000 || finalPositions["00878"] !== undefined) {
       throw new Error(`LINE duplicate delete removed more than one entry: ${JSON.stringify(finalSummary)}`);
+    }
+    const dividend = await sendLineForUser("investment-income-1", "0056 配息 800");
+    const sale = await sendLineForUser("investment-income-2", "賣出 0056 收到 12000");
+    const investmentIncomeSummary = await request(`/api/line/summary?reportId=${encodeURIComponent(created.body.report.id)}`, {
+      method: "GET",
+      headers: { "X-Report-Access-Code": created.body.report.accessCode }
+    });
+    const investmentIncomePositions = Object.fromEntries((investmentIncomeSummary.body.summary?.etfPositions || []).map((position) => [position.ticker, position.amount]));
+    if (
+      dividend.body.replies[0]?.ledgerType !== "investment_income"
+      || sale.body.replies[0]?.ledgerType !== "investment_income"
+      || investmentIncomeSummary.body.summary?.investmentIncome !== 12800
+      || investmentIncomeSummary.body.summary?.remaining !== 52735
+      || investmentIncomePositions["0056"] !== 10000
+    ) {
+      throw new Error(`Investment inflow classification failed: ${JSON.stringify({ dividend, sale, investmentIncomeSummary })}`);
     }
     const reportId = created.body.report.id;
     const reportAccess = { "X-Report-Access-Code": created.body.report.accessCode };

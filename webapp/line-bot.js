@@ -146,10 +146,34 @@ function parseLedgerMessage(text) {
   const raw = String(text || "").trim();
   const amount = firstAmount(raw);
   const ticker = firstTicker(raw);
-  const hasInvestment = /ETF|投資|購入/.test(raw) || (ticker && /買|購入/.test(raw));
+  const hasDividend = /配息|股息|現金股利|領息|收到股利|收到配息/.test(raw);
+  const hasSale = /賣(?:出|掉)?|出售|贖回|出場/.test(raw);
+  const hasBuy = /買|購入|投入|定期定額|加碼/.test(raw);
+  const hasInvestmentContext = /ETF|股票|投資|證券/.test(raw) || Boolean(ticker) || hasDividend || hasSale;
+  const hasInvestment = /ETF|投資|購入|定期定額|加碼/.test(raw) || (ticker && hasBuy);
   const hasIncome = /得|賺|收入|月薪|薪水|獎金|領到|收到/.test(raw);
   const hasExpense = /買|付|花|繳|支出|刷|扣款/.test(raw);
-  if (!amount) return { intent: "help", reason: "missing_amount" };
+  if (!amount) {
+    if (hasInvestmentContext) return { intent: "help", reason: "missing_investment_details" };
+    if (hasIncome) return { intent: "help", reason: "missing_income_amount" };
+    if (hasExpense) return { intent: "help", reason: "missing_expense_amount" };
+    return { intent: "help", reason: "missing_amount" };
+  }
+  if (hasInvestmentContext && /賺|獲利|漲了|上漲/.test(raw) && !hasDividend && !hasSale) {
+    return { intent: "help", reason: "unrealized_investment_gain" };
+  }
+  if (hasDividend || hasSale) {
+    const category = hasDividend ? "投資配息" : "投資賣出";
+    return {
+      intent: "ledger",
+      type: "investment_income",
+      amount,
+      ticker,
+      category,
+      note: compactNote(raw) || ticker || category,
+      occurredAt: parseOccurredAt(raw)
+    };
+  }
   if (hasInvestment) {
     return {
       intent: "ledger",
@@ -195,9 +219,10 @@ function parseBindingMessage(text) {
 
 function parseLineCommand(text) {
   const raw = String(text || "").trim().replace(/[,，]/g, "");
+  if (/^(?:取消|按錯)$/.test(raw)) return { intent: "command", command: "cancel_current" };
   if (/^(?:記一筆)?支出$/.test(raw)) return { intent: "command", command: "prompt_expense" };
   if (/^(?:記一筆)?收入$/.test(raw)) return { intent: "command", command: "prompt_income" };
-  if (/^(?:ETF配置|ETF部位|補ETF部位)$/i.test(raw)) return { intent: "command", command: "prompt_investment" };
+  if (/^(?:ETF配置|ETF部位|補ETF部位|投資ETF)$/i.test(raw)) return { intent: "command", command: "prompt_investment" };
   if (/^綁定網頁(?:帳號|報告)?$/.test(raw)) return { intent: "command", command: "prompt_binding" };
   if (/^修改(?:上一筆|最後一筆)$/.test(raw)) return { intent: "command", command: "prompt_update_last" };
   if (/^(?:查詢?)?(?:本月)?(?:明細|摘要|統計)$/.test(raw)) return { intent: "command", command: "details" };
@@ -224,12 +249,14 @@ function openAiOutputText(response) {
 
 function shouldUseAiParser(text, deterministic) {
   if (process.env.LINE_AI_PARSER_ENABLED !== "1" || !process.env.OPENAI_API_KEY) return false;
+  if (["missing_amount", "missing_income_amount", "missing_expense_amount", "missing_investment_details", "unrealized_investment_gain"].includes(deterministic.reason)) return false;
   if (deterministic.intent === "help") return true;
   const withoutTicker = String(text || "").replace(/\b(?:00\d{2,4}|0\d{4,5})\b/g, "");
   return (withoutTicker.match(/\d+(?:\.\d+)?\s*(?:萬|千|[kw]|元|塊)?/gi) || []).length > 1;
 }
 
 async function parseLedgerMessageWithAi(text) {
+  if (!firstAmount(text)) return null;
   const today = taipeiDateParts();
   const response = await fetch(openAiResponsesEndpoint, {
     method: "POST",
@@ -243,7 +270,7 @@ async function parseLedgerMessageWithAi(text) {
       input: [
         {
           role: "system",
-          content: "你是台灣家庭記帳文字解析器。只抽取使用者明確說出的交易，不推測不存在的金額。買生活用品是 expense，買 ETF 或有證券代碼是 investment，薪水或收到款項是 income。最多拆成 5 筆。日期使用 Asia/Taipei。"
+          content: "你是台灣家庭記帳文字解析器。只抽取使用者明確說出的交易，不推測不存在的金額。買生活用品是 expense；買 ETF 或股票是 investment；ETF 或股票配息、已賣出收到的款項是 investment_income；薪水或一般收到款項是 income。尚未賣出的帳面獲利不算現金收入。最多拆成 5 筆。日期使用 Asia/Taipei。"
         },
         {
           role: "user",
@@ -266,7 +293,7 @@ async function parseLedgerMessageWithAi(text) {
                   type: "object",
                   additionalProperties: false,
                   properties: {
-                    type: { type: "string", enum: ["income", "expense", "investment"] },
+                    type: { type: "string", enum: ["income", "expense", "investment", "investment_income"] },
                     amount: { type: "integer", minimum: 1, maximum: 1000000000 },
                     category: { type: "string", maxLength: 30 },
                     ticker: { type: ["string", "null"], maxLength: 12 },
@@ -287,10 +314,10 @@ async function parseLedgerMessageWithAi(text) {
   if (!response.ok) throw new Error(`OpenAI parser HTTP ${response.status}`);
   const payload = JSON.parse(openAiOutputText(await response.json()) || "{}");
   const entries = (payload.entries || []).slice(0, 5).map((entry) => {
-    const type = ["income", "expense", "investment"].includes(entry.type) ? entry.type : null;
+    const type = ["income", "expense", "investment", "investment_income"].includes(entry.type) ? entry.type : null;
     const amount = Math.round(Number(entry.amount));
     if (!type || !Number.isFinite(amount) || amount <= 0 || amount > 1000000000) return null;
-    const category = String(entry.category || (type === "expense" ? "其他支出" : type === "income" ? "收入" : "ETF")).slice(0, 30);
+    const category = String(entry.category || (type === "expense" ? "其他支出" : type === "income" ? "收入" : type === "investment_income" ? "投資流入" : "ETF")).slice(0, 30);
     const occurred = new Date(entry.occurredAt);
     return {
       type,
@@ -323,7 +350,8 @@ function ledgerTypeLabel(type) {
   return {
     expense: "支出",
     income: "收入",
-    investment: "投資"
+    investment: "投資買入",
+    investment_income: "投資流入"
   }[type] || "記帳";
 }
 
@@ -334,6 +362,7 @@ function summaryReplyText(entry, summary) {
     title,
     tickerLine + `${summary.month} 月統計`,
     `總收入：${formatMoney(summary.income)}`,
+    `投資流入：${formatMoney(summary.investmentIncome)}`,
     `總支出：${formatMoney(summary.expense)}`,
     `投資總額：${formatMoney(summary.investment)}`,
     `剩餘現金流：${formatMoney(summary.remaining)}`
@@ -365,6 +394,7 @@ function compactSummaryLines(summary) {
   return [
     `${summary.month} 月統計`,
     `總收入：${formatMoney(summary.income)}`,
+    `投資流入：${formatMoney(summary.investmentIncome)}`,
     `總支出：${formatMoney(summary.expense)}`,
     `投資總額：${formatMoney(summary.investment)}`,
     `剩餘現金流：${formatMoney(summary.remaining)}`
@@ -387,7 +417,19 @@ function mutationReplyText(action, result, summary) {
   return [title + duplicate, entryReplyText(result.entry), ...compactSummaryLines(summary), "回到網頁按「重新整理」即可同步最新結果。"].join("\n");
 }
 
-function helpReplyText() {
+function helpReplyText(reason = "") {
+  if (reason === "missing_expense_amount") {
+    return "請補上支出金額，例如：買早餐 65、付房租 12000。\n若要結束，請按「取消」或輸入「取消／按錯」。";
+  }
+  if (reason === "missing_income_amount") {
+    return "請補上收入金額，例如：月薪 5萬、獎金 3000。\n若要結束，請按「取消」或輸入「取消／按錯」。";
+  }
+  if (reason === "missing_investment_details") {
+    return "請選擇買入、收到配息或賣出，並提供金額。\n例如：買 0056 10000、0056 配息 800、賣出 0056 收到 12000。\n若要結束，請按「取消」或輸入「取消／按錯」。";
+  }
+  if (reason === "unrealized_investment_gain") {
+    return "這筆是已經賣出收到的款項，還是尚未賣出的帳面損益？\n已賣出請輸入：賣出 0056 收到 12000。\n尚未賣出不會記入現金流；也可以輸入「取消／按錯」。";
+  }
   return [
     "我還沒看懂這筆。",
     "你可以這樣輸入：",
@@ -395,14 +437,17 @@ function helpReplyText() {
     "付房租 12000",
     "賺 3000",
     "買 0056 10000",
+    "0056 配息 800",
+    "賣出 0056 收到 12000",
     "查明細",
     "修改上一筆 80",
     "刪除上一筆",
-    "刪除全部資料"
+    "刪除全部資料",
+    "取消／按錯"
   ].join("\n");
 }
 
-function summaryFlexMessage(title, subtitle, summary) {
+function summaryFlexMessage(title, subtitle, summary, allowUndo = true) {
   const siteUrl = String(process.env.SITE_PUBLIC_BASE_URL || "https://shaino0807.github.io/small-budget-cashflow-web/");
   const metric = (label, value, color = "#04342C") => ({
     type: "box",
@@ -422,7 +467,7 @@ function summaryFlexMessage(title, subtitle, summary) {
   });
   return {
     type: "flex",
-    altText: `${title}｜收入 ${formatMoney(summary.income)}、支出 ${formatMoney(summary.expense)}、投資 ${formatMoney(summary.investment)}`,
+    altText: `${title}｜收入 ${formatMoney(summary.income)}、投資流入 ${formatMoney(summary.investmentIncome)}、支出 ${formatMoney(summary.expense)}、投資買入 ${formatMoney(summary.investment)}`,
     contents: {
       type: "bubble",
       size: "mega",
@@ -446,8 +491,9 @@ function summaryFlexMessage(title, subtitle, summary) {
         contents: [
           { type: "text", text: `${summary.month} 月統計`, color: "#04342C", weight: "bold", size: "md" },
           metric("總收入", summary.income),
+          metric("投資流入", summary.investmentIncome, "#12654E"),
           metric("總支出", summary.expense, "#B42318"),
-          metric("投資總額", summary.investment, "#7C3AED"),
+          metric("投資買入", summary.investment, "#7C3AED"),
           { type: "separator", margin: "lg", color: "#DDE8E4" },
           metric("剩餘現金流", summary.remaining, Number(summary.remaining) >= 0 ? "#1D9E75" : "#B42318")
         ]
@@ -462,7 +508,8 @@ function summaryFlexMessage(title, subtitle, summary) {
           { type: "box", layout: "horizontal", spacing: "sm", contents: [
             { type: "button", style: "secondary", height: "sm", action: { type: "uri", label: "完整報告", uri: siteUrl } },
             messageButton("補 ETF 部位", "ETF 配置")
-          ] }
+          ] },
+          ...(allowUndo ? [messageButton("按錯／撤銷剛才這筆", "按錯")] : [])
         ]
       }
     }
@@ -491,6 +538,71 @@ async function replyLineMessage(replyToken, messages) {
   return { skipped: false };
 }
 
+function pendingPrompt(command) {
+  return {
+    prompt_expense: {
+      type: "expense",
+      label: "支出",
+      text: "請輸入支出內容與金額，例如：買早餐 65、付房租 12000。"
+    },
+    prompt_income: {
+      type: "income",
+      label: "收入",
+      text: "請輸入收入內容與金額，例如：月薪 5萬、獎金 3000。"
+    },
+    prompt_investment: {
+      type: "investment",
+      label: "ETF／股票交易",
+      text: "請選擇買入、收到配息或賣出，並提供金額。\n例如：買 0056 10000、0056 配息 800、賣出 0056 收到 12000。"
+    },
+    prompt_binding: {
+      type: "binding",
+      label: "綁定網頁帳號",
+      text: process.env.LINE_LIFF_URL
+        ? `請開啟會員帳本，LINE 會自動登入並同步你的記帳資料。\n${process.env.LINE_LIFF_URL}`
+        : `請先開啟現金流網站完成免費健檢，在報告的「LINE 懶人記帳同步」取得 6 位數碼，再傳送「綁定 123456」。\n${String(process.env.SITE_PUBLIC_BASE_URL || "https://shaino0807.github.io/small-budget-cashflow-web/")}`
+    },
+    prompt_update_last: {
+      type: "update",
+      label: "修改上一筆",
+      text: "請在後面加上正確金額，例如：修改上一筆 80。"
+    },
+    request_delete_all: {
+      type: "delete_all",
+      label: "刪除全部資料",
+      text: "這會刪除所有 LINE 記帳、ETF 部位、財務設定與網頁綁定，而且無法復原。\n若確定要刪除，請輸入：確認刪除全部資料"
+    }
+  }[command] || null;
+}
+
+function canceledPrefix(canceled) {
+  return canceled?.label ? `已取消「${canceled.label}」　+$0\n` : "";
+}
+
+function cancelReplyText(result) {
+  if (result?.kind === "pending") {
+    return `已取消「${result.label}」　+$0\n這個項目沒有寫入記帳，也不會影響現金流。`;
+  }
+  if (result?.kind === "entry" && result.entry) {
+    const subject = result.label || result.entry.ticker || result.entry.note || result.entry.category || ledgerTypeLabel(result.entry.type);
+    return `已撤銷剛才的「${subject}」　+$0\n現金流與 ETF 部位已回復。`;
+  }
+  return "目前沒有待輸入或剛完成可撤銷的項目。較早的紀錄請使用「刪除上一筆」或「刪除第 N 筆」。";
+}
+
+function cancelableTextMessage(text) {
+  return {
+    type: "text",
+    text,
+    quickReply: {
+      items: [{
+        type: "action",
+        action: { type: "message", label: "取消", text: "取消" }
+      }]
+    }
+  };
+}
+
 async function handleLineWebhook(rawBody, options = {}) {
   const body = parseLineWebhook(rawBody);
   const events = Array.isArray(body.events) ? body.events : [];
@@ -509,36 +621,35 @@ async function handleLineWebhook(rawBody, options = {}) {
         replyText = "LINE 記帳後端尚未準備好，請稍後再試。";
       } else {
         try {
-          if (parsed.command === "request_delete_all") {
-            commandResult = { command: parsed.command };
-            replyText = "這會刪除所有 LINE 記帳、ETF 部位、財務設定與網頁綁定，而且無法復原。\n若確定要刪除，請輸入：確認刪除全部資料";
+          const prompt = pendingPrompt(parsed.command);
+          if (parsed.command === "cancel_current") {
+            const result = options.store.cancelCurrentLineInput({
+              lineUserId: userId,
+              sourceMessageId: event.message.id
+            });
+            commandResult = { command: parsed.command, result };
+            replyText = cancelReplyText(result);
+          } else if (prompt) {
+            const pending = options.store.startLinePendingInput({
+              lineUserId: userId,
+              type: prompt.type,
+              label: prompt.label,
+              sourceMessageId: event.message.id
+            });
+            commandResult = { command: parsed.command, pending: true, result: pending };
+            replyText = `${canceledPrefix(pending.canceled)}${prompt.text}\n若要結束，請按「取消」或輸入「取消／按錯」。`;
           } else if (parsed.command === "confirm_delete_all") {
             const deleted = options.store.deleteLineUserData({ lineUserId: userId });
             commandResult = { command: parsed.command, deleted };
             replyText = `已刪除全部 LINE 財務資料。\n記帳 ${deleted.ledgerEntries} 筆、ETF 部位 ${deleted.holdings} 筆、網頁綁定 ${deleted.bindings} 筆。`;
-          } else if (parsed.command === "prompt_expense") {
-            commandResult = { command: parsed.command };
-            replyText = "請輸入支出內容與金額，例如：買早餐 65、付房租 12000。";
-          } else if (parsed.command === "prompt_income") {
-            commandResult = { command: parsed.command };
-            replyText = "請輸入收入內容與金額，例如：月薪 5萬、獎金 3000。";
-          } else if (parsed.command === "prompt_investment") {
-            commandResult = { command: parsed.command };
-            replyText = "請輸入 ETF 代碼與投入金額，例如：買 0056 10000。";
-          } else if (parsed.command === "prompt_binding") {
-            commandResult = { command: parsed.command };
-            replyText = process.env.LINE_LIFF_URL
-              ? `請開啟會員帳本，LINE 會自動登入並同步你的記帳資料。\n${process.env.LINE_LIFF_URL}`
-              : `請先開啟現金流網站完成免費健檢，在報告的「LINE 懶人記帳同步」取得 6 位數碼，再傳送「綁定 123456」。\n${String(process.env.SITE_PUBLIC_BASE_URL || "https://shaino0807.github.io/small-budget-cashflow-web/")}`;
-          } else if (parsed.command === "prompt_update_last") {
-            commandResult = { command: parsed.command };
-            replyText = "請在後面加上正確金額，例如：修改上一筆 80。";
           } else if (parsed.command === "details") {
+            const canceled = options.store.clearLinePendingInput({ lineUserId: userId });
             const summary = options.store.lineLedgerSummary(userId);
             const entries = options.store.lineLedgerEntries(userId, summary.month, 8);
             commandResult = { command: parsed.command, entries, summary };
-            replyText = detailsReplyText(entries, summary);
+            replyText = `${canceledPrefix(canceled)}${detailsReplyText(entries, summary)}`;
           } else {
+            const canceled = options.store.clearLinePendingInput({ lineUserId: userId });
             const isDelete = parsed.command.startsWith("delete");
             const isIndexed = parsed.command.endsWith("indexed");
             const result = isDelete
@@ -548,9 +659,10 @@ async function handleLineWebhook(rawBody, options = {}) {
               : isIndexed
                 ? options.store.updateIndexedLineLedgerEntry({ lineUserId: userId, index: parsed.index, amount: parsed.amount, sourceMessageId: event.message.id })
                 : options.store.updateLastLineLedgerEntry({ lineUserId: userId, amount: parsed.amount, sourceMessageId: event.message.id });
+            options.store.markLineUndoTarget({ lineUserId: userId, entries: [] });
             const summary = options.store.lineLedgerSummary(userId);
             commandResult = { command: parsed.command, result, summary };
-            replyText = mutationReplyText(parsed.command, result, summary);
+            replyText = `${canceledPrefix(canceled)}${mutationReplyText(parsed.command, result, summary)}`;
           }
         } catch (error) {
           replyText = error.message || "記帳指令處理失敗，請稍後再試。";
@@ -562,6 +674,7 @@ async function handleLineWebhook(rawBody, options = {}) {
       } else {
         try {
           bindingResult = options.store.bindLineReport({ lineUserId: userId, code: parsed.code });
+          options.store.clearLinePendingInput({ lineUserId: userId });
           replyText = "綁定成功。之後在 LINE 記錄的收入、支出與 ETF 投資，會同步到這份網頁報告。";
         } catch (error) {
           replyText = error.message || "綁定失敗，請回到網頁重新產生綁定碼。";
@@ -592,6 +705,10 @@ async function handleLineWebhook(rawBody, options = {}) {
             else throw error;
           }
         }
+        if (entries.length) {
+          options.store.clearLinePendingInput({ lineUserId: userId });
+          options.store.markLineUndoTarget({ lineUserId: userId, entries });
+        }
         const summary = options.store.lineLedgerSummary(userId);
         ledgerResult = { entries, summary, parser: "ai" };
         replyText = entries.length
@@ -619,6 +736,8 @@ async function handleLineWebhook(rawBody, options = {}) {
               replyToken: event.replyToken ? "present" : "missing"
             }
           });
+          options.store.clearLinePendingInput({ lineUserId: userId });
+          options.store.markLineUndoTarget({ lineUserId: userId, entries: [entry] });
           const summary = options.store.lineLedgerSummary(userId);
           ledgerResult = { entry, summary };
           replyText = summaryReplyText(entry, summary);
@@ -629,14 +748,30 @@ async function handleLineWebhook(rawBody, options = {}) {
             "這筆 LINE 訊息已經記錄過，不會重複入帳。",
             `${summary.month} 月統計`,
             `總收入：${formatMoney(summary.income)}`,
+            `投資流入：${formatMoney(summary.investmentIncome)}`,
             `總支出：${formatMoney(summary.expense)}`,
             `投資總額：${formatMoney(summary.investment)}`,
             `剩餘現金流：${formatMoney(summary.remaining)}`
           ].join("\n");
         }
       }
+    } else if (parsed.intent === "help" && options.store && userId && ["missing_expense_amount", "missing_income_amount", "missing_investment_details", "unrealized_investment_gain"].includes(parsed.reason)) {
+      const promptType = parsed.reason === "missing_expense_amount"
+        ? "expense"
+        : parsed.reason === "missing_income_amount"
+          ? "income"
+          : "investment";
+      const label = promptType === "expense" ? "支出" : promptType === "income" ? "收入" : "ETF／股票交易";
+      const pending = options.store.startLinePendingInput({
+        lineUserId: userId,
+        type: promptType,
+        label,
+        sourceMessageId: event.message.id
+      });
+      commandResult = { command: `prompt_${promptType}`, pending: true, result: pending };
+      replyText = `${canceledPrefix(pending.canceled)}${helpReplyText(parsed.reason)}`;
     } else if (!/測試|test|hello|hi|嗨|哈囉/i.test(text)) {
-      replyText = helpReplyText();
+      replyText = helpReplyText(parsed.reason);
     }
     let messages = [{ type: "text", text: replyText }];
     if (ledgerResult?.summary) {
@@ -648,7 +783,9 @@ async function handleLineWebhook(rawBody, options = {}) {
       messages = [summaryFlexMessage(title, subtitle, ledgerResult.summary)];
     } else if (commandResult?.summary && commandResult?.result?.entry) {
       const actionTitle = commandResult.command.startsWith("delete") ? "已刪除記帳" : "已修改記帳";
-      messages = [summaryFlexMessage(actionTitle, entryReplyText(commandResult.result.entry), commandResult.summary)];
+      messages = [summaryFlexMessage(actionTitle, entryReplyText(commandResult.result.entry), commandResult.summary, false)];
+    } else if (commandResult?.pending) {
+      messages = [cancelableTextMessage(replyText)];
     }
     const result = await replyLineMessage(event.replyToken, messages);
     replies.push({
@@ -661,6 +798,8 @@ async function handleLineWebhook(rawBody, options = {}) {
       binding: bindingResult ? "linked" : null,
       command: commandResult?.command || null,
       commandDuplicate: Boolean(commandResult?.result?.duplicate),
+      pending: Boolean(commandResult?.pending),
+      canceled: commandResult?.result?.canceled?.label || commandResult?.result?.kind || null,
       userId: event.source?.userId ? "present" : "missing",
       ...result
     });
