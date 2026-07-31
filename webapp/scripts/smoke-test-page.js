@@ -558,6 +558,10 @@ async function main() {
       freeStatus: document.querySelector("#upgradeView .plan-card .plan-status")?.textContent.trim() || "",
       consultingPrice: [...document.querySelectorAll("#upgradeView .plan-card")].find((card) => card.querySelector("h3")?.textContent.includes("一對一"))?.querySelector(".price")?.textContent.trim() || "",
       consultingAction: document.querySelector('#upgradeView [data-plan="consulting"]')?.textContent.trim() || "",
+      fullReportAction: document.querySelector('#upgradeView [data-plan="paid"]')?.textContent.trim() || "",
+      disabledPaymentButtons: document.querySelectorAll('#upgradeView [data-plan]:disabled').length,
+      hasLinePayPendingNotice: document.querySelector("#upgradeView")?.innerText.includes("LINE Pay 商店資料申請中") || false,
+      hasNoChargeNotice: document.querySelector("#upgradeView")?.innerText.includes("不會建立訂單或收取款項") || false,
       hasDepositInclusion: document.querySelector("#upgradeView")?.innerText.includes("訂金 NT$200 已包含在總費用內") || false,
       hasBalance: document.querySelector("#upgradeView")?.innerText.includes("尾款 NT$1,300") || false,
       hasUnconfiguredLine: document.querySelector("#upgradeView")?.innerText.includes("LINE 尚未設定") || false,
@@ -808,7 +812,11 @@ async function main() {
         && !upgradeNavigation.hasFreeActionButton
         && upgradeNavigation.freeStatus === "目前方案"
         && upgradeNavigation.consultingPrice === "NT$1,500"
-        && upgradeNavigation.consultingAction.includes("NT$200")
+        && upgradeNavigation.consultingAction === "LINE Pay 申請中"
+        && upgradeNavigation.fullReportAction === "LINE Pay 申請中"
+        && upgradeNavigation.disabledPaymentButtons === 2
+        && upgradeNavigation.hasLinePayPendingNotice
+        && upgradeNavigation.hasNoChargeNotice
         && upgradeNavigation.hasDepositInclusion
         && upgradeNavigation.hasBalance
         && !upgradeNavigation.hasUnconfiguredLine

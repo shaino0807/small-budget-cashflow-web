@@ -13,6 +13,7 @@ const fullReportPriceTwd = Math.max(1, Math.round(Number(window.FULL_REPORT_PRIC
 const consultationDepositTwd = Math.max(1, Math.round(Number(window.CONSULTATION_DEPOSIT_TWD || 200)));
 const consultationFeeTwd = Math.max(1, Math.round(Number(window.CONSULTATION_FEE_TWD || 1500)));
 const disclaimer = "本 App 僅供教育與財務規劃參考，不構成任何投資建議、買賣建議或保證報酬。所有投資皆有風險，使用者應自行判斷並承擔投資結果。";
+let paymentRuntime = { provider: "linepay", configured: false, environment: "sandbox" };
 const monthLabels = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
 const monthFields = ["monthlyIncome", "fixedExpense", "insuranceExpense", "loanExpense", "monthlyInvestment"];
 const simulationYearOptions = [10, 15, 20, 25, 30];
@@ -501,22 +502,6 @@ function applyEntitlements(entitlements = []) {
   state.consultingUnlocked = unique.includes("consultation_deposit");
 }
 
-function submitCheckoutForm(checkout) {
-  const form = document.createElement("form");
-  form.method = checkout.method || "POST";
-  form.action = checkout.action;
-  form.hidden = true;
-  Object.entries(checkout.fields || {}).forEach(([name, value]) => {
-    const input = document.createElement("input");
-    input.type = "hidden";
-    input.name = name;
-    input.value = value;
-    form.appendChild(input);
-  });
-  document.body.appendChild(form);
-  form.submit();
-}
-
 async function startCheckout(productType) {
   if (!backendAvailable()) {
     showToast("付款需要後端服務，請使用正式網站或本地 server。");
@@ -525,6 +510,10 @@ async function startCheckout(productType) {
   if (!state.reportMeta?.reportId || (!authState.authenticated && !state.reportMeta?.accessCode)) {
     showToast("請先產生或重新讀回報告，再進行付款。");
     goTo("freeReportView");
+    return;
+  }
+  if (!paymentRuntime.configured) {
+    showToast("LINE Pay 商店審核中，付款功能尚未開放。");
     return;
   }
   try {
@@ -541,10 +530,16 @@ async function startCheckout(productType) {
       lastProductType: productType,
       lastStatus: result.order.status,
       statusToken: result.order.statusToken,
-      message: "已建立付款訂單，正在前往綠界付款頁。"
+      provider: "linepay",
+      message: "已建立付款訂單，正在前往 LINE Pay。"
     };
     persist();
-    submitCheckoutForm(result.checkout);
+    const inLineClient = Boolean(window.liff?.isInClient?.());
+    const paymentUrl = inLineClient
+      ? result.checkout?.paymentUrl?.app || result.checkout?.paymentUrl?.web
+      : result.checkout?.paymentUrl?.web || result.checkout?.paymentUrl?.app;
+    if (!paymentUrl) throw new Error("LINE Pay 未提供付款網址");
+    location.assign(paymentUrl);
   } catch (error) {
     state.payment = { ...state.payment, lastProductType: productType, lastStatus: "failed", message: error.message };
     refreshReports();
@@ -564,7 +559,14 @@ async function checkPaymentStatus(orderId = state.payment?.lastOrderId) {
     lastProductType: result.order.productType,
     lastStatus: result.order.status,
     statusToken: state.payment?.statusToken || null,
-    message: result.order.status === "paid" ? "付款成功，完整權限已更新。" : result.order.failureReason || "付款尚未完成。"
+    provider: result.order.provider,
+    message: result.order.status === "paid"
+      ? "LINE Pay 付款成功，完整權限已更新。"
+      : result.order.status === "refunded"
+        ? "LINE Pay 已退款，相關付費權限已更新。"
+        : result.order.status === "cancelled"
+          ? "LINE Pay 付款已取消。"
+          : result.providerCheckError || result.order.failureReason || "LINE Pay 付款尚未完成。"
   };
   applyEntitlements(result.order.entitlements);
   persist();
@@ -582,14 +584,21 @@ async function handlePaymentReturn() {
     lastProductType: state.payment.lastProductType,
     lastStatus: status,
     statusToken: state.payment.statusToken,
-    message: status === "success" ? "付款結果已返回，正在向後端確認入帳。" : "付款未完成或付款失敗。"
+    provider: "linepay",
+    message: status === "success"
+      ? "LINE Pay 已返回，正在向後端確認入帳。"
+      : status === "cancelled"
+        ? "LINE Pay 付款已取消。"
+        : status === "pending"
+          ? "LINE Pay 狀態仍在確認中，請稍後重新確認。"
+          : "LINE Pay 付款未完成或付款失敗。"
   };
   if (orderId) {
     try {
       const order = await checkPaymentStatus(orderId);
       if (order?.status === "paid" && order.productType === "full_report") goTo("paidReportView");
       if (order?.status === "paid" && order.productType === "consultation_deposit") goTo("upgradeView");
-      showToast(order?.status === "paid" ? "付款成功，已更新權限。" : "尚未收到後端付款確認。");
+      showToast(order?.status === "paid" ? "LINE Pay 付款成功，已更新權限。" : "尚未收到 LINE Pay 付款確認。");
     } catch (error) {
       showToast(`付款狀態確認失敗：${error.message}`);
     }
@@ -601,6 +610,21 @@ async function handlePaymentReturn() {
   params.delete("reportId");
   const clean = `${location.pathname}${params.toString() ? `?${params.toString()}` : ""}${location.hash}`;
   history.replaceState(null, "", clean);
+}
+
+async function loadPaymentReadiness() {
+  if (!backendAvailable()) return paymentRuntime;
+  try {
+    const health = await apiRequest("/api/health");
+    paymentRuntime = {
+      provider: health.payment?.provider || "linepay",
+      configured: health.payment?.configured === true,
+      environment: health.payment?.environment || "sandbox"
+    };
+  } catch {
+    paymentRuntime = { provider: "linepay", configured: false, environment: "sandbox" };
+  }
+  return paymentRuntime;
 }
 
 function trackEvent(eventType, metadata = {}) {
@@ -3158,11 +3182,23 @@ function renderUpgrade() {
   if (upgradeIntro) {
     upgradeIntro.textContent = `完整報告 ${formatTwd(fullReportPriceTwd)}；一對一諮詢總費用 ${formatTwd(consultationFeeTwd)}，訂金 ${formatTwd(consultationDepositTwd)} 已包含在總費用內。`;
   }
+  const paymentAvailable = paymentRuntime.provider === "linepay" && paymentRuntime.configured;
   const plans = [
     { name: "免費報告", price: "NT$0", status: "目前方案", key: "free", features: ["財務體質分數", "現金流摘要", "3 個優先風險"] },
-    { name: "完整報告", price: formatTwd(fullReportPriceTwd), action: state.paidUnlocked ? "已解鎖" : "前往付款", key: "paid", highlight: true, features: ["整體股票重疊度分析", "高股息依賴與壓力測試", "資產模擬與月份月曆", "PDF/列印匯出"] },
-    { name: "一對一現金流諮詢", price: formatTwd(consultationFeeTwd), priceNote: "總費用", action: state.consultingUnlocked ? "訂金已支付" : `支付 ${formatTwd(consultationDepositTwd)} 訂金`, key: "consulting", features: [`訂金 ${formatTwd(consultationDepositTwd)} 已包含在總費用內`, `預約確認後再支付尾款 ${formatTwd(consultationBalanceTwd)}`, "人工檢視 ETF、股票與現金流"] }
+    { name: "完整報告", price: formatTwd(fullReportPriceTwd), action: state.paidUnlocked ? "已解鎖" : paymentAvailable ? "使用 LINE Pay 付款" : "LINE Pay 申請中", key: "paid", disabled: !paymentAvailable && !state.paidUnlocked, highlight: true, features: ["整體股票重疊度分析", "高股息依賴與壓力測試", "資產模擬與月份月曆", "PDF/列印匯出"] },
+    { name: "一對一現金流諮詢", price: formatTwd(consultationFeeTwd), priceNote: "總費用", action: state.consultingUnlocked ? "訂金已支付" : paymentAvailable ? `使用 LINE Pay 支付 ${formatTwd(consultationDepositTwd)} 訂金` : "LINE Pay 申請中", key: "consulting", disabled: !paymentAvailable && !state.consultingUnlocked, features: [`訂金 ${formatTwd(consultationDepositTwd)} 已包含在總費用內`, `預約確認後再支付尾款 ${formatTwd(consultationBalanceTwd)}`, "人工檢視 ETF、股票與現金流"] }
   ];
+  const providerNotice = !paymentAvailable ? `
+    <section class="panel payment-status-panel" role="status">
+      <span class="badge">LINE Pay</span>
+      <p>LINE Pay 商店資料申請中，正式付款功能尚未開放。目前不會建立訂單或收取款項。</p>
+    </section>
+  ` : paymentRuntime.environment !== "production" ? `
+    <section class="panel payment-status-panel" role="status">
+      <span class="badge">Sandbox</span>
+      <p>目前為 LINE Pay 測試環境，不會向真實客戶收款。</p>
+    </section>
+  ` : "";
   const paymentNotice = state.payment?.message ? `
     <section class="panel payment-status-panel">
       <span class="badge">${escapeHtml(state.payment.lastStatus || "payment")}</span>
@@ -3183,7 +3219,7 @@ function renderUpgrade() {
       </div>
     </section>
   `;
-  q("#plans").innerHTML = paymentNotice + plans.map((plan) => `
+  q("#plans").innerHTML = providerNotice + paymentNotice + plans.map((plan) => `
     <article class="plan-card ${plan.highlight ? "highlight" : ""}">
       <h3>${plan.name}</h3>
       <div class="price">${plan.price}</div>
@@ -3191,7 +3227,7 @@ function renderUpgrade() {
       <ul class="feature-list">${plan.features.map((item) => `<li>${item}</li>`).join("")}</ul>
       ${plan.status
         ? `<span class="plan-status" aria-label="${plan.name}${plan.status}">${plan.status}</span>`
-        : `<button class="${plan.highlight ? "primary-button" : "secondary-button"}" data-plan="${plan.key}" type="button">${plan.action}</button>`}
+        : `<button class="${plan.highlight ? "primary-button" : "secondary-button"}" data-plan="${plan.key}" type="button"${plan.disabled ? " disabled aria-disabled=\"true\"" : ""}>${plan.action}</button>`}
     </article>
   `).join("") + consultationLinks;
 
@@ -4043,6 +4079,7 @@ async function init() {
   syncInputs();
   bindEvents();
   await initializeMemberAuth();
+  await loadPaymentReadiness();
   if (q(`#${activeView}`)) goTo(activeView, "", activeMemberNav);
   document.body.dataset.appReady = "true";
   configureConsultationLinks();

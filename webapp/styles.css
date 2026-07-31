@@ -1249,6 +1249,11 @@ a {
   pointer-events: none;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
 .price {
   font-size: 30px;
   font-weight: 900;

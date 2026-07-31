@@ -48,16 +48,14 @@ services:
         value: main
       - key: GITHUB_ACTIONS_TOKEN
         sync: false
-      - key: ECPAY_ENV
-        value: stage
-      - key: ECPAY_USE_STAGE_DEFAULTS
-        value: "1"
-      - key: ECPAY_MERCHANT_ID
+      - key: LINE_PAY_ENV
+        value: sandbox
+      - key: LINE_PAY_CHANNEL_ID
         sync: false
-      - key: ECPAY_HASH_KEY
+      - key: LINE_PAY_CHANNEL_SECRET
         sync: false
-      - key: ECPAY_HASH_IV
-        sync: false
+      - key: ECPAY_LEGACY_CALLBACK_ENABLED
+        value: "0"
       - key: FULL_REPORT_PRICE_TWD
         value: "499"
       - key: CONSULTATION_DEPOSIT_TWD

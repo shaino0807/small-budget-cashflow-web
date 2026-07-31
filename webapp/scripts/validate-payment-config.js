@@ -1,11 +1,12 @@
-const { ecpayConfig, productCatalog } = require("../ecpay");
+const { linePayConfig, linePayReadiness } = require("../linepay");
+const { productCatalog } = require("../payment-catalog");
 
 const placeholderPatterns = [
   /^your-/i,
   /placeholder/i,
   /example/i,
   /請填/i,
-  /範例/i
+  /你的/i
 ];
 
 function isPlaceholder(value) {
@@ -23,11 +24,15 @@ function moneyEnv(name, fallback) {
 }
 
 function main() {
-  const mode = process.argv.includes("--production") ? "production" : process.argv.includes("--stage") ? "stage" : "local";
-  const requirePublicUrls = mode === "production" || mode === "stage";
+  const mode = process.argv.includes("--production")
+    ? "production"
+    : process.argv.includes("--sandbox")
+      ? "sandbox"
+      : "local";
   const errors = [];
   const warnings = [];
-  const config = ecpayConfig();
+  const config = linePayConfig();
+  const readiness = linePayReadiness();
   const catalog = productCatalog();
   const sitePublicBaseUrl = String(process.env.SITE_PUBLIC_BASE_URL || process.env.PUBLIC_SITE_BASE_URL || "").trim();
   const apiPublicBaseUrl = String(process.env.API_PUBLIC_BASE_URL || process.env.BACKEND_PUBLIC_BASE_URL || process.env.RENDER_EXTERNAL_URL || "").trim();
@@ -37,30 +42,26 @@ function main() {
   const consultationDeposit = moneyEnv("CONSULTATION_DEPOSIT_TWD", 200);
   const consultationFee = moneyEnv("CONSULTATION_FEE_TWD", 1500);
 
+  if (mode === "production" || mode === "sandbox") {
+    if (process.env.LINE_PAY_ENV !== mode) errors.push(`LINE_PAY_ENV must be ${mode}`);
+    if (isPlaceholder(process.env.LINE_PAY_CHANNEL_ID)) errors.push("LINE_PAY_CHANNEL_ID is missing or placeholder");
+    if (isPlaceholder(process.env.LINE_PAY_CHANNEL_SECRET)) errors.push("LINE_PAY_CHANNEL_SECRET is missing or placeholder");
+    if (!isHttpsUrl(sitePublicBaseUrl)) errors.push("SITE_PUBLIC_BASE_URL must be an HTTPS URL");
+    if (!isHttpsUrl(apiPublicBaseUrl)) errors.push("API_PUBLIC_BASE_URL or RENDER_EXTERNAL_URL must be an HTTPS URL");
+  } else if (!readiness.configured) {
+    warnings.push("LINE Pay credentials are not configured; checkout is safely disabled and no order will be created");
+  }
+
   if (mode === "production") {
-    if (process.env.ECPAY_ENV !== "production") errors.push("ECPAY_ENV must be production");
-    if (config.useStageDefaults) errors.push("ECPAY_USE_STAGE_DEFAULTS must be 0 for production");
-    if (isPlaceholder(process.env.ECPAY_MERCHANT_ID)) errors.push("ECPAY_MERCHANT_ID is missing or placeholder");
-    if (isPlaceholder(process.env.ECPAY_HASH_KEY)) errors.push("ECPAY_HASH_KEY is missing or placeholder");
-    if (isPlaceholder(process.env.ECPAY_HASH_IV)) errors.push("ECPAY_HASH_IV is missing or placeholder");
+    if (config.apiBaseUrl !== "https://api-pay.line.me") errors.push("Production must use https://api-pay.line.me");
     if (!isHttpsUrl(consultationLineUrl)) errors.push("CONSULTATION_LINE_URL must be set to an HTTPS URL");
-  } else if (mode === "stage") {
-    if (process.env.ECPAY_ENV !== "stage") errors.push("ECPAY_ENV must be stage");
-    if (!config.merchantId || !config.hashKey || !config.hashIv) {
-      errors.push("Stage ECPay credentials are missing; set ECPAY_USE_STAGE_DEFAULTS=1 or provide stage credentials");
-    }
-    if (!config.checkoutUrl.includes("payment-stage.ecpay.com.tw")) errors.push("Stage checkout URL must use payment-stage.ecpay.com.tw");
-    if (!consultationLineUrl) warnings.push("CONSULTATION_LINE_URL is not configured; LINE consultation CTA stays disabled during stage testing");
-  } else {
-    if (!config.merchantId || !config.hashKey || !config.hashIv) {
-      warnings.push("ECPay credentials are not configured; checkout endpoint will reject live payment creation");
-    }
+  } else if (mode === "sandbox") {
+    if (config.apiBaseUrl !== "https://sandbox-api-pay.line.me") errors.push("Sandbox must use https://sandbox-api-pay.line.me");
     if (!consultationLineUrl) warnings.push("CONSULTATION_LINE_URL is not configured; LINE consultation CTA stays disabled");
   }
 
-  if (requirePublicUrls) {
-    if (!isHttpsUrl(sitePublicBaseUrl)) errors.push("SITE_PUBLIC_BASE_URL must be an HTTPS URL");
-    if (!isHttpsUrl(apiPublicBaseUrl)) errors.push("API_PUBLIC_BASE_URL or RENDER_EXTERNAL_URL must be an HTTPS URL");
+  if (process.env.LINE_PAY_API_BASE_URL && mode !== "local") {
+    errors.push("LINE_PAY_API_BASE_URL override is only allowed for local automated tests");
   }
   if (!isHttpsUrl(consultationIgUrl)) errors.push("CONSULTATION_IG_URL must be an HTTPS URL");
   if (fullReportPrice !== 499) warnings.push(`FULL_REPORT_PRICE_TWD is ${fullReportPrice}; expected current product price is 499`);
@@ -68,13 +69,14 @@ function main() {
   if (consultationFee !== 1500) errors.push("CONSULTATION_FEE_TWD must be 1500");
   if (catalog.full_report.amount !== fullReportPrice) errors.push("full_report catalog amount does not match FULL_REPORT_PRICE_TWD");
   if (catalog.consultation_deposit.amount !== consultationDeposit) errors.push("consultation_deposit catalog amount does not match CONSULTATION_DEPOSIT_TWD");
-  if (!config.checkoutUrl.includes("ecpay.com.tw")) errors.push("ECPay checkout URL is not an ECPay endpoint");
 
   const result = {
     ok: errors.length === 0,
     mode,
-    ecpayConfigured: Boolean(config.merchantId && config.hashKey && config.hashIv),
-    checkoutHost: config.checkoutUrl ? new URL(config.checkoutUrl).host : null,
+    provider: readiness.provider,
+    configured: readiness.configured,
+    environment: readiness.environment,
+    apiHost: readiness.apiHost,
     sitePublicBaseConfigured: Boolean(sitePublicBaseUrl),
     apiPublicBaseConfigured: Boolean(apiPublicBaseUrl),
     consultationIgConfigured: Boolean(consultationIgUrl),

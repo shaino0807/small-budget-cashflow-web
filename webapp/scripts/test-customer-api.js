@@ -4,14 +4,147 @@ const fs = require("fs");
 const http = require("http");
 const os = require("os");
 const path = require("path");
-const { computeCheckMacValue } = require("../ecpay");
 
-const port = 5600 + Math.floor(Math.random() * 300);
-const githubPort = port + 400;
+const port = 5600 + Math.floor(Math.random() * 200);
+const githubPort = port + 300;
+const linePayPort = port + 600;
 const baseUrl = `http://127.0.0.1:${port}`;
 const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "cashflow-customer-api-"));
 const adminKey = crypto.randomBytes(24).toString("base64url");
+const linePayChannelId = "test-linepay-channel";
+const linePayChannelSecret = "test-linepay-secret";
 let githubDispatchCount = 0;
+let nextTransactionId = 2026072800000000000n;
+let nextRefundTransactionId = 2026072890000000000n;
+const linePayTransactions = new Map();
+const mismatchTransactions = new Set();
+
+function writeJson(res, status, payload, { raw = false } = {}) {
+  res.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });
+  res.end(raw ? payload : JSON.stringify(payload));
+}
+
+function linePaySignature(req, rawBody) {
+  const nonce = String(req.headers["x-line-authorization-nonce"] || "");
+  const url = new URL(req.url, "http://localhost");
+  const message = req.method === "GET"
+    ? `${linePayChannelSecret}${url.pathname}${url.search.slice(1)}${nonce}`
+    : `${linePayChannelSecret}${url.pathname}${rawBody}${nonce}`;
+  return crypto.createHmac("sha256", linePayChannelSecret).update(message, "utf8").digest("base64");
+}
+
+function readRawBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    req.on("data", (chunk) => chunks.push(chunk));
+    req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+    req.on("error", reject);
+  });
+}
+
+const linePayServer = http.createServer(async (req, res) => {
+  try {
+    const rawBody = await readRawBody(req);
+    const suppliedSignature = String(req.headers["x-line-authorization"] || "");
+    const suppliedChannel = String(req.headers["x-line-channelid"] || "");
+    if (
+      suppliedChannel !== linePayChannelId
+      || !suppliedSignature
+      || suppliedSignature !== linePaySignature(req, rawBody)
+    ) {
+      writeJson(res, 401, { returnCode: "1104", returnMessage: "Invalid signature" });
+      return;
+    }
+
+    const url = new URL(req.url, `http://127.0.0.1:${linePayPort}`);
+    if (req.method === "POST" && url.pathname === "/v4/payments/request") {
+      const request = JSON.parse(rawBody);
+      nextTransactionId += 1n;
+      const transactionId = nextTransactionId.toString();
+      linePayTransactions.set(transactionId, {
+        transactionId,
+        orderId: String(request.orderId),
+        amount: Number(request.amount),
+        currency: String(request.currency),
+        status: "reserved"
+      });
+      writeJson(
+        res,
+        200,
+        `{"returnCode":"0000","returnMessage":"Success","info":{"transactionId":${transactionId},"paymentUrl":{"web":"https://sandbox-pay.test/${transactionId}","app":"line://pay/${transactionId}"}}}`,
+        { raw: true }
+      );
+      return;
+    }
+
+    const confirmMatch = url.pathname.match(/^\/v4\/payments\/(\d+)\/confirm$/);
+    if (req.method === "POST" && confirmMatch) {
+      const transaction = linePayTransactions.get(confirmMatch[1]);
+      if (!transaction) {
+        writeJson(res, 200, { returnCode: "1172", returnMessage: "Transaction not found" });
+        return;
+      }
+      const request = JSON.parse(rawBody);
+      transaction.status = "paid";
+      const paidAmount = mismatchTransactions.has(transaction.transactionId)
+        ? 1
+        : Number(request.amount);
+      writeJson(
+        res,
+        200,
+        `{"returnCode":"0000","returnMessage":"Success","info":{"orderId":"${transaction.orderId}","transactionId":${transaction.transactionId},"currency":"${transaction.currency}","payInfo":[{"method":"BALANCE","amount":${paidAmount}}]}}`,
+        { raw: true }
+      );
+      return;
+    }
+
+    const checkMatch = url.pathname.match(/^\/v4\/payments\/requests\/(\d+)\/check$/);
+    if (req.method === "GET" && checkMatch) {
+      const transaction = linePayTransactions.get(checkMatch[1]);
+      const returnCode = transaction?.status === "paid" ? "0123" : "0110";
+      writeJson(res, 200, { returnCode, returnMessage: returnCode === "0110" ? "Reserved" : "Paid" });
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/v4/payments") {
+      const transaction = linePayTransactions.get(String(url.searchParams.get("transactionId") || ""));
+      if (!transaction) {
+        writeJson(res, 200, { returnCode: "0000", returnMessage: "Success", info: [] });
+        return;
+      }
+      writeJson(
+        res,
+        200,
+        `{"returnCode":"0000","returnMessage":"Success","info":[{"orderId":"${transaction.orderId}","transactionId":${transaction.transactionId},"currency":"${transaction.currency}","payInfo":[{"method":"BALANCE","amount":${mismatchTransactions.has(transaction.transactionId) ? 1 : transaction.amount}}]}]}`,
+        { raw: true }
+      );
+      return;
+    }
+
+    const refundMatch = url.pathname.match(/^\/v4\/payments\/(\d+)\/refund$/);
+    if (req.method === "POST" && refundMatch) {
+      const transaction = linePayTransactions.get(refundMatch[1]);
+      if (!transaction) {
+        writeJson(res, 200, { returnCode: "1172", returnMessage: "Transaction not found" });
+        return;
+      }
+      transaction.status = "refunded";
+      nextRefundTransactionId += 1n;
+      writeJson(
+        res,
+        200,
+        `{"returnCode":"0000","returnMessage":"Success","info":{"refundTransactionId":${nextRefundTransactionId},"refundAmount":${transaction.amount}}}`,
+        { raw: true }
+      );
+      return;
+    }
+
+    writeJson(res, 404, { returnCode: "4040", returnMessage: "Not found" });
+  } catch (error) {
+    writeJson(res, 500, { returnCode: "5000", returnMessage: error.message });
+  }
+});
+
 const githubServer = http.createServer((req, res) => {
   if (req.method === "POST" && req.url.includes("/actions/workflows/pages.yml/dispatches")) {
     githubDispatchCount += 1;
@@ -22,6 +155,7 @@ const githubServer = http.createServer((req, res) => {
   res.writeHead(404);
   res.end();
 });
+
 const env = {
   ...process.env,
   PORT: String(port),
@@ -29,14 +163,17 @@ const env = {
   CUSTOMER_DATA_DIR: dataDir,
   CUSTOMER_DATA_KEY: crypto.randomBytes(32).toString("base64"),
   ACCESS_CODE_PEPPER: crypto.randomBytes(24).toString("base64url"),
-  ADMIN_API_KEY: adminKey
-  ,
+  ADMIN_API_KEY: adminKey,
   GITHUB_ACTIONS_TOKEN: "test-server-only-token",
   GITHUB_API_BASE: `http://127.0.0.1:${githubPort}`,
   ACTION_DISPATCH_MINUTES: "15",
   SITE_PUBLIC_BASE_URL: baseUrl,
   API_PUBLIC_BASE_URL: baseUrl,
-  ECPAY_USE_STAGE_DEFAULTS: "1",
+  LINE_PAY_ENV: "sandbox",
+  LINE_PAY_CHANNEL_ID: linePayChannelId,
+  LINE_PAY_CHANNEL_SECRET: linePayChannelSecret,
+  LINE_PAY_API_BASE_URL: `http://127.0.0.1:${linePayPort}`,
+  ECPAY_LEGACY_CALLBACK_ENABLED: "0",
   FULL_REPORT_PRICE_TWD: "499",
   CONSULTATION_DEPOSIT_TWD: "200",
   CONSULTATION_FEE_TWD: "1500",
@@ -54,7 +191,7 @@ async function request(pathname, options = {}) {
     ...rest
   });
   const body = await response.json();
-  return { status: response.status, body };
+  return { status: response.status, body, headers: response.headers };
 }
 
 async function requestText(pathname, options = {}) {
@@ -66,12 +203,8 @@ async function requestText(pathname, options = {}) {
   return { status: response.status, body: await response.text(), headers: response.headers };
 }
 
-function formBody(params) {
-  return new URLSearchParams(params).toString();
-}
-
 async function waitForServer() {
-  for (let index = 0; index < 40; index++) {
+  for (let index = 0; index < 40; index += 1) {
     try {
       const response = await fetch(`${baseUrl}/api/database-status`);
       if (response.ok) return;
@@ -82,8 +215,41 @@ async function waitForServer() {
   throw new Error("API server did not start");
 }
 
+function assert(condition, message) {
+  if (!condition) throw new Error(message);
+}
+
+async function createCheckout(report, productType) {
+  return request("/api/payments/checkout", {
+    method: "POST",
+    body: JSON.stringify({
+      reportId: report.id,
+      accessCode: report.accessCode,
+      productType
+    })
+  });
+}
+
+async function confirmCheckout(checkout) {
+  const transactionId = checkout.body.order.providerTradeNo;
+  return requestText(
+    `/api/payments/linepay/confirm?orderId=${encodeURIComponent(checkout.body.order.id)}&transactionId=${encodeURIComponent(transactionId)}`,
+    { redirect: "manual" }
+  );
+}
+
+async function paymentStatus(checkout, report, headers = {}) {
+  return request(
+    `/api/payments/${checkout.body.order.id}/status?reportId=${encodeURIComponent(report.id)}`,
+    { headers }
+  );
+}
+
 async function main() {
-  await new Promise((resolve) => githubServer.listen(githubPort, "127.0.0.1", resolve));
+  await Promise.all([
+    new Promise((resolve) => githubServer.listen(githubPort, "127.0.0.1", resolve)),
+    new Promise((resolve) => linePayServer.listen(linePayPort, "127.0.0.1", resolve))
+  ]);
   const server = spawn(process.execPath, [path.join(__dirname, "..", "server.js")], {
     cwd: path.join(__dirname, "..", ".."),
     env,
@@ -93,23 +259,31 @@ async function main() {
   try {
     await waitForServer();
     const health = await request("/api/health");
-    if (health.status !== 200 || !health.body.payment?.ecpayConfigured || health.body.payment.prices.fullReport !== 499) {
-      throw new Error("Payment readiness health check failed");
-    }
+    assert(
+      health.status === 200
+      && health.body.payment?.provider === "linepay"
+      && health.body.payment?.configured === true
+      && health.body.payment?.environment === "sandbox"
+      && health.body.payment?.prices?.fullReport === 499,
+      "LINE Pay readiness health check failed"
+    );
     const healthRaw = JSON.stringify(health.body);
-    if (healthRaw.includes("pwFHCqoQZGmho4w6") || healthRaw.includes("EkRm7iFT261dpevs")) {
-      throw new Error("Health endpoint leaked ECPay secrets");
-    }
+    assert(!healthRaw.includes(linePayChannelSecret) && !healthRaw.includes(linePayChannelId), "Health endpoint leaked LINE Pay credentials");
+
     const firstRefresh = await request("/api/market/refresh", { method: "POST" });
     const secondRefresh = await request("/api/market/refresh", { method: "POST" });
-    if (!firstRefresh.body.githubAction?.dispatched || secondRefresh.body.githubAction?.reason !== "recent_dispatch_available" || githubDispatchCount !== 1) {
-      throw new Error("GitHub Action dispatch throttling failed");
-    }
+    assert(
+      firstRefresh.body.githubAction?.dispatched
+      && secondRefresh.body.githubAction?.reason === "recent_dispatch_available"
+      && githubDispatchCount === 1,
+      "GitHub Action dispatch throttling failed"
+    );
+
     const invalid = await request("/api/reports", {
       method: "POST",
       body: JSON.stringify({ checkType: "cashflow", consent: { accepted: false } })
     });
-    if (invalid.status !== 400) throw new Error("Invalid report was not rejected");
+    assert(invalid.status === 400, "Invalid report was not rejected");
 
     const submission = {
       anonymousId: crypto.randomUUID(),
@@ -135,274 +309,200 @@ async function main() {
       }
     };
     const created = await request("/api/reports", { method: "POST", body: JSON.stringify(submission) });
-    if (created.status !== 201 || !created.body.report?.accessCode) throw new Error("Report creation failed");
+    assert(created.status === 201 && created.body.report?.accessCode, "Report creation failed");
     const report = created.body.report;
 
     const wrongCode = await request(`/api/reports/${report.id}`, {
       headers: { "X-Report-Access-Code": "wrong-code" }
     });
-    if (wrongCode.status !== 404) throw new Error("Wrong access code was accepted");
-
+    assert(wrongCode.status === 404, "Wrong report access code was accepted");
     const unauthorizedAdmin = await request("/api/admin/reports");
-    if (unauthorizedAdmin.status !== 401) throw new Error("Admin endpoint accepted missing key");
-
+    assert(unauthorizedAdmin.status === 401, "Admin endpoint accepted missing key");
     const forbiddenOrigin = await request("/api/reports", {
       method: "POST",
       headers: { Origin: "https://attacker.example" },
       body: JSON.stringify(submission)
     });
-    if (forbiddenOrigin.status !== 403) throw new Error("Unapproved origin was accepted");
+    assert(forbiddenOrigin.status === 403, "Unapproved origin was accepted");
 
-    const reopened = await request(`/api/reports/${report.id}`, {
-      headers: { "X-Report-Access-Code": report.accessCode }
-    });
-    if (reopened.status !== 200 || reopened.body.report.payload.input.profile.monthlyIncome !== 50000) {
-      throw new Error("Report reopen failed");
-    }
+    const checkout = await createCheckout(report, "full_report");
+    assert(
+      checkout.status === 201
+      && checkout.body.order.status === "pending"
+      && checkout.body.order.amount === 499
+      && checkout.body.order.provider === "linepay"
+      && checkout.body.order.statusToken
+      && checkout.body.checkout?.provider === "linepay"
+      && checkout.body.checkout?.paymentUrl?.web,
+      "LINE Pay checkout creation failed"
+    );
+    assert(
+      checkout.body.order.providerTradeNo === "2026072800000000001",
+      "Large LINE Pay transaction ID was not preserved as a string"
+    );
 
-    const checkout = await request("/api/payments/checkout", {
-      method: "POST",
-      body: JSON.stringify({
-        reportId: report.id,
-        accessCode: report.accessCode,
-        productType: "full_report"
-      })
-    });
-    if (checkout.status !== 201 || checkout.body.order.status !== "pending" || checkout.body.order.amount !== 499 || !checkout.body.order.statusToken) {
-      throw new Error("Payment checkout creation failed");
-    }
-    if (!checkout.body.checkout?.fields?.CheckMacValue || !checkout.body.checkout.action.includes("ecpay")) {
-      throw new Error("ECPay checkout form was not generated");
-    }
+    const wrongPaymentAccess = await paymentStatus(checkout, report, { "X-Report-Access-Code": "wrong-code" });
+    assert(wrongPaymentAccess.status === 404, "Payment status accepted a wrong access code");
+    const wrongPaymentToken = await paymentStatus(checkout, report, { "X-Payment-Status-Token": "wrong-token" });
+    assert(wrongPaymentToken.status === 404, "Payment status accepted a wrong status token");
 
-    const unauthorizedPaymentStatus = await request(`/api/payments/${checkout.body.order.id}/status?reportId=${report.id}`, {
-      headers: { "X-Report-Access-Code": "wrong-code" }
-    });
-    if (unauthorizedPaymentStatus.status !== 404) throw new Error("Payment status accepted a wrong access code");
+    const confirm = await confirmCheckout(checkout);
+    assert(confirm.status === 303 && confirm.headers.get("location")?.includes("payment=success"), "LINE Pay confirm did not redirect to success");
+    const paid = await paymentStatus(checkout, report, { "X-Payment-Status-Token": checkout.body.order.statusToken });
+    assert(
+      paid.status === 200
+      && paid.body.order.status === "paid"
+      && paid.body.order.entitlements.includes("full_report"),
+      "Confirmed LINE Pay order did not atomically unlock full report"
+    );
 
-    const wrongPaymentToken = await request(`/api/payments/${checkout.body.order.id}/status?reportId=${report.id}`, {
-      headers: { "X-Payment-Status-Token": "wrong-token" }
-    });
-    if (wrongPaymentToken.status !== 404) throw new Error("Payment status accepted a wrong status token");
+    const duplicateConfirm = await confirmCheckout(checkout);
+    assert(duplicateConfirm.status === 303 && duplicateConfirm.headers.get("location")?.includes("payment=success"), "Duplicate confirm was not idempotent");
+    const afterDuplicate = await paymentStatus(checkout, report, { "X-Payment-Status-Token": checkout.body.order.statusToken });
+    assert(
+      afterDuplicate.body.order.entitlements.filter((item) => item === "full_report").length === 1,
+      "Duplicate confirm duplicated the entitlement"
+    );
 
-    const notifyPayload = {
-      MerchantID: "3002607",
-      MerchantTradeNo: checkout.body.order.id,
-      StoreID: "",
-      RtnCode: "1",
-      RtnMsg: "Succeeded",
-      TradeNo: "stage-test-trade-no",
-      TradeAmt: "499",
-      PaymentDate: "2026/06/29 12:00:00",
-      PaymentType: "Credit_CreditCard",
-      PaymentTypeChargeFee: "0",
-      TradeDate: "2026/06/29 11:59:00",
-      SimulatePaid: "1",
-      CustomField1: report.id,
-      CustomField2: "full_report",
-      CustomField3: "",
-      CustomField4: ""
-    };
+    const mismatchCheckout = await createCheckout(report, "full_report");
+    assert(mismatchCheckout.status === 201, "Mismatch checkout creation failed");
+    mismatchTransactions.add(mismatchCheckout.body.order.providerTradeNo);
+    const mismatchConfirm = await confirmCheckout(mismatchCheckout);
+    assert(
+      mismatchConfirm.status === 303 && mismatchConfirm.headers.get("location")?.includes("payment=pending"),
+      "Provider amount mismatch was not held for review"
+    );
+    const mismatchStatus = await paymentStatus(mismatchCheckout, report, {
+      "X-Payment-Status-Token": mismatchCheckout.body.order.statusToken
+    });
+    assert(
+      mismatchStatus.status === 200
+      && mismatchStatus.body.order.status !== "paid"
+      && mismatchStatus.body.providerCheckError?.includes("金額")
+      && mismatchStatus.body.order.entitlements.filter((item) => item === "full_report").length === 1,
+      `Provider amount mismatch incorrectly unlocked or changed entitlements: ${JSON.stringify(mismatchStatus.body)}`
+    );
 
-    const invalidMacPayload = { ...notifyPayload, CheckMacValue: "INVALID" };
-    const invalidMacNotify = await requestText("/api/payments/ecpay/notify", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: formBody(invalidMacPayload)
+    const cancelledCheckout = await createCheckout(report, "consultation_deposit");
+    const cancel = await requestText(
+      `/api/payments/linepay/cancel?orderId=${encodeURIComponent(cancelledCheckout.body.order.id)}`,
+      { redirect: "manual" }
+    );
+    assert(cancel.status === 303 && cancel.headers.get("location")?.includes("payment=cancelled"), "LINE Pay cancel redirect failed");
+    const cancelledStatus = await paymentStatus(cancelledCheckout, report, {
+      "X-Payment-Status-Token": cancelledCheckout.body.order.statusToken
     });
-    if (invalidMacNotify.status !== 400 || invalidMacNotify.body !== "0|INVALID") {
-      throw new Error("Invalid ECPay CheckMacValue was not rejected");
-    }
-    const statusAfterInvalidMac = await request(`/api/payments/${checkout.body.order.id}/status?reportId=${report.id}`, {
-      headers: { "X-Payment-Status-Token": checkout.body.order.statusToken }
-    });
-    if (statusAfterInvalidMac.status !== 200 || statusAfterInvalidMac.body.order.status !== "pending") {
-      throw new Error("Invalid ECPay notification changed the order status");
-    }
+    assert(
+      cancelledStatus.body.order.status === "cancelled"
+      && !cancelledStatus.body.order.entitlements.includes("consultation_deposit"),
+      "Cancelled order unlocked consultation"
+    );
 
-    const mismatchCheckout = await request("/api/payments/checkout", {
-      method: "POST",
-      body: JSON.stringify({
-        reportId: report.id,
-        accessCode: report.accessCode,
-        productType: "full_report"
-      })
+    const consultationCheckout = await createCheckout(report, "consultation_deposit");
+    const consultationConfirm = await confirmCheckout(consultationCheckout);
+    assert(consultationConfirm.status === 303, "Consultation deposit confirm failed");
+    const consultationPaid = await paymentStatus(consultationCheckout, report, {
+      "X-Payment-Status-Token": consultationCheckout.body.order.statusToken
     });
-    if (mismatchCheckout.status !== 201 || mismatchCheckout.body.order.status !== "pending") {
-      throw new Error("Amount mismatch checkout creation failed");
-    }
-    const mismatchNotifyPayload = {
-      ...notifyPayload,
-      MerchantTradeNo: mismatchCheckout.body.order.id,
-      TradeNo: "stage-test-mismatch-trade-no",
-      TradeAmt: "1"
-    };
-    mismatchNotifyPayload.CheckMacValue = computeCheckMacValue(mismatchNotifyPayload, "pwFHCqoQZGmho4w6", "EkRm7iFT261dpevs");
-    const mismatchNotify = await requestText("/api/payments/ecpay/notify", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: formBody(mismatchNotifyPayload)
-    });
-    if (mismatchNotify.status !== 200 || mismatchNotify.body !== "1|OK") {
-      throw new Error("Valid amount-mismatch callback was not acknowledged");
-    }
-    const mismatchStatus = await request(`/api/payments/${mismatchCheckout.body.order.id}/status?reportId=${report.id}`, {
-      headers: { "X-Payment-Status-Token": mismatchCheckout.body.order.statusToken }
-    });
-    if (mismatchStatus.status !== 200 || mismatchStatus.body.order.status !== "failed" || mismatchStatus.body.order.entitlements.includes("full_report")) {
-      throw new Error("Amount mismatch did not fail the order without entitlement");
-    }
-
-    notifyPayload.CheckMacValue = computeCheckMacValue(notifyPayload, "pwFHCqoQZGmho4w6", "EkRm7iFT261dpevs");
-    const notify = await requestText("/api/payments/ecpay/notify", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: formBody(notifyPayload)
-    });
-    if (notify.status !== 200 || notify.body !== "1|OK") throw new Error("ECPay notify was not accepted");
-
-    const paymentStatus = await request(`/api/payments/${checkout.body.order.id}/status?reportId=${report.id}`, {
-      headers: { "X-Report-Access-Code": report.accessCode }
-    });
-    if (paymentStatus.status !== 200 || paymentStatus.body.order.status !== "paid" || !paymentStatus.body.order.entitlements.includes("full_report")) {
-      throw new Error("Paid order did not unlock full report entitlement");
-    }
-
-    const duplicateNotify = await requestText("/api/payments/ecpay/notify", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: formBody(notifyPayload)
-    });
-    if (duplicateNotify.status !== 200 || duplicateNotify.body !== "1|OK") {
-      throw new Error("Duplicate ECPay notify was not idempotent");
-    }
-    const duplicateStatus = await request(`/api/payments/${checkout.body.order.id}/status?reportId=${report.id}`, {
-      headers: { "X-Payment-Status-Token": checkout.body.order.statusToken }
-    });
-    const duplicateFullReportEntitlements = duplicateStatus.body.order.entitlements.filter((entitlement) => entitlement === "full_report");
-    if (duplicateStatus.status !== 200 || duplicateStatus.body.order.status !== "paid" || duplicateFullReportEntitlements.length !== 1) {
-      throw new Error("Duplicate ECPay notify duplicated or damaged the entitlement");
-    }
-
-    const tokenPaymentStatus = await request(`/api/payments/${checkout.body.order.id}/status?reportId=${report.id}`, {
-      headers: { "X-Payment-Status-Token": checkout.body.order.statusToken }
-    });
-    if (tokenPaymentStatus.status !== 200 || tokenPaymentStatus.body.order.status !== "paid" || !tokenPaymentStatus.body.order.entitlements.includes("full_report")) {
-      throw new Error("Payment status token did not survive redirect-style lookup");
-    }
-
-    const reopenedAfterPayment = await request(`/api/reports/${report.id}`, {
-      headers: { "X-Report-Access-Code": report.accessCode }
-    });
-    if (!reopenedAfterPayment.body.report.entitlements.includes("full_report")) {
-      throw new Error("Report entitlement was not returned after payment");
-    }
-
-    const consultationCheckout = await request("/api/payments/checkout", {
-      method: "POST",
-      body: JSON.stringify({
-        reportId: report.id,
-        accessCode: report.accessCode,
-        productType: "consultation_deposit"
-      })
-    });
-    if (consultationCheckout.status !== 201 || consultationCheckout.body.order.status !== "pending" || consultationCheckout.body.order.amount !== 200) {
-      throw new Error("Consultation deposit checkout creation failed");
-    }
-
-    const consultationNotifyPayload = {
-      ...notifyPayload,
-      MerchantTradeNo: consultationCheckout.body.order.id,
-      TradeNo: "stage-test-consultation-trade-no",
-      TradeAmt: "200",
-      CustomField2: "consultation_deposit"
-    };
-    consultationNotifyPayload.CheckMacValue = computeCheckMacValue(consultationNotifyPayload, "pwFHCqoQZGmho4w6", "EkRm7iFT261dpevs");
-    const consultationNotify = await requestText("/api/payments/ecpay/notify", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: formBody(consultationNotifyPayload)
-    });
-    if (consultationNotify.status !== 200 || consultationNotify.body !== "1|OK") {
-      throw new Error("Consultation deposit notify was not accepted");
-    }
-
-    const consultationStatus = await request(`/api/payments/${consultationCheckout.body.order.id}/status?reportId=${report.id}`, {
-      headers: { "X-Payment-Status-Token": consultationCheckout.body.order.statusToken }
-    });
-    if (consultationStatus.status !== 200 || consultationStatus.body.order.status !== "paid" || !consultationStatus.body.order.entitlements.includes("consultation_deposit")) {
-      throw new Error("Paid consultation deposit did not unlock consultation entitlement");
-    }
-
-    const resultRedirect = await requestText("/api/payments/ecpay/result", {
-      method: "POST",
-      redirect: "manual",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: formBody(notifyPayload)
-    });
-    if (resultRedirect.status !== 303 || !resultRedirect.headers.get("location")?.includes("payment=success")) {
-      throw new Error("Payment result did not redirect to the success page");
-    }
-
-    const failedResultPayload = { ...notifyPayload, RtnCode: "0", RtnMsg: "Failed" };
-    failedResultPayload.CheckMacValue = computeCheckMacValue(failedResultPayload, "pwFHCqoQZGmho4w6", "EkRm7iFT261dpevs");
-    const failedResultRedirect = await requestText("/api/payments/ecpay/result", {
-      method: "POST",
-      redirect: "manual",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: formBody(failedResultPayload)
-    });
-    if (failedResultRedirect.status !== 303 || !failedResultRedirect.headers.get("location")?.includes("payment=failed")) {
-      throw new Error("Payment result did not redirect to the failed page");
-    }
+    assert(
+      consultationPaid.body.order.status === "paid"
+      && consultationPaid.body.order.entitlements.includes("consultation_deposit"),
+      "Consultation payment did not unlock entitlement"
+    );
 
     const adminHeaders = { Authorization: `Bearer ${adminKey}` };
+    const adminPayments = await request("/api/admin/payments", { headers: adminHeaders });
+    assert(
+      adminPayments.status === 200
+      && adminPayments.body.orders.some((order) => order.id === consultationCheckout.body.order.id),
+      "Admin payment list failed"
+    );
+    const refund = await request(`/api/admin/payments/${consultationCheckout.body.order.id}/refund`, {
+      method: "POST",
+      headers: adminHeaders,
+      body: "{}"
+    });
+    assert(
+      refund.status === 200
+      && refund.body.order.status === "refunded"
+      && refund.body.refundTransactionId === "2026072890000000001",
+      `LINE Pay refund failed or lost large refund transaction ID: ${JSON.stringify(refund.body)}`
+    );
+    const afterRefund = await paymentStatus(consultationCheckout, report, {
+      "X-Payment-Status-Token": consultationCheckout.body.order.statusToken
+    });
+    assert(
+      afterRefund.body.order.status === "refunded"
+      && !afterRefund.body.order.entitlements.includes("consultation_deposit"),
+      "Refund did not revoke consultation entitlement"
+    );
+    const duplicateRefund = await request(`/api/admin/payments/${consultationCheckout.body.order.id}/refund`, {
+      method: "POST",
+      headers: adminHeaders,
+      body: "{}"
+    });
+    assert(duplicateRefund.status === 200 && duplicateRefund.body.idempotent === true, "Duplicate refund was not idempotent");
+
+    const legacyNotify = await requestText("/api/payments/ecpay/notify", { method: "POST", body: "" });
+    const legacyResult = await requestText("/api/payments/ecpay/result", { method: "POST", body: "" });
+    assert(legacyNotify.status === 410 && legacyResult.status === 410, "Legacy ECPay callbacks were not disabled");
+
     const list = await request("/api/admin/reports", { headers: adminHeaders });
-    if (list.status !== 200 || list.body.reports.length !== 1) throw new Error("Admin report list failed");
-
+    assert(list.status === 200 && list.body.reports.length === 1, "Admin report list failed");
     const detail = await request(`/api/admin/reports/${report.id}`, { headers: adminHeaders });
-    if (detail.status !== 200 || detail.body.report.contact.value !== "test-contact") throw new Error("Admin detail decrypt failed");
-
+    assert(detail.status === 200 && detail.body.report.contact.value === "test-contact", "Admin detail decrypt failed");
     const updated = await request(`/api/admin/reports/${report.id}`, {
       method: "PATCH",
       headers: adminHeaders,
       body: JSON.stringify({ followupStatus: "converted" })
     });
-    if (updated.status !== 200) throw new Error("Follow-up update failed");
-
+    assert(updated.status === 200, "Follow-up update failed");
     const analytics = await request("/api/admin/analytics", { headers: adminHeaders });
-    if (analytics.status !== 200) throw new Error("Analytics failed");
+    assert(analytics.status === 200, "Analytics failed");
+
+    const reopened = await request(`/api/reports/${report.id}`, {
+      headers: { "X-Report-Access-Code": report.accessCode }
+    });
+    assert(reopened.body.report.entitlements.includes("full_report"), "Paid entitlement missing after report reopen");
+    assert(!reopened.body.report.entitlements.includes("consultation_deposit"), "Refunded entitlement persisted after report reopen");
 
     const rawDatabase = [
       path.join(dataDir, "customers.sqlite"),
       path.join(dataDir, "customers.sqlite-wal")
     ].filter(fs.existsSync).map((file) => fs.readFileSync(file).toString("utf8")).join("");
-    if (rawDatabase.includes("test-contact")) throw new Error("Contact value was stored as plaintext");
+    assert(!rawDatabase.includes("test-contact"), "Contact value was stored as plaintext");
 
     const deleted = await request(`/api/reports/${report.id}`, {
       method: "DELETE",
       headers: { "X-Report-Access-Code": report.accessCode }
     });
-    if (deleted.status !== 200) throw new Error("Report deletion failed");
+    assert(deleted.status === 200, "Report deletion failed");
 
     console.log(JSON.stringify({
       passed: true,
-      invalidSubmissionRejected: true,
+      provider: "linepay",
+      signedMockApiCalls: true,
+      largeTransactionIdsPreserved: true,
+      amountMismatchBlocked: true,
+      duplicateConfirmIdempotent: true,
+      cancellationBlockedEntitlement: true,
+      refundRevokedEntitlement: true,
+      legacyEcpayCallbacksDisabled: true,
       encryptedDatabaseCreated: fs.existsSync(path.join(dataDir, "customers.sqlite")),
-      wrongAccessRejected: true,
-      unauthorizedAdminRejected: true,
-      unapprovedOriginRejected: true,
       plaintextContactAbsent: true,
-      githubActionDispatchedServerSide: true,
       githubActionDispatchThrottled: true,
-      reportCreateReopenDelete: true,
-      adminListDetailUpdate: true,
       analytics: analytics.body.analytics
     }, null, 2));
   } finally {
     server.kill();
-    await new Promise((resolve) => server.once("exit", resolve));
-    await new Promise((resolve) => githubServer.close(resolve));
+    await Promise.race([
+      new Promise((resolve) => server.once("exit", resolve)),
+      wait(3000)
+    ]);
+    await Promise.all([
+      new Promise((resolve) => githubServer.close(resolve)),
+      new Promise((resolve) => linePayServer.close(resolve))
+    ]);
     fs.rmSync(dataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   }
 }

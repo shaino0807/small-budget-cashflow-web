@@ -4,7 +4,17 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const { authSessionDays, createStore, lineLedgerRetentionDays } = require("./customer-store");
-const { buildCheckout, createMerchantTradeNo, ecpayConfig, productCatalog, productFor, verifyNotification } = require("./ecpay");
+const { verifyNotification } = require("./ecpay");
+const { productCatalog, productFor } = require("./payment-catalog");
+const {
+  assertLinePayConfigured,
+  checkLinePayPaymentRequest,
+  confirmLinePayPayment,
+  linePayReadiness,
+  refundLinePayPayment,
+  requestLinePayPayment,
+  retrieveLinePayPayment
+} = require("./linepay");
 const { authorizationUrl, createPkceValues, exchangeAuthorizationCode, lineLoginReadiness, verifyLineIdToken } = require("./line-auth");
 const { handleLineWebhook, lineReadiness, parseLedgerMessageWithAi, verifyLineSignature } = require("./line-bot");
 
@@ -51,12 +61,14 @@ function apiPublicBaseUrl() {
 }
 
 function paymentReadiness() {
-  const config = ecpayConfig();
+  const linePay = linePayReadiness();
   const catalog = productCatalog();
   return {
-    ecpayConfigured: Boolean(config.merchantId && config.hashKey && config.hashIv),
-    ecpayEnvironment: config.isProduction ? "production" : "stage",
-    checkoutHost: new URL(config.checkoutUrl).host,
+    provider: "linepay",
+    configured: linePay.configured,
+    environment: linePay.environment,
+    apiHost: linePay.apiHost,
+    legacyEcpayCallbackEnabled: process.env.ECPAY_LEGACY_CALLBACK_ENABLED === "1",
     sitePublicBaseConfigured: Boolean(process.env.SITE_PUBLIC_BASE_URL || process.env.PUBLIC_SITE_BASE_URL),
     apiPublicBaseConfigured: Boolean(process.env.API_PUBLIC_BASE_URL || process.env.BACKEND_PUBLIC_BASE_URL || process.env.RENDER_EXTERNAL_URL),
     consultationIgConfigured: Boolean(process.env.CONSULTATION_IG_URL || "https://www.instagram.com/chendino080077/"),
@@ -94,6 +106,20 @@ function sendText(res, status, body) {
     "X-Content-Type-Options": "nosniff"
   });
   res.end(body);
+}
+
+function createPaymentOrderId() {
+  const stamp = Date.now().toString(36).toUpperCase();
+  const random = crypto.randomBytes(3).toString("hex").toUpperCase();
+  return `CF${stamp}${random}`.slice(0, 20);
+}
+
+function paymentReturnUrl(status, order = null) {
+  const redirect = new URL(`${sitePublicBaseUrl()}/`);
+  redirect.searchParams.set("payment", status);
+  if (order?.id) redirect.searchParams.set("orderId", order.id);
+  if (order?.reportId) redirect.searchParams.set("reportId", order.reportId);
+  return redirect.toString();
 }
 
 function getCustomerStore() {
@@ -268,7 +294,7 @@ function setSecurityHeaders(req, res) {
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
-  res.setHeader("Content-Security-Policy", "default-src 'self'; connect-src 'self' https:; img-src 'self' data: https://profile.line-scdn.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self' https://static.line-scdn.net; form-action 'self' https://access.line.me https://payment-stage.ecpay.com.tw https://payment.ecpay.com.tw; frame-ancestors 'none'");
+  res.setHeader("Content-Security-Policy", "default-src 'self'; connect-src 'self' https:; img-src 'self' data: https://profile.line-scdn.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self' https://static.line-scdn.net; form-action 'self' https://access.line.me; frame-ancestors 'none'");
 }
 
 function databaseFreshness() {
@@ -356,6 +382,96 @@ async function establishLineSession(req, idToken, nonce = "") {
   const user = getCustomerStore().findOrCreateUserByLineId(identity.lineUserId);
   const session = getCustomerStore().createUserSession(user.id, req.headers["user-agent"] || "");
   return { user, session };
+}
+
+function validateLinePayProviderResult(order, transactionId, info = {}) {
+  const resultOrderId = String(info.orderId || order.id);
+  const resultTransactionId = String(info.transactionId || transactionId);
+  if (resultOrderId !== order.id || resultTransactionId !== String(transactionId)) {
+    const error = new Error("LINE Pay 回傳的訂單或交易編號不一致");
+    error.statusCode = 409;
+    throw error;
+  }
+  if (Array.isArray(info.payInfo) && info.payInfo.length) {
+    const paidAmount = info.payInfo.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    if (Math.round(paidAmount) !== Number(order.amount)) {
+      const error = new Error("LINE Pay 回傳金額與訂單不一致");
+      error.statusCode = 409;
+      throw error;
+    }
+  }
+}
+
+async function confirmStoredLinePayOrder(order, transactionId) {
+  if (!order || order.provider !== "linepay") {
+    const error = new Error("找不到 LINE Pay 訂單");
+    error.statusCode = 404;
+    throw error;
+  }
+  if (String(order.providerTradeNo || "") !== String(transactionId || "")) {
+    const error = new Error("LINE Pay 交易編號與訂單不一致");
+    error.statusCode = 409;
+    throw error;
+  }
+  if (order.status === "paid") return order;
+  const result = await confirmLinePayPayment({
+    transactionId,
+    amount: order.amount,
+    currency: order.currency
+  });
+  validateLinePayProviderResult(order, transactionId, result.info || {});
+  return getCustomerStore().completeProviderPayment({
+    orderId: order.id,
+    provider: "linepay",
+    providerTradeNo: String(transactionId),
+    amount: order.amount,
+    currency: order.currency,
+    payload: result
+  }).order;
+}
+
+async function reconcileStoredLinePayOrder(order) {
+  if (!order || order.provider !== "linepay" || !order.providerTradeNo || order.status !== "pending") return order;
+  const transactionId = String(order.providerTradeNo);
+  const result = await checkLinePayPaymentRequest({ transactionId });
+  if (result.returnCode === "0110") return confirmStoredLinePayOrder(order, transactionId);
+  if (result.returnCode === "0121") {
+    return getCustomerStore().markProviderOrderFailed({
+      orderId: order.id,
+      provider: "linepay",
+      status: "cancelled",
+      reason: result.returnMessage || "LINE Pay 已取消或逾時",
+      payload: result
+    });
+  }
+  if (result.returnCode === "0122") {
+    return getCustomerStore().markProviderOrderFailed({
+      orderId: order.id,
+      provider: "linepay",
+      reason: result.returnMessage || "LINE Pay 付款失敗",
+      payload: result
+    });
+  }
+  if (result.returnCode === "0123") {
+    const detail = await retrieveLinePayPayment({ transactionId, orderId: order.id });
+    const info = Array.isArray(detail.info) ? detail.info[0] : null;
+    if (!info) throw new Error("LINE Pay 查不到已完成交易的明細");
+    validateLinePayProviderResult(order, transactionId, info);
+    if (String(info.currency || order.currency) !== order.currency) {
+      const error = new Error("LINE Pay 回傳幣別與訂單不一致");
+      error.statusCode = 409;
+      throw error;
+    }
+    return getCustomerStore().completeProviderPayment({
+      orderId: order.id,
+      provider: "linepay",
+      providerTradeNo: transactionId,
+      amount: order.amount,
+      currency: order.currency,
+      payload: detail
+    }).order;
+  }
+  return order;
 }
 
 const server = http.createServer((req, res) => {
@@ -798,26 +914,54 @@ const server = http.createServer((req, res) => {
   if (urlPath === "/api/payments/checkout" && req.method === "POST") {
     if (!rateLimit(req, 12, 60000)) return sendJson(res, 429, { ok: false, error: "付款建立次數過多，請稍後再試" });
     readJson(req, 20000)
-      .then((body) => {
+      .then(async (body) => {
+        assertLinePayConfigured();
         const member = memberSession(req);
         const product = productFor(body.productType || "full_report");
         const order = getCustomerStore().createOrder({
-          id: createMerchantTradeNo(),
+          id: createPaymentOrderId(),
           reportId: body.reportId,
           accessCode: body.accessCode,
           userId: member?.user.id || null,
           productType: product.productType,
           amount: product.amount,
           currency: "TWD",
-          provider: "ecpay"
+          provider: "linepay"
         });
-        const checkout = buildCheckout({
-          order,
-          product,
-          siteBaseUrl: sitePublicBaseUrl(),
-          apiBaseUrl: apiPublicBaseUrl()
-        });
-        sendJson(res, 201, { ok: true, order, checkout });
+        try {
+          const confirmUrl = new URL(`${apiPublicBaseUrl()}/api/payments/linepay/confirm`);
+          confirmUrl.searchParams.set("orderId", order.id);
+          const cancelUrl = new URL(`${apiPublicBaseUrl()}/api/payments/linepay/cancel`);
+          cancelUrl.searchParams.set("orderId", order.id);
+          const requested = await requestLinePayPayment({
+            order,
+            product,
+            confirmUrl: confirmUrl.toString(),
+            cancelUrl: cancelUrl.toString()
+          });
+          const attached = getCustomerStore().attachProviderTransaction({
+            orderId: order.id,
+            provider: "linepay",
+            providerTradeNo: requested.transactionId,
+            payload: requested.providerResult
+          });
+          sendJson(res, 201, {
+            ok: true,
+            order: { ...attached, statusToken: order.statusToken },
+            checkout: {
+              provider: "linepay",
+              paymentUrl: requested.paymentUrl
+            }
+          });
+        } catch (error) {
+          getCustomerStore().markProviderOrderFailed({
+            orderId: order.id,
+            provider: "linepay",
+            reason: String(error.providerCode || error.message || "linepay_request_failed"),
+            payload: error.providerResult || { message: error.message }
+          });
+          throw error;
+        }
       })
       .catch((error) => sendJson(res, error.statusCode || 400, { ok: false, error: publicStoreError(error) }));
     return;
@@ -825,23 +969,77 @@ const server = http.createServer((req, res) => {
 
   const paymentStatusMatch = urlPath.match(/^\/api\/payments\/([A-Z0-9]+)\/status$/i);
   if (paymentStatusMatch && req.method === "GET") {
-    try {
+    (async () => {
       const member = memberSession(req);
-      const order = getCustomerStore().getOrderStatus({
+      let order = getCustomerStore().getOrderStatus({
         id: paymentStatusMatch[1],
         reportId: url.searchParams.get("reportId"),
         accessCode: accessCode(req, url),
         statusToken: String(req.headers["x-payment-status-token"] || url.searchParams.get("statusToken") || ""),
         userId: member?.user.id || null
       });
-      sendJson(res, order ? 200 : 404, order ? { ok: true, order } : { ok: false, error: "找不到付款訂單" });
+      let providerCheckError = null;
+      if (order?.provider === "linepay" && order.status === "pending" && linePayReadiness().configured) {
+        try {
+          order = await reconcileStoredLinePayOrder(order);
+        } catch (error) {
+          providerCheckError = String(error.message || "LINE Pay 狀態確認失敗").slice(0, 200);
+        }
+      }
+      sendJson(res, order ? 200 : 404, order
+        ? { ok: true, order, providerCheckError }
+        : { ok: false, error: "找不到付款訂單" });
+    })().catch((error) => sendJson(res, error.statusCode || 500, { ok: false, error: publicStoreError(error) }));
+    return;
+  }
+
+  if (urlPath === "/api/payments/linepay/confirm" && req.method === "GET") {
+    if (!rateLimit(req, 30, 60000)) {
+      res.writeHead(303, { Location: paymentReturnUrl("failed"), "Cache-Control": "no-store" });
+      res.end();
+      return;
+    }
+    const orderId = String(url.searchParams.get("orderId") || "");
+    const transactionId = String(url.searchParams.get("transactionId") || "");
+    const order = getCustomerStore().providerOrder(orderId, "linepay");
+    confirmStoredLinePayOrder(order, transactionId)
+      .then((confirmed) => {
+        res.writeHead(303, { Location: paymentReturnUrl("success", confirmed), "Cache-Control": "no-store" });
+        res.end();
+      })
+      .catch((error) => {
+        console.error(`LINE Pay confirm 失敗：${String(error.message || error).slice(0, 300)}`);
+        const latest = orderId ? getCustomerStore().providerOrder(orderId, "linepay") : null;
+        res.writeHead(303, { Location: paymentReturnUrl("pending", latest), "Cache-Control": "no-store" });
+        res.end();
+      });
+    return;
+  }
+
+  if (urlPath === "/api/payments/linepay/cancel" && req.method === "GET") {
+    const orderId = String(url.searchParams.get("orderId") || "");
+    try {
+      const order = getCustomerStore().markProviderOrderFailed({
+        orderId,
+        provider: "linepay",
+        status: "cancelled",
+        reason: "customer_cancelled",
+        payload: { query: Object.fromEntries(url.searchParams.entries()) }
+      });
+      res.writeHead(303, { Location: paymentReturnUrl("cancelled", order), "Cache-Control": "no-store" });
+      res.end();
     } catch (error) {
-      sendJson(res, error.statusCode || 500, { ok: false, error: publicStoreError(error) });
+      res.writeHead(303, { Location: paymentReturnUrl("cancelled"), "Cache-Control": "no-store" });
+      res.end();
     }
     return;
   }
 
   if (urlPath === "/api/payments/ecpay/notify" && req.method === "POST") {
+    if (process.env.ECPAY_LEGACY_CALLBACK_ENABLED !== "1") {
+      sendText(res, 410, "0|DISABLED");
+      return;
+    }
     readForm(req)
       .then((body) => {
         const validMac = verifyNotification(body);
@@ -865,6 +1063,10 @@ const server = http.createServer((req, res) => {
   }
 
   if (urlPath === "/api/payments/ecpay/result" && req.method === "POST") {
+    if (process.env.ECPAY_LEGACY_CALLBACK_ENABLED !== "1") {
+      sendText(res, 410, "ECPay disabled");
+      return;
+    }
     readForm(req)
       .then((body) => {
         const status = String(body.RtnCode) === "1" ? "success" : "failed";
@@ -913,6 +1115,51 @@ const server = http.createServer((req, res) => {
     } catch (error) {
       sendJson(res, error.statusCode || 500, { ok: false, error: publicStoreError(error) });
     }
+    return;
+  }
+
+  if (urlPath === "/api/admin/payments" && req.method === "GET") {
+    try {
+      sendJson(res, 200, { ok: true, orders: getCustomerStore().listOrders(adminKey(req), url.searchParams.get("limit")) });
+    } catch (error) {
+      sendJson(res, error.statusCode || 500, { ok: false, error: publicStoreError(error) });
+    }
+    return;
+  }
+  const adminPaymentRefundMatch = urlPath.match(/^\/api\/admin\/payments\/([A-Z0-9]+)\/refund$/i);
+  if (adminPaymentRefundMatch && req.method === "POST") {
+    readJson(req, 20000)
+      .then(async () => {
+        getCustomerStore().authorizeAdmin(adminKey(req));
+        const order = getCustomerStore().providerOrder(adminPaymentRefundMatch[1], "linepay");
+        if (!order) {
+          const error = new Error("找不到 LINE Pay 訂單");
+          error.statusCode = 404;
+          throw error;
+        }
+        if (order.status === "refunded") {
+          sendJson(res, 200, { ok: true, order, idempotent: true });
+          return;
+        }
+        if (order.status !== "paid" || !order.providerTradeNo) {
+          const error = new Error("只有已付款 LINE Pay 訂單可以退款");
+          error.statusCode = 409;
+          throw error;
+        }
+        const result = await refundLinePayPayment({ transactionId: order.providerTradeNo });
+        const refunded = getCustomerStore().markProviderOrderRefunded({
+          orderId: order.id,
+          provider: "linepay",
+          refundTransactionId: result.info?.refundTransactionId,
+          payload: result
+        });
+        sendJson(res, 200, {
+          ok: true,
+          ...refunded,
+          refundTransactionId: String(result.info?.refundTransactionId || "")
+        });
+      })
+      .catch((error) => sendJson(res, error.statusCode || 400, { ok: false, error: publicStoreError(error) }));
     return;
   }
 

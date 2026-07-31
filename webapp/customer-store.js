@@ -2,6 +2,7 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const { DatabaseSync } = require("node:sqlite");
+const { entitlementForProduct } = require("./payment-catalog");
 
 const inputVersion = "cashflow-input-v2";
 const reportVersion = "cashflow-report-v2";
@@ -1466,7 +1467,7 @@ function createStore() {
     return deleteLineUserDataByHash(memberLineUserHash(userId));
   }
 
-  function createOrder({ id, reportId, accessCode, userId = null, productType, amount, currency = "TWD", provider = "ecpay" }) {
+  function createOrder({ id, reportId, accessCode, userId = null, productType, amount, currency = "TWD", provider = "linepay" }) {
     const report = userId ? assertUserReport(reportId, userId) : assertReportAccess(reportId, accessCode);
     const now = new Date().toISOString();
     const numericAmount = Math.round(Number(amount));
@@ -1509,7 +1510,7 @@ function createStore() {
     return publicOrder(row);
   }
 
-  function recordPaymentEvent({ orderId = null, provider = "ecpay", eventType, validMac, payload = {} }) {
+  function recordPaymentEvent({ orderId = null, provider = "linepay", eventType, validMac, payload = {} }) {
     insertPaymentEvent.run(
       crypto.randomUUID(),
       orderId,
@@ -1521,6 +1522,241 @@ function createStore() {
     );
   }
 
+  function listOrders(adminKey, limit = 100) {
+    assertAdmin(adminKey);
+    const safeLimit = Math.max(1, Math.min(500, Number(limit || 100)));
+    return db.prepare(`
+      SELECT * FROM orders
+      ORDER BY created_at DESC
+      LIMIT ?
+    `).all(safeLimit).map(publicOrder);
+  }
+
+  function authorizeAdmin(adminKey) {
+    assertAdmin(adminKey);
+    return true;
+  }
+
+  function providerOrder(id, provider = null) {
+    const row = provider
+      ? db.prepare("SELECT * FROM orders WHERE id = ? AND provider = ?").get(id, provider)
+      : db.prepare("SELECT * FROM orders WHERE id = ?").get(id);
+    return row ? publicOrder(row) : null;
+  }
+
+  function attachProviderTransaction({ orderId, provider, providerTradeNo, payload = {} }) {
+    const row = db.prepare("SELECT * FROM orders WHERE id = ?").get(orderId);
+    if (!row || row.provider !== provider) {
+      const error = new Error("找不到對應的付款訂單");
+      error.statusCode = 404;
+      throw error;
+    }
+    const transactionId = String(providerTradeNo || "");
+    if (!transactionId) throw new Error("付款交易編號不可為空");
+    if (row.provider_trade_no && row.provider_trade_no !== transactionId) {
+      const error = new Error("付款交易編號與訂單不一致");
+      error.statusCode = 409;
+      throw error;
+    }
+    const now = new Date().toISOString();
+    db.exec("BEGIN IMMEDIATE");
+    try {
+      db.prepare(`
+        UPDATE orders
+        SET provider_trade_no = ?, updated_at = ?
+        WHERE id = ? AND provider = ?
+      `).run(transactionId, now, orderId, provider);
+      recordPaymentEvent({
+        orderId,
+        provider,
+        eventType: "payment_requested",
+        validMac: true,
+        payload
+      });
+      db.exec("COMMIT");
+    } catch (error) {
+      db.exec("ROLLBACK");
+      throw error;
+    }
+    return providerOrder(orderId, provider);
+  }
+
+  function markProviderOrderFailed({ orderId, provider, reason, payload = {}, status = "failed" }) {
+    if (!["failed", "cancelled"].includes(status)) throw new Error("付款失敗狀態不正確");
+    const row = db.prepare("SELECT * FROM orders WHERE id = ? AND provider = ?").get(orderId, provider);
+    if (!row) {
+      const error = new Error("找不到對應的付款訂單");
+      error.statusCode = 404;
+      throw error;
+    }
+    if (row.status === "paid" || row.status === "refunded") return publicOrder(row);
+    const now = new Date().toISOString();
+    db.exec("BEGIN IMMEDIATE");
+    try {
+      db.prepare(`
+        UPDATE orders
+        SET status = ?, updated_at = ?, failed_at = ?, failure_reason = ?
+        WHERE id = ? AND provider = ?
+      `).run(status, now, now, String(reason || status).slice(0, 200), orderId, provider);
+      recordPaymentEvent({
+        orderId,
+        provider,
+        eventType: status,
+        validMac: true,
+        payload
+      });
+      const report = db.prepare("SELECT anonymous_id FROM reports WHERE id = ?").get(row.report_id);
+      addEvent({
+        anonymousId: report?.anonymous_id || row.report_id,
+        reportId: row.report_id,
+        eventType: "payment_failed",
+        metadata: { orderId, provider, reason: String(reason || status).slice(0, 200) }
+      });
+      db.exec("COMMIT");
+    } catch (error) {
+      db.exec("ROLLBACK");
+      throw error;
+    }
+    return providerOrder(orderId, provider);
+  }
+
+  function completeProviderPayment({
+    orderId,
+    provider,
+    providerTradeNo,
+    amount,
+    currency = "TWD",
+    paidAt = null,
+    payload = {}
+  }) {
+    const row = db.prepare("SELECT * FROM orders WHERE id = ?").get(orderId);
+    if (!row || row.provider !== provider) {
+      const error = new Error("找不到對應的付款訂單");
+      error.statusCode = 404;
+      throw error;
+    }
+    const transactionId = String(providerTradeNo || "");
+    if (!transactionId || (row.provider_trade_no && row.provider_trade_no !== transactionId)) {
+      const error = new Error("付款交易編號與訂單不一致");
+      error.statusCode = 409;
+      throw error;
+    }
+    const numericAmount = Math.round(Number(amount));
+    if (numericAmount !== Number(row.amount) || String(currency) !== String(row.currency)) {
+      markProviderOrderFailed({
+        orderId,
+        provider,
+        reason: numericAmount !== Number(row.amount) ? "amount_mismatch" : "currency_mismatch",
+        payload
+      });
+      return { ok: false, order: providerOrder(orderId, provider) };
+    }
+    if (row.status === "refunded") {
+      const error = new Error("退款完成的訂單不能重新標記為付款成功");
+      error.statusCode = 409;
+      throw error;
+    }
+
+    const now = new Date().toISOString();
+    const entitlement = entitlementForProduct(row.product_type);
+    db.exec("BEGIN IMMEDIATE");
+    try {
+      db.prepare(`
+        UPDATE orders
+        SET status = 'paid', provider_trade_no = ?, updated_at = ?, paid_at = ?,
+            failed_at = NULL, failure_reason = NULL
+        WHERE id = ? AND provider = ?
+      `).run(transactionId, now, paidAt || now, orderId, provider);
+      if (entitlement) {
+        db.prepare(`
+          INSERT OR IGNORE INTO report_entitlements (report_id, entitlement, source_order_id, granted_at)
+          VALUES (?, ?, ?, ?)
+        `).run(row.report_id, entitlement, orderId, now);
+      }
+      recordPaymentEvent({
+        orderId,
+        provider,
+        eventType: row.status === "paid" ? "payment_confirmed_duplicate" : "payment_confirmed",
+        validMac: true,
+        payload
+      });
+      const report = db.prepare("SELECT anonymous_id FROM reports WHERE id = ?").get(row.report_id);
+      if (row.status !== "paid") {
+        addEvent({
+          anonymousId: report?.anonymous_id || row.report_id,
+          reportId: row.report_id,
+          eventType: "payment_paid",
+          metadata: { orderId, provider, providerTradeNo: transactionId }
+        });
+      }
+      db.exec("COMMIT");
+    } catch (error) {
+      db.exec("ROLLBACK");
+      throw error;
+    }
+    return {
+      ok: true,
+      order: providerOrder(orderId, provider),
+      idempotent: row.status === "paid"
+    };
+  }
+
+  function markProviderOrderRefunded({ orderId, provider, refundTransactionId, payload = {} }) {
+    const row = db.prepare("SELECT * FROM orders WHERE id = ? AND provider = ?").get(orderId, provider);
+    if (!row) {
+      const error = new Error("找不到對應的付款訂單");
+      error.statusCode = 404;
+      throw error;
+    }
+    if (row.status === "refunded") return { order: publicOrder(row), idempotent: true };
+    if (row.status !== "paid") {
+      const error = new Error("只有已付款訂單可以退款");
+      error.statusCode = 409;
+      throw error;
+    }
+    const now = new Date().toISOString();
+    const entitlement = entitlementForProduct(row.product_type);
+    db.exec("BEGIN IMMEDIATE");
+    try {
+      db.prepare(`
+        UPDATE orders
+        SET status = 'refunded', updated_at = ?, failure_reason = NULL
+        WHERE id = ? AND provider = ?
+      `).run(now, orderId, provider);
+      if (entitlement) {
+        const replacement = db.prepare(`
+          SELECT id FROM orders
+          WHERE report_id = ? AND product_type = ? AND status = 'paid' AND id <> ?
+          ORDER BY paid_at DESC LIMIT 1
+        `).get(row.report_id, row.product_type, orderId);
+        if (replacement) {
+          db.prepare(`
+            UPDATE report_entitlements
+            SET source_order_id = ?, granted_at = ?
+            WHERE report_id = ? AND entitlement = ? AND source_order_id = ?
+          `).run(replacement.id, now, row.report_id, entitlement, orderId);
+        } else {
+          db.prepare(`
+            DELETE FROM report_entitlements
+            WHERE report_id = ? AND entitlement = ? AND source_order_id = ?
+          `).run(row.report_id, entitlement, orderId);
+        }
+      }
+      recordPaymentEvent({
+        orderId,
+        provider,
+        eventType: "refunded",
+        validMac: true,
+        payload: { ...payload, refundTransactionId: String(refundTransactionId || "") }
+      });
+      db.exec("COMMIT");
+    } catch (error) {
+      db.exec("ROLLBACK");
+      throw error;
+    }
+    return { order: providerOrder(orderId, provider), idempotent: false };
+  }
+
   function applyPaymentNotification({ orderId, provider = "ecpay", providerTradeNo = null, amount, rtnCode, rtnMsg = "", paidAt = null, validMac, payload = {}, entitlement = null }) {
     const row = db.prepare("SELECT * FROM orders WHERE id = ?").get(orderId);
     recordPaymentEvent({
@@ -1530,45 +1766,27 @@ function createStore() {
       validMac,
       payload
     });
-    if (!row || !validMac) return { ok: false, order: row ? publicOrder(row) : null };
-    if (row.status === "paid") return { ok: true, order: publicOrder(row), idempotent: true };
-
-    const now = new Date().toISOString();
-    const numericAmount = Math.round(Number(amount));
-    if (numericAmount !== Number(row.amount)) {
-      db.prepare(`
-        UPDATE orders
-        SET status = 'failed', provider_trade_no = ?, updated_at = ?, failed_at = ?, failure_reason = ?
-        WHERE id = ?
-      `).run(providerTradeNo, now, now, "amount_mismatch", orderId);
-      return { ok: false, order: publicOrder(db.prepare("SELECT * FROM orders WHERE id = ?").get(orderId)) };
-    }
-
+    if (!row || !validMac || row.provider !== provider) return { ok: false, order: row ? publicOrder(row) : null };
     if (String(rtnCode) !== "1") {
-      db.prepare(`
-        UPDATE orders
-        SET status = 'failed', provider_trade_no = ?, updated_at = ?, failed_at = ?, failure_reason = ?
-        WHERE id = ?
-      `).run(providerTradeNo, now, now, String(rtnMsg || "payment_failed").slice(0, 200), orderId);
-      const report = db.prepare("SELECT anonymous_id FROM reports WHERE id = ?").get(row.report_id);
-      addEvent({ anonymousId: report?.anonymous_id || row.report_id, reportId: row.report_id, eventType: "payment_failed", metadata: { orderId, rtnCode, rtnMsg } });
-      return { ok: false, order: publicOrder(db.prepare("SELECT * FROM orders WHERE id = ?").get(orderId)) };
+      return {
+        ok: false,
+        order: markProviderOrderFailed({
+          orderId,
+          provider,
+          reason: String(rtnMsg || "payment_failed").slice(0, 200),
+          payload
+        })
+      };
     }
-
-    db.prepare(`
-      UPDATE orders
-      SET status = 'paid', provider_trade_no = ?, updated_at = ?, paid_at = ?, failure_reason = NULL
-      WHERE id = ?
-    `).run(providerTradeNo, now, paidAt || now, orderId);
-    if (entitlement) {
-      db.prepare(`
-        INSERT OR IGNORE INTO report_entitlements (report_id, entitlement, source_order_id, granted_at)
-        VALUES (?, ?, ?, ?)
-      `).run(row.report_id, entitlement, orderId, now);
-    }
-    const report = db.prepare("SELECT anonymous_id FROM reports WHERE id = ?").get(row.report_id);
-    addEvent({ anonymousId: report?.anonymous_id || row.report_id, reportId: row.report_id, eventType: "payment_paid", metadata: { orderId, provider, providerTradeNo } });
-    return { ok: true, order: publicOrder(db.prepare("SELECT * FROM orders WHERE id = ?").get(orderId)) };
+    return completeProviderPayment({
+      orderId,
+      provider,
+      providerTradeNo,
+      amount,
+      currency: row.currency,
+      paidAt,
+      payload
+    });
   }
 
   function purgeExpired() {
@@ -1591,7 +1809,9 @@ function createStore() {
     addLineLedgerEntryForUser,
     analytics,
     applyPaymentNotification,
+    attachProviderTransaction,
     authenticatedUser,
+    authorizeAdmin,
     bindLineReport,
     cancelCurrentLineInput,
     clearLinePendingInput,
@@ -1613,6 +1833,7 @@ function createStore() {
     deleteLastLineLedgerEntry,
     getAdminReport,
     getOrderStatus,
+    providerOrder,
     getReport,
     getReportForUser,
     findOrCreateUserByLineId,
@@ -1623,7 +1844,11 @@ function createStore() {
     lineLedgerSummary,
     lineLedgerEntries,
     listReports,
+    listOrders,
     markLineUndoTarget,
+    markProviderOrderFailed,
+    markProviderOrderRefunded,
+    completeProviderPayment,
     purgeExpired,
     consumeAuthChallenge,
     completeUserOnboarding,
