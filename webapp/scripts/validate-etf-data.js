@@ -1,7 +1,9 @@
 const fs = require("fs");
 const path = require("path");
 
-const dbPath = path.join(__dirname, "..", "data", "etf-database.json");
+const dbPath = process.env.ETF_DATABASE_PATH
+  ? path.resolve(process.env.ETF_DATABASE_PATH)
+  : path.join(__dirname, "..", "data", "etf-database.json");
 const db = JSON.parse(fs.readFileSync(dbPath, "utf8"));
 const today = new Date();
 const errors = [];
@@ -30,6 +32,12 @@ if (db.etfMaster) {
   const failedMasterSources = (db.etfMaster.sourceAttempts || []).filter((item) => item.status === "failed");
   if (failedMasterSources.length) {
     warn(false, `ETF master 部分官方分類來源失敗：${failedMasterSources.map((item) => item.label || item.source).join("、")}`);
+  }
+  const skippedMasterRows = (db.etfMaster.sourceAttempts || [])
+    .filter((item) => item.status === "skipped_incomplete")
+    .flatMap((item) => item.items || []);
+  if (skippedMasterRows.length) {
+    warn(false, `ETF master 品質閘門略過官方缺欄位資料：${skippedMasterRows.map((item) => item.ticker || "無代碼").join("、")}`);
   }
 }
 assert(db.classificationRules?.source === "derived_from_official_twse_fields", "ETF 顯示分類規則來源必須標記為 derived_from_official_twse_fields");

@@ -3,7 +3,9 @@ const http = require("http");
 const https = require("https");
 const path = require("path");
 
-const dbPath = path.join(__dirname, "..", "data", "etf-database.json");
+const dbPath = process.env.ETF_DATABASE_PATH
+  ? path.resolve(process.env.ETF_DATABASE_PATH)
+  : path.join(__dirname, "..", "data", "etf-database.json");
 const productsUrl = "https://www.twse.com.tw/zh/ETFortune/ajaxProductsResult";
 const productsPageUrl = "https://www.twse.com.tw/zh/ETFortune/products";
 
@@ -240,9 +242,18 @@ async function main() {
     day: "2-digit"
   }).format(new Date());
 
+  const skippedIncompleteRows = [];
   const etfs = rows
     .map((row) => {
       const ticker = String(row.stockNo || "").trim();
+      if (!ticker) {
+        skippedIncompleteRows.push({
+          ticker: "",
+          shortName: String(row.stockName || "").trim(),
+          missingFields: ["stockNo"]
+        });
+        return null;
+      }
       const existing = existingByTicker.get(ticker) || {};
       const classification = classifications.get(ticker) || {};
       const shortName = String(row.stockName || existing.shortName || ticker).trim();
@@ -279,10 +290,32 @@ async function main() {
       };
       next.displayClassification = displayClassificationFor(next);
       next.category = assetTypes[0] || next.displayClassification.assetClass || existing.category || "未分類";
+      const missingFields = [
+        !next.issuer && "issuer"
+      ].filter(Boolean);
+      if (missingFields.length) {
+        skippedIncompleteRows.push({
+          ticker,
+          shortName,
+          listingDate: next.listingDate,
+          missingFields
+        });
+        return null;
+      }
       return next;
     })
-    .filter((etf) => etf.ticker)
+    .filter(Boolean)
     .sort((a, b) => a.ticker.localeCompare(b.ticker));
+
+  if (skippedIncompleteRows.length) {
+    sourceAttempts.push({
+      source: "twse-etfortune-master-quality-gate",
+      status: "skipped_incomplete",
+      rows: skippedIncompleteRows.length,
+      reason: "首次出現且官方主檔缺少必填欄位；保留上一版已驗證資料，不猜測內容",
+      items: skippedIncompleteRows
+    });
+  }
 
   db.etfs = etfs;
   db.metadata = db.metadata || {};
@@ -303,7 +336,10 @@ async function main() {
     "TWSE 投資篩選器 assetType 資產類別參數目前回 HTTP 403；在取得可穩定讀取的官方端點前，assetTypes 保留官方缺口。",
     "displayClassification 是根據 TWSE 官方主檔欄位、官方 hashtag / rewardType 篩選器與透明關鍵字規則建立的顯示層分類，不視為官方 assetType。",
     "ETF 成分股、NAV/折溢價與配息仍需分投信或其他正式來源逐項接入；未接上的 ETF 會保留缺資料狀態。",
-    "00878 NAV 可見但持股權重表格仍是動態頁，需取得正式 API 或下載檔；不使用第三方資料硬補。"
+    "00878 NAV 可見但持股權重表格仍是動態頁，需取得正式 API 或下載檔；不使用第三方資料硬補。",
+    ...(skippedIncompleteRows.length
+      ? [`本次 TWSE 官方主檔有 ${skippedIncompleteRows.length} 筆首次出現資料缺少必填欄位，品質閘門已略過：${skippedIncompleteRows.map((item) => item.ticker || "無代碼").join("、")}。`]
+      : [])
   ];
   db.classificationRules = {
     status: "display_rules_loaded",
@@ -339,6 +375,7 @@ async function main() {
   console.log(JSON.stringify({
     etfs: etfs.length,
     classified: [...classifications.keys()].length,
+    skippedIncompleteRows,
     sourceAttempts
   }, null, 2));
 }
