@@ -2,7 +2,9 @@ const fs = require("fs");
 const https = require("https");
 const path = require("path");
 
-const dbPath = path.join(__dirname, "..", "data", "etf-database.json");
+const dbPath = process.env.ETF_DATABASE_PATH
+  ? path.resolve(process.env.ETF_DATABASE_PATH)
+  : path.join(__dirname, "..", "data", "etf-database.json");
 const queryDate = process.argv[2] || taipeiQueryDate();
 
 function taipeiQueryDate(date = new Date()) {
@@ -85,32 +87,53 @@ async function fetchMonthlyPrice(ticker) {
   return { ticker, sourceUrl: url, rows, status: "OK" };
 }
 
-async function main() {
-  const db = JSON.parse(fs.readFileSync(dbPath, "utf8"));
-  const featuredTickers = new Set(db.metadata?.featuredTickers || db.etfs.map((etf) => etf.ticker));
-  const targets = db.etfs.filter((etf) => featuredTickers.has(etf.ticker));
-  const results = [];
-  for (const etf of targets) {
-    results.push(await fetchMonthlyPrice(etf.ticker));
+function applyPriceRefresh(db, targets, results, { attemptedAt = new Date().toISOString(), attemptedQueryDate = queryDate } = {}) {
+  db.priceSeries = db.priceSeries || { items: [] };
+  const previousItems = Array.isArray(db.priceSeries.items) ? db.priceSeries.items : [];
+  const targetTickers = new Set(targets.map((etf) => etf.ticker));
+  const effectiveItems = previousItems.filter((row) => !targetTickers.has(row.ticker));
+  let updatedRows = 0;
+  let preservedRows = 0;
+
+  for (const result of results) {
+    const freshRows = Array.isArray(result.rows) ? result.rows : [];
+    if (freshRows.length) {
+      effectiveItems.push(...freshRows);
+      updatedRows += freshRows.length;
+      continue;
+    }
+    const previousTickerRows = previousItems.filter((row) => row.ticker === result.ticker);
+    effectiveItems.push(...previousTickerRows);
+    preservedRows += previousTickerRows.length;
   }
 
-  const items = results.flatMap((result) => result.rows);
-  db.priceSeries.status = items.length ? "official_monthly_price_loaded" : "no_price_rows";
-  db.priceSeries.items = items;
-  db.priceSeries.queryDate = queryDate;
-  db.priceSeries.updatedAt = new Date().toISOString();
+  db.priceSeries.status = updatedRows
+    ? preservedRows
+      ? "official_monthly_price_partially_loaded_preserved_previous"
+      : "official_monthly_price_loaded"
+    : preservedRows
+      ? "no_new_price_rows_preserved_previous"
+      : "no_price_rows";
+  db.priceSeries.items = effectiveItems;
   db.priceSeries.source = "twse-stock-day";
-
-  db.metadata.sources = db.metadata.sources.filter((source) => source.id !== "twse-stock-day");
-  db.metadata.sources.push({
-    id: "twse-stock-day",
-    name: "TWSE STOCK_DAY 各日成交資訊",
-    url: "https://www.twse.com.tw/exchangeReport/STOCK_DAY",
-    usage: "ETF 月內價格折線、開高低收、成交量與成交金額"
-  });
+  db.priceSeries.lastAttemptedAt = attemptedAt;
+  db.priceSeries.lastAttemptQueryDate = attemptedQueryDate;
+  db.priceSeries.sourceAttempts = results.map((result) => ({
+    ticker: result.ticker,
+    status: result.status,
+    rows: Array.isArray(result.rows) ? result.rows.length : 0,
+    preservedRows: Array.isArray(result.rows) && result.rows.length
+      ? 0
+      : previousItems.filter((row) => row.ticker === result.ticker).length,
+    sourceUrl: result.sourceUrl
+  }));
+  if (updatedRows || !preservedRows) {
+    db.priceSeries.queryDate = attemptedQueryDate;
+    db.priceSeries.updatedAt = attemptedAt;
+  }
 
   for (const etf of targets) {
-    const hasRows = items.some((row) => row.ticker === etf.ticker);
+    const hasRows = effectiveItems.some((row) => row.ticker === etf.ticker);
     etf.qualityFlags = (etf.qualityFlags || []).filter((flag) => flag !== "price_series_missing" && flag !== "daily_price_loaded");
     if (hasRows && !etf.qualityFlags.includes("monthly_price_loaded")) {
       etf.qualityFlags.push("monthly_price_loaded");
@@ -120,16 +143,42 @@ async function main() {
     }
   }
 
+  return { updatedRows, preservedRows, effectiveRows: effectiveItems.length };
+}
+
+async function main() {
+  const db = JSON.parse(fs.readFileSync(dbPath, "utf8"));
+  const featuredTickers = new Set(db.metadata?.featuredTickers || db.etfs.map((etf) => etf.ticker));
+  const targets = db.etfs.filter((etf) => featuredTickers.has(etf.ticker));
+  const results = [];
+  for (const etf of targets) {
+    results.push(await fetchMonthlyPrice(etf.ticker));
+  }
+
+  const refresh = applyPriceRefresh(db, targets, results);
+
+  db.metadata.sources = db.metadata.sources.filter((source) => source.id !== "twse-stock-day");
+  db.metadata.sources.push({
+    id: "twse-stock-day",
+    name: "TWSE STOCK_DAY 各日成交資訊",
+    url: "https://www.twse.com.tw/exchangeReport/STOCK_DAY",
+    usage: "ETF 月內價格折線、開高低收、成交量與成交金額"
+  });
+
   fs.writeFileSync(dbPath, `${JSON.stringify(db, null, 2)}\n`, "utf8");
   console.log(JSON.stringify({
     queryDate,
     targetTickers: targets.map((etf) => etf.ticker),
-    updatedRows: items.length,
-    byTicker: results.map((result) => ({ ticker: result.ticker, rows: result.rows.length, status: result.status }))
+    ...refresh,
+    byTicker: db.priceSeries.sourceAttempts
   }, null, 2));
 }
 
-main().catch((error) => {
-  console.error(error.message);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((error) => {
+    console.error(error.message);
+    process.exit(1);
+  });
+}
+
+module.exports = { applyPriceRefresh, fetchMonthlyPrice, rocDateToIso, taipeiQueryDate, toNumber };

@@ -32,6 +32,7 @@ GitHub Pages 由 `.github/workflows/pages.yml` 部署，排程為每日台灣時
 - `webapp/scripts/update-etf-master.js`：從 TWSE ETF e添富投資篩選器更新全市場 ETF 主檔與官方篩選器分類。
 - `webapp/scripts/update-market-data.js`：從 TWSE OpenAPI 下載上市 ETF 日成交快照。
 - `webapp/scripts/update-price-series.js`：從 TWSE `STOCK_DAY` 下載月內價格折線。
+- `webapp/scripts/test-price-series-preservation.js`：驗證週末或單一代號無新行情時保留上一份已驗證價格快照。
 - `webapp/scripts/import-official-csv.js`：匯入投信官方成分股或 NAV/折溢價 CSV。
 - `webapp/scripts/update-stock-master.js`：從 TWSE / TPEx 官方來源補股票主檔與每日行情，支援直接股票與 ETF 底層股票重疊度。
 - `webapp/data/import-templates/holdings.csv`：成分股匯入格式。

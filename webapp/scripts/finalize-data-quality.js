@@ -1,7 +1,9 @@
 const fs = require("fs");
 const path = require("path");
 
-const dbPath = path.join(__dirname, "..", "data", "etf-database.json");
+const dbPath = process.env.ETF_DATABASE_PATH
+  ? path.resolve(process.env.ETF_DATABASE_PATH)
+  : path.join(__dirname, "..", "data", "etf-database.json");
 const db = JSON.parse(fs.readFileSync(dbPath, "utf8"));
 
 function validDate(value) {

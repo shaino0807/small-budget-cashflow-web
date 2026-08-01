@@ -47,6 +47,7 @@ jobs:
 
       - name: Validate available ETF database
         run: |
+          node webapp/scripts/test-price-series-preservation.js
           node webapp/scripts/finalize-data-quality.js
           node webapp/scripts/validate-etf-data.js
 
