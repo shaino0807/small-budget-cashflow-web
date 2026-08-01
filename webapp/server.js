@@ -385,20 +385,23 @@ async function establishLineSession(req, idToken, nonce = "") {
 }
 
 function validateLinePayProviderResult(order, transactionId, info = {}) {
-  const resultOrderId = String(info.orderId || order.id);
-  const resultTransactionId = String(info.transactionId || transactionId);
+  const resultOrderId = String(info.orderId || "");
+  const resultTransactionId = String(info.transactionId || "");
   if (resultOrderId !== order.id || resultTransactionId !== String(transactionId)) {
     const error = new Error("LINE Pay 回傳的訂單或交易編號不一致");
     error.statusCode = 409;
     throw error;
   }
-  if (Array.isArray(info.payInfo) && info.payInfo.length) {
-    const paidAmount = info.payInfo.reduce((sum, item) => sum + Number(item.amount || 0), 0);
-    if (Math.round(paidAmount) !== Number(order.amount)) {
-      const error = new Error("LINE Pay 回傳金額與訂單不一致");
-      error.statusCode = 409;
-      throw error;
-    }
+  if (!Array.isArray(info.payInfo) || !info.payInfo.length) {
+    const error = new Error("LINE Pay 未回傳可驗證的付款明細");
+    error.statusCode = 409;
+    throw error;
+  }
+  const paidAmount = info.payInfo.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  if (Math.round(paidAmount) !== Number(order.amount)) {
+    const error = new Error("LINE Pay 回傳金額與訂單不一致");
+    error.statusCode = 409;
+    throw error;
   }
 }
 
@@ -1018,7 +1021,14 @@ const server = http.createServer((req, res) => {
 
   if (urlPath === "/api/payments/linepay/cancel" && req.method === "GET") {
     const orderId = String(url.searchParams.get("orderId") || "");
+    const transactionId = String(url.searchParams.get("transactionId") || "");
     try {
+      const storedOrder = getCustomerStore().providerOrder(orderId, "linepay");
+      if (!storedOrder || !transactionId || String(storedOrder.providerTradeNo || "") !== transactionId) {
+        const error = new Error("LINE Pay 取消回跳的交易編號與訂單不一致");
+        error.statusCode = 409;
+        throw error;
+      }
       const order = getCustomerStore().markProviderOrderFailed({
         orderId,
         provider: "linepay",
@@ -1029,7 +1039,8 @@ const server = http.createServer((req, res) => {
       res.writeHead(303, { Location: paymentReturnUrl("cancelled", order), "Cache-Control": "no-store" });
       res.end();
     } catch (error) {
-      res.writeHead(303, { Location: paymentReturnUrl("cancelled"), "Cache-Control": "no-store" });
+      const latest = orderId ? getCustomerStore().providerOrder(orderId, "linepay") : null;
+      res.writeHead(303, { Location: paymentReturnUrl("pending", latest), "Cache-Control": "no-store" });
       res.end();
     }
     return;

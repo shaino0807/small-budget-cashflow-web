@@ -41,7 +41,7 @@ function assertLinePayConfigured(config = linePayConfig()) {
 
 function parseLinePayJson(rawText) {
   const protectedText = String(rawText || "").replace(
-    /("(?:transactionId|refundTransactionId)"\s*:\s*)(-?\d+)/g,
+    /(:\s*)(-?\d{16,})(?=\s*[,}\]])/g,
     '$1"$2"'
   );
   return JSON.parse(protectedText);

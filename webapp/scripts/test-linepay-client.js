@@ -22,9 +22,10 @@ async function main() {
   assert(unconfiguredError?.statusCode === 503, "Missing LINE Pay credentials did not fail closed");
 
   const transactionId = "2026072812345678901";
-  const parsed = parseLinePayJson(`{"returnCode":"0000","info":{"transactionId":${transactionId},"refundTransactionId":2026072899999999999}}`);
+  const parsed = parseLinePayJson(`{"returnCode":"0000","info":{"transactionId":${transactionId},"refundTransactionId":2026072899999999999,"originalTransactionId":2026072877777777777}}`);
   assert(parsed.info.transactionId === transactionId, "Large transactionId lost precision");
   assert(parsed.info.refundTransactionId === "2026072899999999999", "Large refundTransactionId lost precision");
+  assert(parsed.info.originalTransactionId === "2026072877777777777", "Other large LINE Pay integers lost precision");
 
   const channelSecret = "test-secret";
   const nonce = "fixed-nonce";

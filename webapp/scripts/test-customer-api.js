@@ -18,6 +18,7 @@ let nextTransactionId = 2026072800000000000n;
 let nextRefundTransactionId = 2026072890000000000n;
 const linePayTransactions = new Map();
 const mismatchTransactions = new Set();
+const missingPaymentDetailsTransactions = new Set();
 
 function writeJson(res, status, payload, { raw = false } = {}) {
   res.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });
@@ -89,10 +90,13 @@ const linePayServer = http.createServer(async (req, res) => {
       const paidAmount = mismatchTransactions.has(transaction.transactionId)
         ? 1
         : Number(request.amount);
+      const payInfo = missingPaymentDetailsTransactions.has(transaction.transactionId)
+        ? ""
+        : `,"payInfo":[{"method":"BALANCE","amount":${paidAmount}}]`;
       writeJson(
         res,
         200,
-        `{"returnCode":"0000","returnMessage":"Success","info":{"orderId":"${transaction.orderId}","transactionId":${transaction.transactionId},"currency":"${transaction.currency}","payInfo":[{"method":"BALANCE","amount":${paidAmount}}]}}`,
+        `{"returnCode":"0000","returnMessage":"Success","info":{"orderId":"${transaction.orderId}","transactionId":${transaction.transactionId},"currency":"${transaction.currency}"${payInfo}}}`,
         { raw: true }
       );
       return;
@@ -101,8 +105,12 @@ const linePayServer = http.createServer(async (req, res) => {
     const checkMatch = url.pathname.match(/^\/v4\/payments\/requests\/(\d+)\/check$/);
     if (req.method === "GET" && checkMatch) {
       const transaction = linePayTransactions.get(checkMatch[1]);
-      const returnCode = transaction?.status === "paid" ? "0123" : "0110";
-      writeJson(res, 200, { returnCode, returnMessage: returnCode === "0110" ? "Reserved" : "Paid" });
+      const returnCode = transaction?.status === "paid"
+        ? "0123"
+        : transaction?.status === "authenticated"
+          ? "0110"
+          : "0000";
+      writeJson(res, 200, { returnCode, returnMessage: returnCode === "0123" ? "Paid" : returnCode === "0110" ? "Authenticated" : "Waiting" });
       return;
     }
 
@@ -112,10 +120,13 @@ const linePayServer = http.createServer(async (req, res) => {
         writeJson(res, 200, { returnCode: "0000", returnMessage: "Success", info: [] });
         return;
       }
+      const payInfo = missingPaymentDetailsTransactions.has(transaction.transactionId)
+        ? ""
+        : `,"payInfo":[{"method":"BALANCE","amount":${mismatchTransactions.has(transaction.transactionId) ? 1 : transaction.amount}}]`;
       writeJson(
         res,
         200,
-        `{"returnCode":"0000","returnMessage":"Success","info":[{"orderId":"${transaction.orderId}","transactionId":${transaction.transactionId},"currency":"${transaction.currency}","payInfo":[{"method":"BALANCE","amount":${mismatchTransactions.has(transaction.transactionId) ? 1 : transaction.amount}}]}]}`,
+        `{"returnCode":"0000","returnMessage":"Success","info":[{"orderId":"${transaction.orderId}","transactionId":${transaction.transactionId},"currency":"${transaction.currency}"${payInfo}}]}`,
         { raw: true }
       );
       return;
@@ -383,9 +394,35 @@ async function main() {
       `Provider amount mismatch incorrectly unlocked or changed entitlements: ${JSON.stringify(mismatchStatus.body)}`
     );
 
+    const missingDetailsCheckout = await createCheckout(report, "full_report");
+    assert(missingDetailsCheckout.status === 201, "Missing-details checkout creation failed");
+    missingPaymentDetailsTransactions.add(missingDetailsCheckout.body.order.providerTradeNo);
+    const missingDetailsConfirm = await confirmCheckout(missingDetailsCheckout);
+    assert(
+      missingDetailsConfirm.status === 303 && missingDetailsConfirm.headers.get("location")?.includes("payment=pending"),
+      "Provider response without payment details was not held for review"
+    );
+    const missingDetailsStatus = await paymentStatus(missingDetailsCheckout, report, {
+      "X-Payment-Status-Token": missingDetailsCheckout.body.order.statusToken
+    });
+    assert(
+      missingDetailsStatus.body.order.status !== "paid"
+      && missingDetailsStatus.body.providerCheckError?.includes("付款明細"),
+      `Provider response without payment details unlocked the order: ${JSON.stringify(missingDetailsStatus.body)}`
+    );
+
     const cancelledCheckout = await createCheckout(report, "consultation_deposit");
+    const forgedCancel = await requestText(
+      `/api/payments/linepay/cancel?orderId=${encodeURIComponent(cancelledCheckout.body.order.id)}&transactionId=2026072800000099999`,
+      { redirect: "manual" }
+    );
+    assert(forgedCancel.status === 303 && forgedCancel.headers.get("location")?.includes("payment=pending"), "Mismatched LINE Pay cancel was not rejected");
+    const afterForgedCancel = await paymentStatus(cancelledCheckout, report, {
+      "X-Payment-Status-Token": cancelledCheckout.body.order.statusToken
+    });
+    assert(afterForgedCancel.body.order.status === "pending", "Mismatched LINE Pay cancel changed the order state");
     const cancel = await requestText(
-      `/api/payments/linepay/cancel?orderId=${encodeURIComponent(cancelledCheckout.body.order.id)}`,
+      `/api/payments/linepay/cancel?orderId=${encodeURIComponent(cancelledCheckout.body.order.id)}&transactionId=${encodeURIComponent(cancelledCheckout.body.order.providerTradeNo)}`,
       { redirect: "manual" }
     );
     assert(cancel.status === 303 && cancel.headers.get("location")?.includes("payment=cancelled"), "LINE Pay cancel redirect failed");
@@ -484,7 +521,9 @@ async function main() {
       signedMockApiCalls: true,
       largeTransactionIdsPreserved: true,
       amountMismatchBlocked: true,
+      missingPaymentDetailsBlocked: true,
       duplicateConfirmIdempotent: true,
+      mismatchedCancellationBlocked: true,
       cancellationBlockedEntitlement: true,
       refundRevokedEntitlement: true,
       legacyEcpayCallbacksDisabled: true,
