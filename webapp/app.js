@@ -338,7 +338,15 @@ function loadLiffSdk() {
 function applyMemberReport(report) {
   if (!report?.payload?.input) return;
   const payload = report.payload;
-  state.profile = { ...state.profile, ...payload.input.profile };
+  const restoredProfile = payload.input.profile || {};
+  state.profile = { ...state.profile, ...restoredProfile };
+  state.inputCompletion.profile = {
+    ...state.inputCompletion.profile,
+    ...(payload.input.inputCompletion?.profile || {})
+  };
+  ["monthlyIncome", "fixedExpense", "cashSavings"].forEach((field) => {
+    if (Object.prototype.hasOwnProperty.call(restoredProfile, field)) state.inputCompletion.profile[field] = true;
+  });
   state.holdings = (payload.input.holdings || []).map(normalizeHolding);
   state.monthlyCashflows = normalizeMonthlyCashflows(payload.input.monthlyCashflows, state.profile);
   state.leadProfile = { ...state.leadProfile, ...payload.input.leadProfile };
@@ -1240,15 +1248,29 @@ function hasMonthlyInput(row) {
   return monthFields.some((field) => row?.[field] !== "" && row?.[field] !== undefined && row?.[field] !== null);
 }
 
+function monthlyFieldValue(row, field) {
+  const value = row?.[field];
+  return value === "" || value === undefined || value === null
+    ? Number(state.profile[field] || 0)
+    : Number(value || 0);
+}
+
+function hasMonthlyOverride(row) {
+  return monthFields.some((field) => {
+    const value = row?.[field];
+    return value !== "" && value !== undefined && value !== null && Number(value) !== Number(state.profile[field] || 0);
+  });
+}
+
 function monthlyProfile(monthNumber) {
   const row = state.monthlyCashflows?.[monthNumber] || {};
   return {
     ...state.profile,
-    monthlyIncome: row.monthlyIncome === "" ? 0 : Number(row.monthlyIncome || 0),
-    fixedExpense: row.fixedExpense === "" ? 0 : Number(row.fixedExpense || 0),
-    insuranceExpense: row.insuranceExpense === "" ? 0 : Number(row.insuranceExpense || 0),
-    loanExpense: row.loanExpense === "" ? 0 : Number(row.loanExpense || 0),
-    monthlyInvestment: row.monthlyInvestment === "" ? 0 : Number(row.monthlyInvestment || 0)
+    monthlyIncome: monthlyFieldValue(row, "monthlyIncome"),
+    fixedExpense: monthlyFieldValue(row, "fixedExpense"),
+    insuranceExpense: monthlyFieldValue(row, "insuranceExpense"),
+    loanExpense: monthlyFieldValue(row, "loanExpense"),
+    monthlyInvestment: monthlyFieldValue(row, "monthlyInvestment")
   };
 }
 
@@ -1599,9 +1621,14 @@ function syncInputs() {
   profileFields.forEach((field) => {
     q(`#${field}`).value = state.profile[field];
     q(`#${field}`).addEventListener("input", (event) => {
-      state.profile[field] = Number(event.target.value || 0);
+      const previousValue = Number(state.profile[field] || 0);
+      const nextValue = Number(event.target.value || 0);
+      state.profile[field] = nextValue;
       state.inputCompletion.profile[field] = true;
+      if (monthFields.includes(field)) syncAnnualDefaultToMonths(field, previousValue, nextValue);
+      renderMonthlyCashflows();
       refreshReports();
+      refreshVisibleDetailedValidation();
     });
   });
   q("#simulationYears").value = state.simulationYears;
@@ -1610,10 +1637,21 @@ function syncInputs() {
   renderHoldings();
 }
 
+function syncAnnualDefaultToMonths(field, previousValue, nextValue) {
+  for (let month = 1; month <= 12; month++) {
+    const row = state.monthlyCashflows[month] || (state.monthlyCashflows[month] = {});
+    const currentValue = row[field];
+    if (currentValue === "" || currentValue === undefined || currentValue === null || Number(currentValue) === previousValue) {
+      row[field] = nextValue;
+    }
+  }
+}
+
 function renderMonthlyCashflows() {
   const root = q("#monthlyCashflowEditor");
   if (!root) return;
   const row = state.monthlyCashflows?.[selectedCashflowMonth] || {};
+  const effectiveRow = monthlyProfile(selectedCashflowMonth);
   const fieldLabels = {
     monthlyIncome: "月收入",
     fixedExpense: "固定支出",
@@ -1628,7 +1666,7 @@ function renderMonthlyCashflows() {
       <div class="month-tabs" role="tablist" aria-label="選擇月份">
         ${monthLabels.map((label, index) => {
           const month = index + 1;
-          const hasData = hasMonthlyInput(state.monthlyCashflows?.[month]);
+          const hasData = hasMonthlyOverride(state.monthlyCashflows?.[month]);
           const isActive = month === selectedCashflowMonth;
           return `
             <button class="month-tab ${hasData ? "has-data" : ""} ${isActive ? "is-active" : ""}" data-select-month="${month}" type="button" role="tab" aria-selected="${isActive}" aria-controls="monthlyCashflowFields">
@@ -1642,14 +1680,14 @@ function renderMonthlyCashflows() {
     <div class="month-editor-head">
       <div>
         <strong>${monthLabels[selectedCashflowMonth - 1]}現金流</strong>
-        <span id="selectedMonthStatus">${hasMonthlyInput(row) ? "已有資料" : "尚未填寫"}</span>
+        <span id="selectedMonthStatus">${hasMonthlyOverride(row) ? "本月已調整" : "沿用年度預設"}</span>
       </div>
-      <button class="text-link-button" id="clearSelectedMonthBtn" type="button">清空本月</button>
+      <button class="text-link-button" id="clearSelectedMonthBtn" type="button">恢復年度預設</button>
     </div>
     <div class="month-row" id="monthlyCashflowFields" data-month="${selectedCashflowMonth}" role="tabpanel">
       ${monthFields.map((field) => `
         <label>${fieldLabels[field]}
-          <input data-month-field="${field}" type="number" min="0" step="${fieldSteps[field]}" inputmode="numeric" value="${escapeHtml(row[field])}" />
+          <input data-month-field="${field}" type="number" min="0" step="${fieldSteps[field]}" inputmode="numeric" value="${escapeHtml(effectiveRow[field])}" />
         </label>
       `).join("")}
     </div>
@@ -1691,18 +1729,18 @@ function centerActiveMonthTab(behavior = "smooth") {
 }
 
 function syncMonthEditorIndicators(month) {
-  const hasData = hasMonthlyInput(state.monthlyCashflows?.[month]);
+  const hasData = hasMonthlyOverride(state.monthlyCashflows?.[month]);
   q(`[data-select-month="${month}"]`)?.classList.toggle("has-data", hasData);
   const status = q("#selectedMonthStatus");
-  if (status && month === selectedCashflowMonth) status.textContent = hasData ? "已有資料" : "尚未填寫";
+  if (status && month === selectedCashflowMonth) status.textContent = hasData ? "本月已調整" : "沿用年度預設";
 }
 
 function clearSelectedMonth() {
-  state.monthlyCashflows[selectedCashflowMonth] = Object.fromEntries(monthFields.map((field) => [field, ""]));
+  state.monthlyCashflows[selectedCashflowMonth] = Object.fromEntries(monthFields.map((field) => [field, Number(state.profile[field] || 0)]));
   renderMonthlyCashflows();
   refreshReports();
   persist();
-  showToast(`已清空 ${monthLabels[selectedCashflowMonth - 1]}現金流`);
+  showToast(`${monthLabels[selectedCashflowMonth - 1]}已恢復年度預設`);
 }
 
 function applyProfileToMonths() {
@@ -1722,13 +1760,13 @@ function clearMonthlyCashflows() {
   for (let month = 1; month <= 12; month++) {
     state.monthlyCashflows[month] = {};
     monthFields.forEach((field) => {
-      state.monthlyCashflows[month][field] = "";
+      state.monthlyCashflows[month][field] = Number(state.profile[field] || 0);
     });
   }
   renderMonthlyCashflows();
   refreshReports();
   persist();
-  showToast("已清空月份現金流");
+  showToast("12 個月已全部恢復年度預設");
 }
 
 function renderHoldings() {
@@ -1953,33 +1991,49 @@ function dashboardSnapshot() {
   const summary = state.reportMeta?.lineSummary;
   const usesLineSummary = Boolean(summary?.linked && summary.month === currentMonthKey);
   const row = state.monthlyCashflows?.[monthNumber] || {};
-  const hasMonthData = hasMonthlyInput(row);
-  const profile = hasMonthData ? monthlyProfile(monthNumber) : state.profile;
-  const income = usesLineSummary ? Number(summary.income || 0) : Number(profile.monthlyIncome || 0);
-  const investmentIncome = usesLineSummary ? Number(summary.investmentIncome || 0) : 0;
-  const expense = usesLineSummary
-    ? Number(summary.expense || 0)
-    : Number(profile.fixedExpense || 0) + Number(profile.insuranceExpense || 0) + Number(profile.loanExpense || 0);
-  const investment = usesLineSummary ? Number(summary.investment || 0) : Number(profile.monthlyInvestment || 0);
-  const remaining = usesLineSummary && Number.isFinite(Number(summary.remaining))
-    ? Number(summary.remaining)
-    : income + investmentIncome - expense - investment;
+  const profile = monthlyProfile(monthNumber);
+  const budget = {
+    income: Number(profile.monthlyIncome || 0),
+    investmentIncome: 0,
+    expense: Number(profile.fixedExpense || 0) + Number(profile.insuranceExpense || 0) + Number(profile.loanExpense || 0),
+    investment: Number(profile.monthlyInvestment || 0)
+  };
+  budget.remaining = budget.income - budget.expense - budget.investment;
+  const actual = {
+    income: usesLineSummary ? Number(summary.income || 0) : 0,
+    investmentIncome: usesLineSummary ? Number(summary.investmentIncome || 0) : 0,
+    expense: usesLineSummary ? Number(summary.expense || 0) : 0,
+    investment: usesLineSummary ? Number(summary.investment || 0) : 0,
+    incomeCategories: usesLineSummary ? summary.incomeCategories || [] : [],
+    expenseCategories: usesLineSummary ? summary.expenseCategories || [] : [],
+    entries: usesLineSummary ? summary.entries || summary.recentEntries || [] : [],
+    counts: usesLineSummary ? summary.counts || {} : {}
+  };
+  actual.remaining = actual.income + actual.investmentIncome - actual.expense - actual.investment;
+  const actualEntryCount = Object.values(actual.counts).reduce((total, count) => total + Number(count || 0), 0);
+  const hasMonthData = hasMonthlyInput(row) || monthFields.some((field) => Number(state.profile[field] || 0) > 0);
+  const presented = usesLineSummary ? actual : budget;
   return {
     monthLabel: `${now.getFullYear()} 年 ${monthNumber} 月`,
-    income,
-    investmentIncome,
-    expense,
-    investment,
-    remaining,
-    recentEntries: usesLineSummary ? summary.recentEntries || [] : [],
-    hasMonthData: hasMonthData || usesLineSummary,
-    usesLineSummary
+    income: presented.income,
+    investmentIncome: presented.investmentIncome,
+    expense: presented.expense,
+    investment: presented.investment,
+    remaining: presented.remaining,
+    recentEntries: actual.entries,
+    hasMonthData,
+    usesLineSummary,
+    hasActualEntries: actualEntryCount > 0,
+    actualEntryCount,
+    budget,
+    actual,
+    variance: actual.remaining - budget.remaining
   };
 }
 
 function dashboardReminders(snapshot) {
   const reminders = [];
-  if (snapshot.remaining < 0) reminders.push({ level: "urgent", text: `本月支出與投資超過收入 ${formatMoney(Math.abs(snapshot.remaining))}，先確認非必要支出。` });
+  if (snapshot.hasActualEntries && snapshot.actual.remaining < 0) reminders.push({ level: "urgent", text: `本月已記帳支出與投資超過收入 ${formatMoney(Math.abs(snapshot.actual.remaining))}，先確認非必要支出。` });
   if (!snapshot.hasMonthData) reminders.push({ level: "normal", text: "本月預算尚未確認，先填收入與固定支出。", view: "inputView", section: "monthlyCashflowSection", label: "填本月預算", nav: "budget" });
   if (!hasEnteredHoldings(state.holdings)) reminders.push({ level: "normal", text: "ETF 部位尚未填寫，報告中的配息與集中度會不完整。", view: "inputView", section: "etfAllocationSection", label: "新增 ETF 部位", nav: "invest" });
   if (!snapshot.usesLineSummary) reminders.push({ level: "normal", text: "尚無本月 LINE 記帳摘要；在官方 LINE 輸入一筆收支後即可同步。" });
@@ -1994,23 +2048,34 @@ function renderDashboard() {
   const reminders = dashboardReminders(snapshot);
   q("#dashboardPeriod").textContent = snapshot.monthLabel;
   root.innerHTML = `
-    <div class="dashboard-metrics" aria-label="本月現金流摘要">
-      <article class="dashboard-metric income" data-dashboard-metric="income"><span>本月總收入</span><strong>${formatMoney(snapshot.income)}</strong></article>
-      <article class="dashboard-metric investment-income" data-dashboard-metric="investment-income"><span>投資流入</span><strong>${formatMoney(snapshot.investmentIncome)}</strong></article>
-      <article class="dashboard-metric expense" data-dashboard-metric="expense"><span>本月總支出</span><strong>${formatMoney(snapshot.expense)}</strong></article>
-      <article class="dashboard-metric investment" data-dashboard-metric="investment"><span>投資買入</span><strong>${formatMoney(snapshot.investment)}</strong></article>
-      <article class="dashboard-metric remaining ${snapshot.remaining < 0 ? "is-negative" : ""}" data-dashboard-metric="remaining"><span>剩餘現金流</span><strong>${formatMoney(snapshot.remaining)}</strong></article>
+    <div class="dashboard-mode-note">
+      <div><strong>實際帳</strong><span>LINE 與手動記帳的本月累計，不會覆蓋預算。</span></div>
+      <span class="dashboard-status">${snapshot.usesLineSummary ? `已同步 ${snapshot.actualEntryCount} 筆` : "尚未連結 LINE 記帳"}</span>
     </div>
+    <div class="dashboard-metrics" aria-label="本月實際現金流摘要">
+      <article class="dashboard-metric income" data-dashboard-metric="income"><span>實際總收入</span><strong>${formatMoney(snapshot.actual.income)}</strong></article>
+      <article class="dashboard-metric investment-income" data-dashboard-metric="investment-income"><span>實際投資流入</span><strong>${formatMoney(snapshot.actual.investmentIncome)}</strong></article>
+      <article class="dashboard-metric expense" data-dashboard-metric="expense"><span>實際總支出</span><strong>${formatMoney(snapshot.actual.expense)}</strong></article>
+      <article class="dashboard-metric investment" data-dashboard-metric="investment"><span>實際投資買入</span><strong>${formatMoney(snapshot.actual.investment)}</strong></article>
+      <article class="dashboard-metric remaining ${snapshot.actual.remaining < 0 ? "is-negative" : ""}" data-dashboard-metric="remaining"><span>實際剩餘現金流</span><strong>${formatMoney(snapshot.actual.remaining)}</strong></article>
+    </div>
+    <section class="dashboard-budget-comparison" aria-label="預算與實際比較">
+      <div><span>本月預算剩餘</span><strong>${formatMoney(snapshot.budget.remaining)}</strong></div>
+      <div><span>目前實際剩餘</span><strong>${formatMoney(snapshot.actual.remaining)}</strong></div>
+      <div class="${snapshot.variance < 0 ? "is-negative" : ""}"><span>實際與預算差額</span><strong>${snapshot.variance > 0 ? "+" : ""}${formatMoney(snapshot.variance)}</strong></div>
+      <button class="text-link-button" data-goto="inputView" data-focus-section="monthlyCashflowSection" data-member-nav="budget" type="button">查看本月預算</button>
+    </section>
     <div class="dashboard-grid">
       <section class="dashboard-section" id="dashboardRecentEntries" aria-labelledby="dashboardRecentTitle">
         <div class="dashboard-section-head">
           <div>
             <span class="dashboard-kicker">LINE 同步</span>
-            <h3 id="dashboardRecentTitle">最近記帳</h3>
+            <h3 id="dashboardRecentTitle">實際記帳明細</h3>
           </div>
           <span class="dashboard-status">${snapshot.usesLineSummary ? "已同步" : "等待資料"}</span>
         </div>
-        ${snapshot.recentEntries.length ? `
+        ${snapshot.hasActualEntries ? `
+          ${ledgerBreakdownHtml(snapshot.actual)}
           <div class="dashboard-entry-list">
             ${snapshot.recentEntries.slice(0, 6).map((entry) => `
               <article class="dashboard-entry">
@@ -2021,8 +2086,8 @@ function renderDashboard() {
           </div>
         ` : `
           <div class="dashboard-empty">
-            <strong>本月還沒有 LINE 記帳</strong>
-            <p>回到官方 LINE 輸入「買早餐 65」或「賺 3000」，再按上方重新整理。</p>
+            <strong>本月還沒有實際記帳</strong>
+            <p>預算已保留在家庭收支；回到官方 LINE 輸入「買早餐 65」、「本薪 50000」或「獎金 3000」，再按上方更新。</p>
           </div>
         `}
       </section>
@@ -2224,8 +2289,14 @@ function showValidationErrors(selector, errors) {
   if (!root) return;
   root.hidden = errors.length === 0;
   root.innerHTML = errors.length
-    ? `<strong>請先完成以下資料</strong><ul>${errors.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
+    ? `<strong>請先完成以下資料</strong><ul>${errors.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>${errors.some((item) => item.includes("回到首頁")) ? `<button class="secondary-button mini-button" data-goto="landingView" data-focus-section="quickCheckPanel" type="button">回首頁完成同意</button>` : ""}`
     : "";
+  bindGotoButtons();
+}
+
+function refreshVisibleDetailedValidation() {
+  const root = q("#profileValidationErrors");
+  if (root && !root.hidden) showValidationErrors("#profileValidationErrors", detailedValidationErrors());
 }
 
 function quickValidationErrors() {
@@ -2253,10 +2324,9 @@ function quickValidationErrors() {
 
 function detailedValidationErrors() {
   const errors = [];
-  const completed = state.inputCompletion.profile;
-  if (!completed.monthlyIncome || Number(state.profile.monthlyIncome) <= 0) errors.push("填寫月收入");
-  if (!completed.fixedExpense || Number(state.profile.fixedExpense) < 0) errors.push("填寫固定支出");
-  if (!completed.cashSavings || Number(state.profile.cashSavings) < 0) errors.push("填寫現金存款");
+  if (Number(state.profile.monthlyIncome) <= 0) errors.push("填寫月收入");
+  if (!Number.isFinite(Number(state.profile.fixedExpense)) || Number(state.profile.fixedExpense) < 0) errors.push("填寫固定支出");
+  if (!Number.isFinite(Number(state.profile.cashSavings)) || Number(state.profile.cashSavings) < 0) errors.push("填寫現金存款");
   if (!state.consent.accepted) errors.push("回到首頁勾選報告保存與資料使用同意");
   return errors;
 }
@@ -2278,6 +2348,7 @@ function reportSubmission() {
       profile: structuredClone(state.profile),
       holdings: structuredClone(state.holdings),
       monthlyCashflows: structuredClone(state.monthlyCashflows),
+      inputCompletion: structuredClone(state.inputCompletion),
       leadProfile: structuredClone(state.leadProfile)
     },
     report: {
@@ -2754,16 +2825,83 @@ function reportRecordHtml() {
   `;
 }
 
+const ledgerCategoryOptions = {
+  income: ["本薪", "獎金", "額外收入", "其他收入"],
+  expense: ["房租", "伙食", "交通", "交際", "服飾", "生活帳單", "保險", "貸款", "醫療", "娛樂", "教育", "家庭", "其他支出"]
+};
+
+function canonicalLedgerCategory(type, category) {
+  const value = String(category || "").trim();
+  if (type === "income") {
+    if (["固定收入", "月薪", "薪水"].includes(value)) return "本薪";
+    if (["收入", ""].includes(value)) return "其他收入";
+  }
+  if (type === "expense" && value === "餐飲") return "伙食";
+  return value || (type === "expense" ? "其他支出" : type === "income" ? "其他收入" : "未分類");
+}
+
 function lineEntryText(entry) {
   const type = { income: "收入", expense: "支出", investment: "投資買入", investment_income: "投資流入" }[entry.type] || "記帳";
-  const subject = entry.ticker || entry.note || entry.category || type;
+  const category = canonicalLedgerCategory(entry.type, entry.category);
+  const subject = entry.ticker || entry.note || category || type;
   const date = new Date(entry.occurredAt).toLocaleDateString("zh-TW", { month: "numeric", day: "numeric" });
-  return `${date} · ${type} · ${subject}`;
+  return `${date} · ${type}／${category} · ${subject}`;
 }
 
 function lineEntrySignedAmount(entry) {
   const sign = ["expense", "investment"].includes(entry.type) ? "−" : "+";
   return `${sign}${formatMoney(entry.amount)}`;
+}
+
+function categoryRowsHtml(items = [], emptyText = "尚無分類資料") {
+  if (!items.length) return `<p class="panel-note">${emptyText}</p>`;
+  return `<div class="ledger-category-rows">${items.map((item) => `
+    <div><span>${escapeHtml(canonicalLedgerCategory(item.type || "", item.category))} · ${Number(item.count || 0)} 筆</span><strong>${formatMoney(item.amount)}</strong></div>
+  `).join("")}</div>`;
+}
+
+function ledgerBreakdownHtml(summary = {}) {
+  return `
+    <div class="ledger-breakdowns">
+      <details>
+        <summary><span>收入細項</span><strong>${formatMoney(summary.income)}</strong></summary>
+        ${categoryRowsHtml((summary.incomeCategories || []).map((item) => ({ ...item, type: "income" })), "本月尚無收入明細")}
+      </details>
+      <details>
+        <summary><span>支出細項</span><strong>${formatMoney(summary.expense)}</strong></summary>
+        ${categoryRowsHtml((summary.expenseCategories || []).map((item) => ({ ...item, type: "expense" })), "本月尚無支出明細")}
+      </details>
+    </div>
+  `;
+}
+
+function ledgerCategorySelectHtml(entry) {
+  const options = ledgerCategoryOptions[entry.type];
+  if (!options) return `<span class="ledger-category-label">${escapeHtml(canonicalLedgerCategory(entry.type, entry.category))}</span>`;
+  const selected = canonicalLedgerCategory(entry.type, entry.category);
+  const values = options.includes(selected) ? options : [...options, selected];
+  return `
+    <select data-ledger-category data-entry-id="${escapeHtml(entry.id)}" data-entry-type="${escapeHtml(entry.type)}" aria-label="修改${entry.type === "income" ? "收入" : "支出"}分類">
+      ${values.map((category) => `<option value="${escapeHtml(category)}" ${category === selected ? "selected" : ""}>${escapeHtml(category)}</option>`).join("")}
+    </select>
+  `;
+}
+
+function ledgerEditableEntriesHtml(entries = []) {
+  if (!entries.length) return "";
+  return `
+    <div class="line-recent-entries ledger-entry-editor">
+      <strong>本月記帳明細</strong>
+      <p class="panel-note">系統會先自動分類；若分類不合適，可直接在此修正。</p>
+      ${entries.map((entry) => `
+        <div class="ledger-entry-row">
+          <span>${escapeHtml(lineEntryText(entry))}</span>
+          ${ledgerCategorySelectHtml(entry)}
+          <strong>${lineEntrySignedAmount(entry)}</strong>
+        </div>
+      `).join("")}
+    </div>
+  `;
 }
 
 function lineSyncHtml() {
@@ -2811,15 +2949,9 @@ function lineSyncHtml() {
             `).join("")}
           </div>
         ` : ""}
-        ${(summary.recentEntries || []).length ? `
-          <div class="line-recent-entries">
-            <strong>最近明細</strong>
-            ${(summary.recentEntries || []).map((entry) => `
-              <div class="kv"><span>${escapeHtml(lineEntryText(entry))}</span><strong>${lineEntrySignedAmount(entry)}</strong></div>
-            `).join("")}
-          </div>
-        ` : ""}
-        <p class="panel-note">已自動同步到 ${escapeHtml(summary.month)} 月家庭收支與 ETF 部位。</p>
+        ${ledgerBreakdownHtml(summary)}
+        ${ledgerEditableEntriesHtml(summary.entries || summary.recentEntries || [])}
+        <p class="panel-note">已同步 ${escapeHtml(summary.month)} 的實際記帳與 ETF 部位；實際帳不會覆蓋年度或月份預算。</p>
         <p class="panel-note">LINE 使用者識別碼會雜湊保存，記帳備註與來源加密保存；記帳保留 3 年，可隨時刪除全部 LINE 財務資料。</p>
         <div class="button-row">
           <button class="secondary-button" data-goto="inputView" data-focus-section="monthlyCashflowSection" type="button">查看月份現金流</button>
@@ -2892,31 +3024,8 @@ function applyLineSummaryToState(summary) {
   if (!summary?.linked) return false;
   const month = Number(String(summary.month || "").slice(5, 7));
   if (!Number.isInteger(month) || month < 1 || month > 12) return false;
-  const row = state.monthlyCashflows[month] || {};
-  if (Number(summary.counts?.income || 0) > 0) {
-    row.monthlyIncome = Number(summary.income || 0);
-    state.profile.monthlyIncome = row.monthlyIncome;
-  }
-  if (Number(summary.counts?.expense || 0) > 0) {
-    const categoryTotals = Object.fromEntries((summary.expenseCategories || []).map((item) => [item.category, Number(item.amount || 0)]));
-    row.insuranceExpense = Number(categoryTotals["保險"] || 0);
-    row.loanExpense = Number(categoryTotals["貸款"] || 0);
-    row.fixedExpense = Math.max(0, Number(summary.expense || 0) - row.insuranceExpense - row.loanExpense);
-  }
-  if (Number(summary.counts?.investment || 0) > 0) {
-    row.monthlyInvestment = Number(summary.investment || 0);
-    state.profile.monthlyInvestment = row.monthlyInvestment;
-  }
-  state.monthlyCashflows[month] = row;
-  if (summary.profile) {
-    ["monthlyIncome", "fixedExpense", "insuranceExpense", "loanExpense"].forEach((field) => {
-      if (Number(summary.profile[field] || 0) > 0) state.profile[field] = Number(summary.profile[field]);
-    });
-  }
   syncLineEtfPositions(summary.holdings || summary.etfPositions || []);
   state.reportMeta.lineAppliedAt = new Date().toISOString();
-  updateProfileInputs();
-  renderMonthlyCashflows();
   renderHoldings();
   return true;
 }
@@ -3023,19 +3132,25 @@ async function syncWebFinancialData({ silent = false } = {}) {
 }
 
 function clearLineSyncedState(summary) {
-  const month = Number(String(summary?.month || "").slice(5, 7));
-  if (Number.isInteger(month) && month >= 1 && month <= 12) {
-    const row = state.monthlyCashflows[month] || {};
-    if (Number(summary.counts?.income || 0) > 0) row.monthlyIncome = 0;
-    if (Number(summary.counts?.expense || 0) > 0) {
-      row.fixedExpense = 0;
-      row.insuranceExpense = 0;
-      row.loanExpense = 0;
-    }
-    if (Number(summary.counts?.investment || 0) > 0) row.monthlyInvestment = 0;
-    state.monthlyCashflows[month] = row;
-  }
   syncLineEtfPositions([]);
+}
+
+async function updateLedgerEntryCategory(entryId, category) {
+  const meta = state.reportMeta;
+  if (!entryId || !category || (!authState.authenticated && (!meta?.reportId || !meta.accessCode))) return;
+  const reportHeaders = meta?.accessCode ? { "X-Report-Access-Code": meta.accessCode } : {};
+  try {
+    await apiRequest(`/api/ledger/${encodeURIComponent(entryId)}`, {
+      method: "PATCH",
+      headers: reportHeaders,
+      body: JSON.stringify({ reportId: meta?.reportId || null, patch: { category } })
+    });
+    await refreshLineSummary({ silent: true });
+    showToast(`已改為「${category}」`);
+  } catch (error) {
+    showToast(error.message);
+    refreshReports();
+  }
 }
 
 async function deleteAllLineData() {
@@ -3171,6 +3286,9 @@ function renderFreeReport() {
   q("#createLineBindingBtn")?.addEventListener("click", createLineBinding);
   q("#refreshLineSummaryBtn")?.addEventListener("click", () => refreshLineSummary());
   q("#deleteLineDataBtn")?.addEventListener("click", deleteAllLineData);
+  document.querySelectorAll("[data-ledger-category]").forEach((select) => {
+    select.addEventListener("change", () => updateLedgerEntryCategory(select.dataset.entryId, select.value));
+  });
   q("#logoutAllBtn")?.addEventListener("click", () => logoutMember(true));
   q("#deleteMemberAccountBtn")?.addEventListener("click", deleteMemberAccount);
 }
@@ -3956,6 +4074,7 @@ function bindEvents() {
     state.consent.accepted = event.target.checked;
     state.consent.acceptedAt = event.target.checked ? new Date().toISOString() : null;
     persist();
+    refreshVisibleDetailedValidation();
   });
   q("#contactChannel").addEventListener("change", (event) => {
     state.consent.contactChannel = event.target.value;

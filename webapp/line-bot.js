@@ -127,15 +127,29 @@ function expenseCategory(text) {
   if (/保險|保費/.test(raw)) return "保險";
   if (/貸款|房貸|車貸|信貸|還款/.test(raw)) return "貸款";
   if (/水費|電費|瓦斯|網路|電話費|手機費/.test(raw)) return "生活帳單";
-  if (/早餐|午餐|晚餐|飲料|咖啡|餐|吃/.test(raw)) return "餐飲";
+  if (/交際|應酬|請客|送禮|聚餐|生日|慶生|禮物|伴手禮|紅包|婚禮|喜宴|宴客|聚會/.test(raw)) return "交際";
+  if (/衣服|衣物|服飾|外套|褲子|裙子|鞋子|包包|項鍊|首飾|耳環|戒指|手鍊|手錶|帽子|襪子|眼鏡|皮夾/.test(raw)) return "服飾";
+  if (/伙食|早餐|午餐|晚餐|飲料|咖啡|餐|吃|便當|宵夜/.test(raw)) return "伙食";
   if (/交通|加油|停車|捷運|火車|計程車/.test(raw)) return "交通";
   if (/醫療|看醫生|藥/.test(raw)) return "醫療";
+  if (/電影|遊戲|娛樂|唱歌|旅遊/.test(raw)) return "娛樂";
+  if (/學費|課程|補習|書籍/.test(raw)) return "教育";
+  if (/家用|孝親|小孩|育兒/.test(raw)) return "家庭";
   return /固定支出/.test(raw) ? "固定支出" : "其他支出";
 }
 
+function incomeCategory(text) {
+  const raw = String(text || "");
+  if (/獎金|年終|績效|分紅/.test(raw)) return "獎金";
+  if (/本薪|固定收入|月薪|薪水/.test(raw)) return "本薪";
+  if (/兼職|副業|接案|稿費|外快/.test(raw)) return "額外收入";
+  return "其他收入";
+}
+
 function profilePatchFor({ raw, type, category, amount }) {
-  if (type === "income" && /固定收入|月薪|薪水/.test(raw)) return { monthlyIncome: amount };
+  if (type === "income" && category === "本薪" && /設定|固定收入金額/.test(raw)) return { monthlyIncome: amount };
   if (type !== "expense") return null;
+  if (!/設定|固定支出金額|保險金額|貸款金額/.test(raw)) return null;
   if (category === "保險") return { insuranceExpense: amount };
   if (category === "貸款") return { loanExpense: amount };
   if (["房租", "生活帳單", "固定支出"].includes(category)) return { fixedExpense: amount };
@@ -151,8 +165,9 @@ function parseLedgerMessage(text) {
   const hasBuy = /買|購入|投入|定期定額|加碼/.test(raw);
   const hasInvestmentContext = /ETF|股票|投資|證券/.test(raw) || Boolean(ticker) || hasDividend || hasSale;
   const hasInvestment = /ETF|投資|購入|定期定額|加碼/.test(raw) || (ticker && hasBuy);
-  const hasIncome = /得|賺|收入|月薪|薪水|獎金|領到|收到/.test(raw);
-  const hasExpense = /買|付|花|繳|支出|刷|扣款/.test(raw);
+  const hasIncome = /得|賺|收入|本薪|月薪|薪水|獎金|年終|兼職|副業|外快|領到|收到/.test(raw);
+  const inferredExpenseCategory = expenseCategory(raw);
+  const hasExpense = /買|付|花|繳|支出|刷|扣款/.test(raw) || inferredExpenseCategory !== "其他支出";
   if (!amount) {
     if (hasInvestmentContext) return { intent: "help", reason: "missing_investment_details" };
     if (hasIncome) return { intent: "help", reason: "missing_income_amount" };
@@ -186,7 +201,7 @@ function parseLedgerMessage(text) {
     };
   }
   if (hasIncome) {
-    const category = /固定收入|月薪|薪水/.test(raw) ? "固定收入" : "收入";
+    const category = incomeCategory(raw);
     return {
       intent: "ledger",
       type: "income",
@@ -198,7 +213,7 @@ function parseLedgerMessage(text) {
     };
   }
   if (hasExpense) {
-    const category = expenseCategory(raw);
+    const category = inferredExpenseCategory;
     return {
       intent: "ledger",
       type: "expense",
@@ -270,7 +285,7 @@ async function parseLedgerMessageWithAi(text) {
       input: [
         {
           role: "system",
-          content: "你是台灣家庭記帳文字解析器。只抽取使用者明確說出的交易，不推測不存在的金額。買生活用品是 expense；買 ETF 或股票是 investment；ETF 或股票配息、已賣出收到的款項是 investment_income；薪水或一般收到款項是 income。尚未賣出的帳面獲利不算現金收入。最多拆成 5 筆。日期使用 Asia/Taipei。"
+          content: "你是台灣家庭記帳文字解析器。只抽取使用者明確說出的交易，不推測不存在的金額。買生活用品是 expense；買 ETF 或股票是 investment；ETF 或股票配息、已賣出收到的款項是 investment_income；薪水或一般收到款項是 income。收入分類優先使用本薪、獎金、額外收入、其他收入；支出分類優先使用房租、伙食、交通、交際、服飾、生活帳單、保險、貸款、醫療、娛樂、教育、家庭、其他支出。尚未賣出的帳面獲利不算現金收入。最多拆成 5 筆。日期使用 Asia/Taipei。"
         },
         {
           role: "user",
@@ -317,7 +332,10 @@ async function parseLedgerMessageWithAi(text) {
     const type = ["income", "expense", "investment", "investment_income"].includes(entry.type) ? entry.type : null;
     const amount = Math.round(Number(entry.amount));
     if (!type || !Number.isFinite(amount) || amount <= 0 || amount > 1000000000) return null;
-    const category = String(entry.category || (type === "expense" ? "其他支出" : type === "income" ? "收入" : type === "investment_income" ? "投資流入" : "ETF")).slice(0, 30);
+    let category = String(entry.category || (type === "expense" ? "其他支出" : type === "income" ? "其他收入" : type === "investment_income" ? "投資流入" : "ETF")).slice(0, 30);
+    if (type === "expense" && category === "餐飲") category = "伙食";
+    if (type === "income" && ["固定收入", "月薪", "薪水"].includes(category)) category = "本薪";
+    if (type === "income" && category === "收入") category = "其他收入";
     const occurred = new Date(entry.occurredAt);
     return {
       type,

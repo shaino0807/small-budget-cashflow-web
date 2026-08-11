@@ -2801,11 +2801,33 @@ a:hover {
   font-weight: 800;
 }
 
+.dashboard-mode-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid rgba(4, 52, 44, 0.12);
+  border-radius: 12px;
+  background: rgba(159, 225, 203, 0.14);
+}
+
+.dashboard-mode-note > div {
+  display: grid;
+  gap: 2px;
+}
+
+.dashboard-mode-note span:not(.dashboard-status) {
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .dashboard-metrics {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
-  margin-bottom: 28px;
+  margin-bottom: 14px;
 }
 
 .dashboard-metric {
@@ -2862,6 +2884,33 @@ a:hover {
 
 .dashboard-metric.is-negative strong {
   color: #9f1d16;
+}
+
+.dashboard-budget-comparison {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 28px;
+  padding: 14px 16px;
+  border: 1px dashed rgba(4, 52, 44, 0.22);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.56);
+}
+
+.dashboard-budget-comparison > div {
+  display: grid;
+  gap: 3px;
+}
+
+.dashboard-budget-comparison span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dashboard-budget-comparison .is-negative strong {
+  color: var(--danger);
 }
 
 .dashboard-grid {
@@ -2927,6 +2976,82 @@ a:hover {
 
 .dashboard-entry .entry-investment_income {
   color: #12654e;
+}
+
+.ledger-breakdowns {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0 16px;
+}
+
+.ledger-breakdowns details {
+  border: 1px solid rgba(4, 52, 44, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.ledger-breakdowns summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 46px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-weight: 800;
+  list-style: none;
+}
+
+.ledger-breakdowns summary::-webkit-details-marker {
+  display: none;
+}
+
+.ledger-breakdowns summary::after {
+  content: "展開";
+  color: var(--primary-2);
+  font-size: 11px;
+}
+
+.ledger-breakdowns details[open] summary::after {
+  content: "收合";
+}
+
+.ledger-category-rows {
+  display: grid;
+  padding: 0 12px 10px;
+}
+
+.ledger-category-rows > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid rgba(4, 52, 44, 0.08);
+}
+
+.ledger-entry-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(130px, 170px) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid rgba(4, 52, 44, 0.10);
+}
+
+.ledger-entry-row > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ledger-entry-row select {
+  min-height: 38px;
+}
+
+.ledger-category-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .dashboard-empty {
@@ -3157,6 +3282,15 @@ body[data-member-auth="ready"] .brand p {
     grid-template-columns: 1fr;
   }
 
+  .dashboard-budget-comparison {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .dashboard-budget-comparison button {
+    grid-column: 1 / -1;
+    width: max-content;
+  }
+
   .report-value-overview {
     grid-template-columns: 1fr;
   }
@@ -3353,6 +3487,11 @@ body[data-member-auth="ready"] .brand p {
     align-items: flex-start;
   }
 
+  .dashboard-mode-note {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .dashboard-heading > .mini-button {
     width: auto;
     flex: 0 0 auto;
@@ -3373,6 +3512,24 @@ body[data-member-auth="ready"] .brand p {
 
   .dashboard-shortcuts {
     grid-template-columns: 1fr;
+  }
+
+  .dashboard-budget-comparison {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-budget-comparison button {
+    grid-column: auto;
+  }
+
+  .ledger-entry-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .ledger-entry-row select,
+  .ledger-entry-row .ledger-category-label {
+    grid-column: 1 / -1;
+    grid-row: 2;
   }
 
   .monthly-cashflow-head .subhead-actions {

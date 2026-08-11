@@ -19,7 +19,7 @@
   </head>
   <body>
     <header class="app-header brand-nav">
-      <a class="brand" href="#top" aria-label="Chen Dino 首頁">
+      <a class="brand" href="#top" data-goto="landingView" aria-label="Chen Dino 首頁">
         <span class="brand-mark" aria-hidden="true">CD</span>
         <div>
           <h1>Chen Dino</h1>
@@ -27,13 +27,12 @@
         </div>
       </a>
       <nav class="site-links" aria-label="網站導覽">
-        <a href="#painPoints">痛點</a>
-        <a href="#solutionPanel">解法</a>
-        <a href="#quickCheckPanel">健檢</a>
-        <a href="#servicePanel">服務</a>
-        <a href="#contactPanel">預約</a>
+        <a href="#solutionPanel" data-goto="landingView" data-focus-section="solutionPanel">痛點解法</a>
+        <a href="#quickCheckPanel" data-goto="landingView" data-focus-section="quickCheckPanel">快速健檢</a>
+        <a href="#contactPanel" data-goto="landingView" data-focus-section="contactPanel">健檢服務預約</a>
       </nav>
       <div class="header-actions">
+        <button class="secondary-button mini-button header-home-button" data-goto="landingView" type="button">首頁</button>
         <button class="secondary-button mini-button" id="lineLoginBtn" type="button" hidden>LINE 登入</button>
         <button class="secondary-button mini-button" id="logoutBtn" type="button" hidden>登出</button>
         <button class="icon-button" id="sampleBtn" type="button" title="套用範例資料" aria-label="套用範例資料">範</button>
@@ -352,7 +351,7 @@
           <div>
             <span class="dashboard-period" id="dashboardPeriod">本月</span>
             <h2 id="dashboardTitle">本月總覽</h2>
-            <p>彙整本月收入、支出、投資與可用現金，作為預算調整依據。</p>
+            <p>分開顯示本月實際記帳與原定預算，立即看見目前差額。</p>
           </div>
           <button class="secondary-button mini-button" id="refreshDashboardBtn" type="button" aria-label="重新整理本月總覽">更新</button>
         </div>
@@ -376,6 +375,7 @@
             <button class="workspace-tab" data-goto="inputView" data-focus-section="monthlyCashflowSection" type="button">月份現金流</button>
           </div>
           <div class="workspace-actions">
+            <button class="text-link-button" data-goto="landingView" type="button">回首頁</button>
             <button class="text-link-button" data-goto="landingView" data-focus-section="quickCheckPanel" type="button">重新健檢</button>
             <button class="text-link-button" data-goto="freeReportView" type="button">返回健檢結果</button>
           </div>
@@ -386,7 +386,7 @@
             <span id="householdCashflowSection" class="workspace-anchor" aria-hidden="true"></span>
             <div>
               <h3>年度預設值</h3>
-              <p class="panel-note">用來建立財務底稿，也可套用到下方每月現金流；已逐月填寫時，以月份資料為準。</p>
+              <p class="panel-note">這是每月預算底稿。修改後會同步到尚未個別調整的月份；LINE 實際記帳不會覆蓋這裡。</p>
             </div>
             <div class="field-grid">
               <label>月收入<input id="monthlyIncome" type="number" min="0" step="1000" /></label>
@@ -400,12 +400,12 @@
             </div>
             <div class="panel-subhead monthly-cashflow-head" id="monthlyCashflowSection">
               <div>
-                <h3>月份現金流</h3>
-                <span>未填月份不代入月曆</span>
+                <h3>月份預算</h3>
+                <span>沿用年度預設，也可逐月覆寫</span>
               </div>
               <div class="subhead-actions">
                 <button class="secondary-button mini-button" id="applyProfileToMonthsBtn" type="button">套用預設到全年</button>
-                <button class="secondary-button mini-button" id="clearMonthsBtn" type="button">清空全年</button>
+                <button class="secondary-button mini-button" id="clearMonthsBtn" type="button">全部恢復預設</button>
               </div>
             </div>
             <div id="monthlyCashflowEditor" class="monthly-editor"></div>

@@ -387,6 +387,35 @@ async function main() {
       };
     })()`);
     await send(ws, "Runtime.evaluate", {
+      expression: `(() => {
+        const annualIncome = document.querySelector("#monthlyIncome");
+        annualIncome.value = "43000";
+        annualIncome.dispatchEvent(new Event("input", { bubbles: true }));
+      })()`
+    });
+    await wait(200);
+    const annualBudgetSync = await evalValue(ws, `(() => {
+      const currentMonth = new Date().getMonth() + 1;
+      const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
+      const result = {
+        currentMonthIncome: Number(state.monthlyCashflows[currentMonth]?.monthlyIncome || 0),
+        overriddenMonthIncome: Number(state.monthlyCashflows[nextMonth]?.monthlyIncome || 0)
+      };
+      const annualIncome = document.querySelector("#monthlyIncome");
+      annualIncome.value = "42000";
+      annualIncome.dispatchEvent(new Event("input", { bubbles: true }));
+      return result;
+    })()`);
+    const detailedValidationCleared = await evalValue(ws, `(() => {
+      state.profile.monthlyIncome = 42000;
+      state.profile.fixedExpense = 33000;
+      state.profile.cashSavings = 100000;
+      state.inputCompletion.profile = {};
+      state.consent.accepted = true;
+      showValidationErrors("#profileValidationErrors", detailedValidationErrors());
+      return document.querySelector("#profileValidationErrors")?.hidden === true;
+    })()`);
+    await send(ws, "Runtime.evaluate", {
       expression: `document.querySelector('[data-select-month="' + (new Date().getMonth() + 1) + '"]')?.click()`
     });
     await send(ws, "Runtime.evaluate", { expression: `window.goTo("landingView")` });
@@ -452,6 +481,8 @@ async function main() {
           expense: 65,
           investment: 10000,
           counts: { income: 1, expense: 1, investment: 1, investment_income: 1 },
+          incomeCategories: [{ category: "本薪", amount: 50000, count: 1 }],
+          expenseCategories: [{ category: "伙食", amount: 65, count: 1 }],
           etfPositions: [{ ticker: "0056", amount: 10000, count: 1 }],
           recentEntries: [
             {
@@ -468,8 +499,10 @@ async function main() {
               note: "0056",
               occurredAt: new Date().toISOString()
             }
-          ]
+          ],
+          entries: []
         };
+        summary.entries = summary.recentEntries.map((entry, index) => ({ ...entry, id: "00000000-0000-4000-8000-00000000000" + index }));
         state.reportMeta.lineSummary = summary;
         applyLineSummaryToState(summary);
         applyLineSummaryToState(summary);
@@ -489,7 +522,8 @@ async function main() {
         ticker: holding?.querySelector('[data-field="ticker"]')?.value || "",
         lineLots: holding?.querySelectorAll(".lot-row.is-line-synced").length || 0,
         lineAmount: Number(holding?.querySelector('.lot-row.is-line-synced [data-lot-field="amount"]')?.value || 0),
-        recentEntries: document.querySelectorAll("#freeReport .line-recent-entries .kv").length,
+        recentEntries: document.querySelectorAll("#freeReport .ledger-entry-row").length,
+        categoryBreakdowns: document.querySelectorAll("#freeReport .ledger-breakdowns details").length,
         privacyDelete: Boolean(document.querySelector("#freeReport #deleteLineDataBtn"))
       };
     })()`);
@@ -513,6 +547,8 @@ async function main() {
       recentEntries: document.querySelectorAll("#dashboardRecentEntries .dashboard-entry").length,
       recentAmounts: [...document.querySelectorAll("#dashboardRecentEntries .dashboard-entry strong")].map((item) => item.textContent || ""),
       reminderCount: document.querySelectorAll(".dashboard-reminder").length,
+      categoryBreakdowns: document.querySelectorAll("#dashboardRecentEntries .ledger-breakdowns details").length,
+      budgetComparison: document.querySelectorAll(".dashboard-budget-comparison > div").length,
       bottomNavCount: document.querySelectorAll(".member-nav-item").length,
       bottomNavDisplay: getComputedStyle(document.querySelector(".member-bottom-nav")).display,
       activeBottomTabs: document.querySelectorAll(".member-nav-item.is-active").length,
@@ -543,6 +579,14 @@ async function main() {
       activeWorkspaceTabs: document.querySelectorAll('#inputView .workspace-tab.is-active').length,
       activeWorkspaceLabel: document.querySelector('#inputView .workspace-tab.is-active')?.textContent?.trim() || "",
       bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
+    }))()`);
+    await send(ws, "Runtime.evaluate", { expression: `document.querySelector('.site-links [data-focus-section="solutionPanel"]')?.click()` });
+    await wait(450);
+    const headerNavigation = await evalValue(ws, `(() => ({
+      activeView: document.querySelector(".view.is-active")?.id,
+      solutionVisible: document.querySelector("#solutionPanel")?.offsetParent !== null,
+      bookingConfigured: document.querySelector('.site-links [data-focus-section="contactPanel"]')?.dataset.goto === "landingView",
+      homeButtonCount: document.querySelectorAll('[data-goto="landingView"]').length
     }))()`);
 
     await send(ws, "Runtime.evaluate", { expression: `window.goTo("freeReportView", "", "report")` });
@@ -649,12 +693,15 @@ async function main() {
       notificationBehavior,
       notificationRestored,
       monthSwitching,
+      annualBudgetSync,
+      detailedValidationCleared,
       consentStep,
       freeReport,
       lineApplied,
       dashboard,
       ledgerNavigation,
       workspaceJump,
+      headerNavigation,
       upgradeNavigation,
       upgradeReturn,
       f5Persistence,
@@ -746,9 +793,12 @@ async function main() {
         && monthSwitching.visibleMonthRows === 1
         && monthSwitching.activeMonthTabs === 1
         && monthSwitching.activeHasData
-        && monthSwitching.status === "已有資料"
+        && monthSwitching.status === "本月已調整"
         && monthSwitching.storedMonth === monthSwitching.expectedMonth
         && monthSwitching.bodyOverflow === 0
+        && annualBudgetSync.currentMonthIncome === 43000
+        && annualBudgetSync.overriddenMonthIncome === 1234
+        && detailedValidationCleared
         && consentStep.step === "6"
         && consentStep.consentVisible
         && freeReport.activeView === "freeReportView"
@@ -771,13 +821,14 @@ async function main() {
         && freeReport.upgradeOrder > freeReport.actionsOrder
         && freeReport.detailPanelShadow === "none"
         && freeReport.bodyOverflow === 0
-        && lineApplied.income === 50000
-        && lineApplied.expense === 65
-        && lineApplied.investment === 10000
+        && lineApplied.income === 42000
+        && lineApplied.expense === 33000
+        && lineApplied.investment === 8000
         && lineApplied.ticker === "0056"
         && lineApplied.lineLots === 1
         && lineApplied.lineAmount === 10000
         && lineApplied.recentEntries === 2
+        && lineApplied.categoryBreakdowns === 2
         && lineApplied.privacyDelete
         && dashboard.activeView === "dashboardView"
         && dashboard.period.includes("年")
@@ -790,6 +841,8 @@ async function main() {
         && dashboard.recentAmounts.some((value) => /\+.*800/.test(value))
         && dashboard.recentAmounts.some((value) => /−.*10,000/.test(value))
         && dashboard.reminderCount >= 1
+        && dashboard.categoryBreakdowns === 2
+        && dashboard.budgetComparison === 3
         && dashboard.bottomNavCount === 5
         && dashboard.bottomNavDisplay === (mobileViewport ? "grid" : "none")
         && dashboard.activeBottomTabs === 1
@@ -806,6 +859,10 @@ async function main() {
         && workspaceJump.activeWorkspaceTabs === 1
         && workspaceJump.activeWorkspaceLabel === "ETF 部位配置"
         && workspaceJump.bodyOverflow === 0
+        && headerNavigation.activeView === "landingView"
+        && headerNavigation.solutionVisible
+        && headerNavigation.bookingConfigured
+        && headerNavigation.homeButtonCount >= 3
         && upgradeNavigation.activeView === "upgradeView"
         && upgradeNavigation.backButtonCount === 2
         && JSON.stringify(upgradeNavigation.prices) === JSON.stringify(["NT$0", "NT$499", "NT$1,500"])

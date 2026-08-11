@@ -650,10 +650,30 @@ function createStore() {
       if (summary.counts[row.type] !== undefined) summary.counts[row.type] = Number(row.count || 0);
     });
     summary.expenseCategories = db.prepare(`
-      SELECT COALESCE(category, '其他支出') AS category, COALESCE(SUM(amount), 0) AS amount, COUNT(*) AS count
+      SELECT CASE WHEN category = '餐飲' THEN '伙食' ELSE COALESCE(category, '其他支出') END AS category,
+        COALESCE(SUM(amount), 0) AS amount, COUNT(*) AS count
       FROM line_ledger_entries
       WHERE line_user_hash = ? AND entry_type = 'expense' AND occurred_at >= ? AND occurred_at < ?
-      GROUP BY COALESCE(category, '其他支出')
+      GROUP BY CASE WHEN category = '餐飲' THEN '伙食' ELSE COALESCE(category, '其他支出') END
+      ORDER BY amount DESC, category ASC
+    `).all(lineUserHash, range.start, range.end).map((row) => ({
+      category: row.category,
+      amount: Number(row.amount || 0),
+      count: Number(row.count || 0)
+    }));
+    summary.incomeCategories = db.prepare(`
+      SELECT CASE
+        WHEN category IN ('固定收入', '月薪', '薪水') THEN '本薪'
+        WHEN category IS NULL OR category = '' OR category = '收入' THEN '其他收入'
+        ELSE category
+      END AS category, COALESCE(SUM(amount), 0) AS amount, COUNT(*) AS count
+      FROM line_ledger_entries
+      WHERE line_user_hash = ? AND entry_type = 'income' AND occurred_at >= ? AND occurred_at < ?
+      GROUP BY CASE
+        WHEN category IN ('固定收入', '月薪', '薪水') THEN '本薪'
+        WHEN category IS NULL OR category = '' OR category = '收入' THEN '其他收入'
+        ELSE category
+      END
       ORDER BY amount DESC, category ASC
     `).all(lineUserHash, range.start, range.end).map((row) => ({
       category: row.category,
@@ -1132,7 +1152,7 @@ function createStore() {
       return Number(row?.amount || 0);
     };
     return updateLineProfileByHash(lineUserHash, {
-      monthlyIncome: latestAmount("income", ["固定收入"]),
+      monthlyIncome: latestAmount("income", ["本薪", "固定收入"]),
       fixedExpense: latestAmount("expense", ["房租", "生活帳單", "固定支出"]),
       insuranceExpense: latestAmount("expense", ["保險"]),
       loanExpense: latestAmount("expense", ["貸款"])
