@@ -2010,30 +2010,27 @@ function dashboardSnapshot() {
     counts: usesLineSummary ? summary.counts || {} : {}
   };
   actual.remaining = actual.income + actual.investmentIncome - actual.expense - actual.investment;
-  const actualEntryCount = Object.values(actual.counts).reduce((total, count) => total + Number(count || 0), 0);
-  const hasMonthData = hasMonthlyInput(row) || monthFields.some((field) => Number(state.profile[field] || 0) > 0);
-  const presented = usesLineSummary ? actual : budget;
+  const countedActualEntries = Object.values(actual.counts).reduce((total, count) => total + Number(count || 0), 0);
+  const actualEntryCount = countedActualEntries || actual.entries.length;
+  const hasMonthData = monthFields.some((field) => Number(row[field] ?? state.profile[field] ?? 0) > 0);
+  const hasActualEntries = actualEntryCount > 0;
   return {
     monthLabel: `${now.getFullYear()} 年 ${monthNumber} 月`,
-    income: presented.income,
-    investmentIncome: presented.investmentIncome,
-    expense: presented.expense,
-    investment: presented.investment,
-    remaining: presented.remaining,
     recentEntries: actual.entries,
     hasMonthData,
     usesLineSummary,
-    hasActualEntries: actualEntryCount > 0,
+    hasActualEntries,
     actualEntryCount,
     budget,
     actual,
-    variance: actual.remaining - budget.remaining
+    variance: hasActualEntries ? actual.remaining - budget.remaining : null
   };
 }
 
 function dashboardReminders(snapshot) {
   const reminders = [];
   if (snapshot.hasActualEntries && snapshot.actual.remaining < 0) reminders.push({ level: "urgent", text: `本月已記帳支出與投資超過收入 ${formatMoney(Math.abs(snapshot.actual.remaining))}，先確認非必要支出。` });
+  if (snapshot.hasMonthData && snapshot.budget.remaining < 0) reminders.push({ level: "urgent", text: `本月預算的支出與投資超過收入 ${formatMoney(Math.abs(snapshot.budget.remaining))}，請先調整預算配置。`, view: "inputView", section: "monthlyCashflowSection", label: "調整本月預算", nav: "budget" });
   if (!snapshot.hasMonthData) reminders.push({ level: "normal", text: "本月預算尚未確認，先填收入與固定支出。", view: "inputView", section: "monthlyCashflowSection", label: "填本月預算", nav: "budget" });
   if (!hasEnteredHoldings(state.holdings)) reminders.push({ level: "normal", text: "ETF 部位尚未填寫，報告中的配息與集中度會不完整。", view: "inputView", section: "etfAllocationSection", label: "新增 ETF 部位", nav: "invest" });
   if (!snapshot.usesLineSummary) reminders.push({ level: "normal", text: "尚無本月 LINE 記帳摘要；在官方 LINE 輸入一筆收支後即可同步。" });
@@ -2046,23 +2043,24 @@ function renderDashboard() {
   if (!root) return;
   const snapshot = dashboardSnapshot();
   const reminders = dashboardReminders(snapshot);
+  const actualMetric = (value) => snapshot.hasActualEntries ? formatMoney(value) : "—";
   q("#dashboardPeriod").textContent = snapshot.monthLabel;
   root.innerHTML = `
     <div class="dashboard-mode-note">
       <div><strong>實際帳</strong><span>LINE 與手動記帳的本月累計，不會覆蓋預算。</span></div>
-      <span class="dashboard-status">${snapshot.usesLineSummary ? `已同步 ${snapshot.actualEntryCount} 筆` : "尚未連結 LINE 記帳"}</span>
+      <span class="dashboard-status">${snapshot.hasActualEntries ? `已同步 ${snapshot.actualEntryCount} 筆` : snapshot.usesLineSummary ? "本月尚無實際帳" : "尚未連結 LINE 記帳"}</span>
     </div>
     <div class="dashboard-metrics" aria-label="本月實際現金流摘要">
-      <article class="dashboard-metric income" data-dashboard-metric="income"><span>實際總收入</span><strong>${formatMoney(snapshot.actual.income)}</strong></article>
-      <article class="dashboard-metric investment-income" data-dashboard-metric="investment-income"><span>實際投資流入</span><strong>${formatMoney(snapshot.actual.investmentIncome)}</strong></article>
-      <article class="dashboard-metric expense" data-dashboard-metric="expense"><span>實際總支出</span><strong>${formatMoney(snapshot.actual.expense)}</strong></article>
-      <article class="dashboard-metric investment" data-dashboard-metric="investment"><span>實際投資買入</span><strong>${formatMoney(snapshot.actual.investment)}</strong></article>
-      <article class="dashboard-metric remaining ${snapshot.actual.remaining < 0 ? "is-negative" : ""}" data-dashboard-metric="remaining"><span>實際剩餘現金流</span><strong>${formatMoney(snapshot.actual.remaining)}</strong></article>
+      <article class="dashboard-metric income" data-dashboard-metric="income"><span>實際總收入</span><strong>${actualMetric(snapshot.actual.income)}</strong></article>
+      <article class="dashboard-metric investment-income" data-dashboard-metric="investment-income"><span>實際投資流入</span><strong>${actualMetric(snapshot.actual.investmentIncome)}</strong></article>
+      <article class="dashboard-metric expense" data-dashboard-metric="expense"><span>實際總支出</span><strong>${actualMetric(snapshot.actual.expense)}</strong></article>
+      <article class="dashboard-metric investment" data-dashboard-metric="investment"><span>實際投資買入</span><strong>${actualMetric(snapshot.actual.investment)}</strong></article>
+      <article class="dashboard-metric remaining ${snapshot.hasActualEntries && snapshot.actual.remaining < 0 ? "is-negative" : ""}" data-dashboard-metric="remaining"><span>實際剩餘現金流</span><strong>${actualMetric(snapshot.actual.remaining)}</strong></article>
     </div>
     <section class="dashboard-budget-comparison" aria-label="預算與實際比較">
       <div><span>本月預算剩餘</span><strong>${formatMoney(snapshot.budget.remaining)}</strong></div>
-      <div><span>目前實際剩餘</span><strong>${formatMoney(snapshot.actual.remaining)}</strong></div>
-      <div class="${snapshot.variance < 0 ? "is-negative" : ""}"><span>實際與預算差額</span><strong>${snapshot.variance > 0 ? "+" : ""}${formatMoney(snapshot.variance)}</strong></div>
+      <div><span>目前實際剩餘</span><strong>${snapshot.hasActualEntries ? formatMoney(snapshot.actual.remaining) : "尚無實際帳"}</strong></div>
+      <div class="${snapshot.variance !== null && snapshot.variance < 0 ? "is-negative" : ""}"><span>實際與預算差額</span><strong>${snapshot.variance === null ? "開始記帳後顯示" : `${snapshot.variance > 0 ? "+" : ""}${formatMoney(snapshot.variance)}`}</strong></div>
       <button class="text-link-button" data-goto="inputView" data-focus-section="monthlyCashflowSection" data-member-nav="budget" type="button">查看本月預算</button>
     </section>
     <div class="dashboard-grid">
@@ -2072,7 +2070,7 @@ function renderDashboard() {
             <span class="dashboard-kicker">LINE 同步</span>
             <h3 id="dashboardRecentTitle">實際記帳明細</h3>
           </div>
-          <span class="dashboard-status">${snapshot.usesLineSummary ? "已同步" : "等待資料"}</span>
+          <span class="dashboard-status">${snapshot.hasActualEntries ? "已同步" : snapshot.usesLineSummary ? "本月無資料" : "等待資料"}</span>
         </div>
         ${snapshot.hasActualEntries ? `
           ${ledgerBreakdownHtml(snapshot.actual)}
@@ -2734,22 +2732,26 @@ function trustSourceHtml() {
 
 function reportCashflowSummaryHtml() {
   const snapshot = dashboardSnapshot();
+  const isActual = snapshot.hasActualEntries;
+  const cashflow = isActual ? snapshot.actual : snapshot.budget;
+  const sourceLabel = isActual ? "實際" : "預算";
+  const status = isActual ? "LINE 已同步" : snapshot.usesLineSummary ? "本月尚無實際帳" : "依目前預算";
   return `
     <section class="report-cashflow-summary" id="reportCashflowSummary" data-report-block="cashflow">
       <div class="report-block-heading">
         <div>
           <span class="eyebrow">${escapeHtml(snapshot.monthLabel)}</span>
-          <h3>本月現金流</h3>
+          <h3>本月${sourceLabel}帳</h3>
         </div>
-        <span class="dashboard-status">${snapshot.usesLineSummary ? "LINE 已同步" : "依目前填寫"}</span>
+        <span class="dashboard-status">${status}</span>
       </div>
       <div class="report-cashflow-grid">
-        <article><span>收入</span><strong>${formatMoney(snapshot.income)}</strong></article>
-        <article><span>支出</span><strong>${formatMoney(snapshot.expense)}</strong></article>
-        <article><span>投資</span><strong>${formatMoney(snapshot.investment)}</strong></article>
-        <article class="${snapshot.remaining < 0 ? "is-negative" : ""}"><span>剩餘</span><strong>${formatMoney(snapshot.remaining)}</strong></article>
+        <article><span>${sourceLabel}收入</span><strong>${formatMoney(cashflow.income)}</strong></article>
+        <article><span>${sourceLabel}支出</span><strong>${formatMoney(cashflow.expense)}</strong></article>
+        <article><span>${sourceLabel}投資</span><strong>${formatMoney(cashflow.investment)}</strong></article>
+        <article class="${cashflow.remaining < 0 ? "is-negative" : ""}"><span>${sourceLabel}剩餘</span><strong>${formatMoney(cashflow.remaining)}</strong></article>
       </div>
-      <button class="text-link-button" data-goto="inputView" data-focus-section="monthlyCashflowSection" data-member-nav="budget" type="button">調整月份資料</button>
+      <button class="text-link-button" data-goto="inputView" data-focus-section="monthlyCashflowSection" data-member-nav="budget" type="button">查看本月預算</button>
     </section>
   `;
 }

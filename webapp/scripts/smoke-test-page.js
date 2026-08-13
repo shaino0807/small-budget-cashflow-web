@@ -5,15 +5,19 @@ const http = require("http");
 const os = require("os");
 const path = require("path");
 
-const targetUrl = process.argv[2] || "http://127.0.0.1:5188/";
-const shouldServe = process.argv.includes("--serve");
-const screenshotArg = process.argv.find((arg) => arg.startsWith("--screenshot="));
+const cliArgs = process.argv.slice(2);
+const explicitTargetUrl = cliArgs.find((arg) => !arg.startsWith("--"));
+const shouldServe = cliArgs.includes("--serve");
+const requestedPort = explicitTargetUrl ? Number(new URL(explicitTargetUrl).port) : 0;
+const smokeServerPort = requestedPort > 0 ? requestedPort : 5400 + Math.floor(Math.random() * 400);
+const targetUrl = explicitTargetUrl || (shouldServe ? `http://127.0.0.1:${smokeServerPort}/` : "http://127.0.0.1:5188/");
+const screenshotArg = cliArgs.find((arg) => arg.startsWith("--screenshot="));
 const screenshotPath = screenshotArg ? path.resolve(screenshotArg.slice("--screenshot=".length)) : "";
-const screenshotViewArg = process.argv.find((arg) => arg.startsWith("--screenshot-view="));
+const screenshotViewArg = cliArgs.find((arg) => arg.startsWith("--screenshot-view="));
 const screenshotView = screenshotViewArg ? screenshotViewArg.slice("--screenshot-view=".length) : "landingView";
-const screenshotSectionArg = process.argv.find((arg) => arg.startsWith("--screenshot-section="));
+const screenshotSectionArg = cliArgs.find((arg) => arg.startsWith("--screenshot-section="));
 const screenshotSection = screenshotSectionArg ? screenshotSectionArg.slice("--screenshot-section=".length) : "";
-const viewportArg = process.argv.find((arg) => arg.startsWith("--viewport="));
+const viewportArg = cliArgs.find((arg) => arg.startsWith("--viewport="));
 const viewportMatch = viewportArg?.match(/^(?:--viewport=)(\d+)x(\d+)$/i);
 const viewportWidth = viewportMatch ? Number(viewportMatch[1]) : 390;
 const viewportHeight = viewportMatch ? Number(viewportMatch[2]) : 844;
@@ -122,15 +126,19 @@ async function main() {
         env: {
           ...process.env,
           SMOKE_TEST: "1",
+          PORT: String(smokeServerPort),
+          ALLOWED_ORIGINS: `http://localhost:${smokeServerPort},http://127.0.0.1:${smokeServerPort}`,
           CUSTOMER_DATA_DIR: customerDataDir,
           CUSTOMER_DATA_KEY: crypto.randomBytes(32).toString("base64"),
           ACCESS_CODE_PEPPER: crypto.randomBytes(24).toString("base64url"),
-          ADMIN_API_KEY: crypto.randomBytes(24).toString("base64url")
+          ADMIN_API_KEY: crypto.randomBytes(24).toString("base64url"),
+          GITHUB_ACTIONS_TOKEN: "",
+          LINE_REPLY_DISABLED: "1"
         },
         windowsHide: true,
         stdio: "ignore"
       });
-      await waitForHttp("http://127.0.0.1:5188/");
+      await waitForHttp(targetUrl);
     }
 
     const debuggingPort = 9300 + Math.floor(Math.random() * 400);
@@ -199,6 +207,23 @@ async function main() {
     await send(ws, "Runtime.enable");
     await send(ws, "Network.enable");
     await send(ws, "Page.enable");
+    await send(ws, "Page.addScriptToEvaluateOnNewDocument", {
+      source: `(() => {
+        window.__smokeFailedApiResponses = [];
+        const originalFetch = window.fetch.bind(window);
+        window.fetch = async (...args) => {
+          const response = await originalFetch(...args);
+          if (response.status >= 400) {
+            let body = "";
+            try { body = (await response.clone().text()).slice(0, 500); } catch {}
+            const request = args[0];
+            const url = request instanceof Request ? request.url : String(request);
+            window.__smokeFailedApiResponses.push({ url, status: response.status, body });
+          }
+          return response;
+        };
+      })()`
+    });
     await send(ws, "Emulation.setDeviceMetricsOverride", {
       width: viewportWidth,
       height: viewportHeight,
@@ -544,6 +569,9 @@ async function main() {
       expense: document.querySelector('[data-dashboard-metric="expense"] strong')?.textContent || "",
       investment: document.querySelector('[data-dashboard-metric="investment"] strong')?.textContent || "",
       remaining: document.querySelector('[data-dashboard-metric="remaining"] strong')?.textContent || "",
+      budgetRemaining: document.querySelector('.dashboard-budget-comparison > div:nth-child(1) strong')?.textContent || "",
+      actualRemaining: document.querySelector('.dashboard-budget-comparison > div:nth-child(2) strong')?.textContent || "",
+      variance: document.querySelector('.dashboard-budget-comparison > div:nth-child(3) strong')?.textContent || "",
       recentEntries: document.querySelectorAll("#dashboardRecentEntries .dashboard-entry").length,
       recentAmounts: [...document.querySelectorAll("#dashboardRecentEntries .dashboard-entry strong")].map((item) => item.textContent || ""),
       reminderCount: document.querySelectorAll(".dashboard-reminder").length,
@@ -580,6 +608,33 @@ async function main() {
       activeWorkspaceLabel: document.querySelector('#inputView .workspace-tab.is-active')?.textContent?.trim() || "",
       bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
     }))()`);
+
+    await send(ws, "Runtime.evaluate", {
+      expression: `(() => {
+        const savedSummary = state.reportMeta.lineSummary;
+        state.reportMeta.lineSummary = {
+          ...savedSummary,
+          income: 0,
+          investmentIncome: 0,
+          expense: 0,
+          investment: 0,
+          counts: { income: 0, expense: 0, investment: 0, investment_income: 0 },
+          entries: [],
+          recentEntries: []
+        };
+        renderDashboard();
+        window.__emptyActualDashboard = {
+          status: document.querySelector('.dashboard-mode-note .dashboard-status')?.textContent || "",
+          metrics: [...document.querySelectorAll('.dashboard-metric strong')].map((item) => item.textContent || ""),
+          actualRemaining: document.querySelector('.dashboard-budget-comparison > div:nth-child(2) strong')?.textContent || "",
+          variance: document.querySelector('.dashboard-budget-comparison > div:nth-child(3) strong')?.textContent || "",
+          ledgerStatus: document.querySelector('#dashboardRecentEntries .dashboard-status')?.textContent || ""
+        };
+        state.reportMeta.lineSummary = savedSummary;
+        renderDashboard();
+      })()`
+    });
+    const emptyActualDashboard = await evalValue(ws, "window.__emptyActualDashboard");
     await send(ws, "Runtime.evaluate", { expression: `document.querySelector('.site-links [data-focus-section="solutionPanel"]')?.click()` });
     await wait(450);
     const headerNavigation = await evalValue(ws, `(() => ({
@@ -679,6 +734,7 @@ async function main() {
       fs.writeFileSync(screenshotPath, Buffer.from(shot.data, "base64"));
     }
 
+    const failedApiResponses = await evalValue(ws, "window.__smokeFailedApiResponses || []");
     const result = {
       url: targetUrl,
       viewport: `${viewportWidth}x${viewportHeight} ${mobileViewport ? "mobile" : "desktop"}`,
@@ -686,6 +742,7 @@ async function main() {
       runtimeErrors,
       failedRequests: failures,
       badResponses,
+      failedApiResponses,
       landing,
       requiredValidation,
       advancedInput,
@@ -699,6 +756,7 @@ async function main() {
       freeReport,
       lineApplied,
       dashboard,
+      emptyActualDashboard,
       ledgerNavigation,
       workspaceJump,
       headerNavigation,
@@ -837,6 +895,9 @@ async function main() {
         && /65/.test(dashboard.expense)
         && /10,000/.test(dashboard.investment)
         && /40,735/.test(dashboard.remaining)
+        && /1,000/.test(dashboard.budgetRemaining)
+        && /40,735/.test(dashboard.actualRemaining)
+        && /39,735/.test(dashboard.variance)
         && dashboard.recentEntries === 2
         && dashboard.recentAmounts.some((value) => /\+.*800/.test(value))
         && dashboard.recentAmounts.some((value) => /−.*10,000/.test(value))
@@ -849,6 +910,12 @@ async function main() {
         && dashboard.activeBottomLabel === "總覽"
         && dashboard.headerHeight <= 66
         && dashboard.bodyOverflow === 0
+        && emptyActualDashboard.status === "本月尚無實際帳"
+        && emptyActualDashboard.metrics.length === 5
+        && emptyActualDashboard.metrics.every((value) => value === "—")
+        && emptyActualDashboard.actualRemaining === "尚無實際帳"
+        && emptyActualDashboard.variance === "開始記帳後顯示"
+        && emptyActualDashboard.ledgerStatus === "本月無資料"
         && ledgerNavigation.activeView === "dashboardView"
         && ledgerNavigation.activeBottomTabs === 1
         && ledgerNavigation.activeBottomLabel === "記帳"
