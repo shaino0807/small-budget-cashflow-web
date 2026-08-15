@@ -2012,24 +2012,33 @@ function dashboardSnapshot() {
   actual.remaining = actual.income + actual.investmentIncome - actual.expense - actual.investment;
   const countedActualEntries = Object.values(actual.counts).reduce((total, count) => total + Number(count || 0), 0);
   const actualEntryCount = countedActualEntries || actual.entries.length;
+  const countedIncomeEntries = Number(actual.counts.income || 0);
+  const countedInflowEntries = countedIncomeEntries + Number(actual.counts.investment_income || 0);
+  const actualIncomeEntryCount = countedIncomeEntries || actual.entries.filter((entry) => entry.type === "income").length;
+  const actualInflowEntryCount = countedInflowEntries || actual.entries.filter((entry) => ["income", "investment_income"].includes(entry.type)).length;
   const hasMonthData = monthFields.some((field) => Number(row[field] ?? state.profile[field] ?? 0) > 0);
   const hasActualEntries = actualEntryCount > 0;
+  const hasActualIncome = actualIncomeEntryCount > 0;
+  const hasActualInflow = actualInflowEntryCount > 0;
   return {
     monthLabel: `${now.getFullYear()} 年 ${monthNumber} 月`,
     recentEntries: actual.entries,
     hasMonthData,
     usesLineSummary,
     hasActualEntries,
+    hasActualIncome,
+    hasActualInflow,
     actualEntryCount,
     budget,
     actual,
-    variance: hasActualEntries ? actual.remaining - budget.remaining : null
+    variance: hasActualEntries && hasActualInflow ? actual.remaining - budget.remaining : null
   };
 }
 
 function dashboardReminders(snapshot) {
   const reminders = [];
   if (snapshot.hasActualEntries && snapshot.actual.remaining < 0) reminders.push({ level: "urgent", text: `本月已記帳支出與投資超過收入 ${formatMoney(Math.abs(snapshot.actual.remaining))}，先確認非必要支出。` });
+  if (snapshot.hasActualEntries && !snapshot.hasActualInflow) reminders.push({ level: "normal", text: "本月已有實際支出，但尚未記錄實際收入；預算差額會在有收入或投資流入後才顯示。" });
   if (snapshot.hasMonthData && snapshot.budget.remaining < 0) reminders.push({ level: "urgent", text: `本月預算的支出與投資超過收入 ${formatMoney(Math.abs(snapshot.budget.remaining))}，請先調整預算配置。`, view: "inputView", section: "monthlyCashflowSection", label: "調整本月預算", nav: "budget" });
   if (!snapshot.hasMonthData) reminders.push({ level: "normal", text: "本月預算尚未確認，先填收入與固定支出。", view: "inputView", section: "monthlyCashflowSection", label: "填本月預算", nav: "budget" });
   if (!hasEnteredHoldings(state.holdings)) reminders.push({ level: "normal", text: "ETF 部位尚未填寫，報告中的配息與集中度會不完整。", view: "inputView", section: "etfAllocationSection", label: "新增 ETF 部位", nav: "invest" });
@@ -2044,6 +2053,17 @@ function renderDashboard() {
   const snapshot = dashboardSnapshot();
   const reminders = dashboardReminders(snapshot);
   const actualMetric = (value) => snapshot.hasActualEntries ? formatMoney(value) : "—";
+  const actualIncomeMetric = snapshot.hasActualEntries && !snapshot.hasActualIncome ? "尚未記錄" : actualMetric(snapshot.actual.income);
+  const varianceText = snapshot.variance === null
+    ? snapshot.hasActualEntries
+      ? "等待實際收入後比較"
+      : "開始記帳後顯示"
+    : `${snapshot.variance > 0 ? "+" : ""}${formatMoney(snapshot.variance)}`;
+  const varianceNote = snapshot.variance === null
+    ? snapshot.hasActualEntries
+      ? `預算月收入 ${formatMoney(snapshot.budget.income)} 不會自動帶入實際帳。請先記錄一筆實際收入。`
+      : "開始有實際記帳後，系統才會比較本月預算與實際結果。"
+    : "計算：目前實際剩餘 − 本月預算剩餘。負值表示目前記錄的剩餘較少，不等於超支金額。";
   q("#dashboardPeriod").textContent = snapshot.monthLabel;
   root.innerHTML = `
     <div class="dashboard-mode-note">
@@ -2051,7 +2071,7 @@ function renderDashboard() {
       <span class="dashboard-status">${snapshot.hasActualEntries ? `已同步 ${snapshot.actualEntryCount} 筆` : snapshot.usesLineSummary ? "本月尚無實際帳" : "尚未連結 LINE 記帳"}</span>
     </div>
     <div class="dashboard-metrics" aria-label="本月實際現金流摘要">
-      <article class="dashboard-metric income" data-dashboard-metric="income"><span>實際總收入</span><strong>${actualMetric(snapshot.actual.income)}</strong></article>
+      <article class="dashboard-metric income" data-dashboard-metric="income"><span>實際總收入</span><strong>${actualIncomeMetric}</strong>${snapshot.hasActualEntries && !snapshot.hasActualIncome ? `<small>預算 ${formatMoney(snapshot.budget.income)} 未自動帶入</small>` : ""}</article>
       <article class="dashboard-metric investment-income" data-dashboard-metric="investment-income"><span>實際投資流入</span><strong>${actualMetric(snapshot.actual.investmentIncome)}</strong></article>
       <article class="dashboard-metric expense" data-dashboard-metric="expense"><span>實際總支出</span><strong>${actualMetric(snapshot.actual.expense)}</strong></article>
       <article class="dashboard-metric investment" data-dashboard-metric="investment"><span>實際投資買入</span><strong>${actualMetric(snapshot.actual.investment)}</strong></article>
@@ -2060,7 +2080,7 @@ function renderDashboard() {
     <section class="dashboard-budget-comparison" aria-label="預算與實際比較">
       <div><span>本月預算剩餘</span><strong>${formatMoney(snapshot.budget.remaining)}</strong></div>
       <div><span>目前實際剩餘</span><strong>${snapshot.hasActualEntries ? formatMoney(snapshot.actual.remaining) : "尚無實際帳"}</strong></div>
-      <div class="${snapshot.variance !== null && snapshot.variance < 0 ? "is-negative" : ""}"><span>實際與預算差額</span><strong>${snapshot.variance === null ? "開始記帳後顯示" : `${snapshot.variance > 0 ? "+" : ""}${formatMoney(snapshot.variance)}`}</strong></div>
+      <div class="dashboard-variance ${snapshot.variance !== null && snapshot.variance < 0 ? "is-negative" : ""}"><span>實際剩餘相對預算</span><strong>${varianceText}</strong><small>${varianceNote}</small></div>
       <button class="text-link-button" data-goto="inputView" data-focus-section="monthlyCashflowSection" data-member-nav="budget" type="button">查看本月預算</button>
     </section>
     <div class="dashboard-grid">
@@ -2073,6 +2093,7 @@ function renderDashboard() {
           <span class="dashboard-status">${snapshot.hasActualEntries ? "已同步" : snapshot.usesLineSummary ? "本月無資料" : "等待資料"}</span>
         </div>
         ${snapshot.hasActualEntries ? `
+          ${expenseCategoryOverviewHtml(snapshot.actual)}
           ${ledgerBreakdownHtml(snapshot.actual)}
           <div class="dashboard-entry-list">
             ${snapshot.recentEntries.slice(0, 6).map((entry) => `
@@ -2113,7 +2134,7 @@ function renderDashboard() {
       <button data-goto="freeReportView" data-member-nav="report" type="button"><span>報告</span><strong>查看健檢結果</strong></button>
     </section>
     <div class="dashboard-secondary-actions">
-      <button class="text-link-button" data-goto="landingView" data-focus-section="quickCheckPanel" type="button">重新做五題健檢</button>
+      <button class="text-link-button" data-goto="landingView" data-focus-section="quickCheckPanel" data-allow-member-onboarding="true" type="button">重新做五題健檢</button>
     </div>
   `;
   bindGotoButtons();
@@ -2503,7 +2524,8 @@ function workspaceNavHtml(active = "freeReportView", activeSection = "") {
         }).join("")}
       </div>
       <div class="workspace-actions">
-        <button class="text-link-button" data-goto="landingView" data-focus-section="quickCheckPanel" type="button">返回首頁改答案</button>
+        <button class="text-link-button" data-goto="dashboardView" data-member-nav="overview" type="button">回本月總覽</button>
+        <button class="text-link-button" data-goto="landingView" data-focus-section="quickCheckPanel" data-allow-member-onboarding="true" type="button">重新健檢</button>
       </div>
     </nav>
   `;
@@ -2860,6 +2882,39 @@ function categoryRowsHtml(items = [], emptyText = "尚無分類資料") {
   return `<div class="ledger-category-rows">${items.map((item) => `
     <div><span>${escapeHtml(canonicalLedgerCategory(item.type || "", item.category))} · ${Number(item.count || 0)} 筆</span><strong>${formatMoney(item.amount)}</strong></div>
   `).join("")}</div>`;
+}
+
+function expenseCategoryOverviewHtml(summary = {}) {
+  const items = (summary.expenseCategories || [])
+    .map((item) => ({ ...item, amount: Number(item.amount || 0), count: Number(item.count || 0) }))
+    .filter((item) => item.amount > 0)
+    .sort((a, b) => b.amount - a.amount || String(a.category).localeCompare(String(b.category), "zh-Hant"));
+  const total = Number(summary.expense || 0);
+  if (!items.length || total <= 0) return "";
+  return `
+    <section class="expense-category-overview" aria-labelledby="expenseCategoryOverviewTitle">
+      <div class="expense-category-overview-head">
+        <div>
+          <span class="dashboard-kicker">本月支出統計</span>
+          <h4 id="expenseCategoryOverviewTitle">支出分類總表</h4>
+        </div>
+        <strong>${formatMoney(total)}</strong>
+      </div>
+      <p>依目前實際支出由高到低排列；百分比以本月實際總支出計算。</p>
+      <div class="expense-category-bars">
+        ${items.map((item) => {
+          const share = Math.round(item.amount / total * 1000) / 10;
+          const category = canonicalLedgerCategory("expense", item.category);
+          return `
+            <article class="expense-category-bar">
+              <div class="expense-category-bar-meta"><span>${escapeHtml(category)} · ${item.count} 筆</span><strong>${formatMoney(item.amount)} <small>${share}%</small></strong></div>
+              <div class="expense-category-bar-track" role="progressbar" aria-label="${escapeHtml(category)}占本月支出的比例" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${share}"><span style="--expense-share:${share}%"></span></div>
+            </article>
+          `;
+        }).join("")}
+      </div>
+    </section>
+  `;
 }
 
 function ledgerBreakdownHtml(summary = {}) {
@@ -3961,7 +4016,13 @@ function scrollToWorkspaceSection(sectionId) {
   }, 180);
 }
 
-function goTo(viewId, sectionId = "", memberNav = "") {
+function goTo(viewId, sectionId = "", memberNav = "", options = {}) {
+  const isCompletedMember = authState.authenticated && authState.user?.onboardingCompleted;
+  if (viewId === "landingView" && isCompletedMember && !options.allowMemberOnboarding) {
+    viewId = "dashboardView";
+    sectionId = "";
+    memberNav = "overview";
+  }
   if (["paidReportView", "simulationView", "calendarView"].includes(viewId) && !state.paidUnlocked) {
     viewId = "upgradeView";
     showToast("完整報告、模擬與月曆需先解鎖");
@@ -4003,9 +4064,11 @@ function bindGotoButtons() {
   document.querySelectorAll("[data-goto]").forEach((button) => {
     if (button.dataset.gotoBound === "true") return;
     button.dataset.gotoBound = "true";
-    button.addEventListener("click", () => {
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
       const sectionId = button.dataset.focusSection;
-      goTo(button.dataset.goto, sectionId || "", button.dataset.memberNav || "");
+      const allowMemberOnboarding = button.dataset.allowMemberOnboarding === "true";
+      goTo(button.dataset.goto, sectionId || "", button.dataset.memberNav || "", { allowMemberOnboarding });
       scrollToWorkspaceSection(sectionId);
     });
   });

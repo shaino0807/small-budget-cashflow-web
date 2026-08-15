@@ -2886,6 +2886,13 @@ a:hover {
   color: #9f1d16;
 }
 
+.dashboard-metric small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
 .dashboard-budget-comparison {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
@@ -2911,6 +2918,17 @@ a:hover {
 
 .dashboard-budget-comparison .is-negative strong {
   color: var(--danger);
+}
+
+.dashboard-budget-comparison small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.dashboard-variance small {
+  max-width: 360px;
 }
 
 .dashboard-grid {
@@ -2982,6 +3000,80 @@ a:hover {
   display: grid;
   gap: 8px;
   margin: 10px 0 16px;
+}
+
+.expense-category-overview {
+  margin: 0 0 16px;
+  padding: 16px;
+  border: 1px solid rgba(4, 52, 44, 0.14);
+  border-radius: 14px;
+  background: rgba(159, 225, 203, 0.12);
+}
+
+.expense-category-overview-head,
+.expense-category-bar-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.expense-category-overview h4 {
+  margin-top: 2px;
+  font-size: 17px;
+}
+
+.expense-category-overview > p {
+  margin: 6px 0 14px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.expense-category-bars {
+  display: grid;
+  gap: 12px;
+}
+
+.expense-category-bar {
+  display: grid;
+  gap: 6px;
+}
+
+.expense-category-bar-meta {
+  font-size: 13px;
+}
+
+.expense-category-bar-meta > span {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.expense-category-bar-meta > strong {
+  color: var(--brand-dark);
+  white-space: nowrap;
+}
+
+.expense-category-bar-meta small {
+  margin-left: 4px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.expense-category-bar-track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(4, 52, 44, 0.10);
+}
+
+.expense-category-bar-track > span {
+  display: block;
+  width: var(--expense-share);
+  min-width: 5px;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--brand-green), #4fb892);
 }
 
 .ledger-breakdowns details {

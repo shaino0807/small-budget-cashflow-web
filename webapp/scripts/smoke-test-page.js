@@ -576,6 +576,8 @@ async function main() {
       recentAmounts: [...document.querySelectorAll("#dashboardRecentEntries .dashboard-entry strong")].map((item) => item.textContent || ""),
       reminderCount: document.querySelectorAll(".dashboard-reminder").length,
       categoryBreakdowns: document.querySelectorAll("#dashboardRecentEntries .ledger-breakdowns details").length,
+      expenseCategorySummaryRows: document.querySelectorAll("#dashboardRecentEntries .expense-category-bar").length,
+      expenseCategorySummaryText: document.querySelector("#dashboardRecentEntries .expense-category-overview")?.innerText || "",
       budgetComparison: document.querySelectorAll(".dashboard-budget-comparison > div").length,
       bottomNavCount: document.querySelectorAll(".member-nav-item").length,
       bottomNavDisplay: getComputedStyle(document.querySelector(".member-bottom-nav")).display,
@@ -604,6 +606,7 @@ async function main() {
       hasEtfSection: Boolean(document.querySelector("#etfAllocationSection")),
       hasHoldingEditor: Boolean(document.querySelector("#holdingEditor")),
       hasBackHome: Boolean(document.querySelector('#inputView [data-goto="landingView"]')),
+      hasDashboardReturn: Boolean(document.querySelector('#inputView [data-goto="dashboardView"]')),
       activeWorkspaceTabs: document.querySelectorAll('#inputView .workspace-tab.is-active').length,
       activeWorkspaceLabel: document.querySelector('#inputView .workspace-tab.is-active')?.textContent?.trim() || "",
       bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
@@ -630,12 +633,37 @@ async function main() {
           variance: document.querySelector('.dashboard-budget-comparison > div:nth-child(3) strong')?.textContent || "",
           ledgerStatus: document.querySelector('#dashboardRecentEntries .dashboard-status')?.textContent || ""
         };
+        state.reportMeta.lineSummary = {
+          ...savedSummary,
+          income: 0,
+          investmentIncome: 0,
+          expense: 1065,
+          investment: 0,
+          counts: { income: 0, expense: 2, investment: 0, investment_income: 0 },
+          expenseCategories: [{ category: "伙食", amount: 1000, count: 1 }, { category: "交通", amount: 65, count: 1 }],
+          entries: [],
+          recentEntries: []
+        };
+        renderDashboard();
+        window.__expenseOnlyDashboard = {
+          income: document.querySelector('[data-dashboard-metric="income"] strong')?.textContent || "",
+          incomeNote: document.querySelector('[data-dashboard-metric="income"] small')?.textContent || "",
+          variance: document.querySelector('.dashboard-budget-comparison > div:nth-child(3) strong')?.textContent || "",
+          varianceNote: document.querySelector('.dashboard-budget-comparison > div:nth-child(3) small')?.textContent || "",
+          categoryRows: document.querySelectorAll('#dashboardRecentEntries .expense-category-bar').length
+        };
         state.reportMeta.lineSummary = savedSummary;
         renderDashboard();
       })()`
     });
     const emptyActualDashboard = await evalValue(ws, "window.__emptyActualDashboard");
-    await send(ws, "Runtime.evaluate", { expression: `document.querySelector('.site-links [data-focus-section="solutionPanel"]')?.click()` });
+    const expenseOnlyDashboard = await evalValue(ws, "window.__expenseOnlyDashboard");
+    await send(ws, "Runtime.evaluate", {
+      expression: `(() => {
+        authState = { ...authState, authenticated: true, user: { ...(authState.user || {}), onboardingCompleted: true } };
+        document.querySelector('.site-links [data-focus-section="solutionPanel"]')?.click();
+      })()`
+    });
     await wait(450);
     const headerNavigation = await evalValue(ws, `(() => ({
       activeView: document.querySelector(".view.is-active")?.id,
@@ -757,6 +785,7 @@ async function main() {
       lineApplied,
       dashboard,
       emptyActualDashboard,
+      expenseOnlyDashboard,
       ledgerNavigation,
       workspaceJump,
       headerNavigation,
@@ -903,6 +932,9 @@ async function main() {
         && dashboard.recentAmounts.some((value) => /−.*10,000/.test(value))
         && dashboard.reminderCount >= 1
         && dashboard.categoryBreakdowns === 2
+        && dashboard.expenseCategorySummaryRows === 1
+        && dashboard.expenseCategorySummaryText.includes("伙食")
+        && dashboard.expenseCategorySummaryText.includes("100%")
         && dashboard.budgetComparison === 3
         && dashboard.bottomNavCount === 5
         && dashboard.bottomNavDisplay === (mobileViewport ? "grid" : "none")
@@ -916,6 +948,11 @@ async function main() {
         && emptyActualDashboard.actualRemaining === "尚無實際帳"
         && emptyActualDashboard.variance === "開始記帳後顯示"
         && emptyActualDashboard.ledgerStatus === "本月無資料"
+        && expenseOnlyDashboard.income === "尚未記錄"
+        && expenseOnlyDashboard.incomeNote.includes("未自動帶入")
+        && expenseOnlyDashboard.variance === "等待實際收入後比較"
+        && expenseOnlyDashboard.varianceNote.includes("不會自動帶入實際帳")
+        && expenseOnlyDashboard.categoryRows === 2
         && ledgerNavigation.activeView === "dashboardView"
         && ledgerNavigation.activeBottomTabs === 1
         && ledgerNavigation.activeBottomLabel === "記帳"
@@ -923,11 +960,12 @@ async function main() {
         && workspaceJump.hasEtfSection
         && workspaceJump.hasHoldingEditor
         && workspaceJump.hasBackHome
+        && workspaceJump.hasDashboardReturn
         && workspaceJump.activeWorkspaceTabs === 1
         && workspaceJump.activeWorkspaceLabel === "ETF 部位配置"
         && workspaceJump.bodyOverflow === 0
-        && headerNavigation.activeView === "landingView"
-        && headerNavigation.solutionVisible
+        && headerNavigation.activeView === "dashboardView"
+        && !headerNavigation.solutionVisible
         && headerNavigation.bookingConfigured
         && headerNavigation.homeButtonCount >= 3
         && upgradeNavigation.activeView === "upgradeView"
