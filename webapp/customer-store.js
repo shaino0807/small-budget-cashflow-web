@@ -179,7 +179,8 @@ function initialize() {
       label TEXT NOT NULL,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
-      expires_at TEXT NOT NULL
+      expires_at TEXT NOT NULL,
+      payload_cipher TEXT
     );
     CREATE INDEX IF NOT EXISTS idx_line_pending_inputs_expiry ON line_pending_inputs(expires_at);
     CREATE TABLE IF NOT EXISTS line_undo_targets (
@@ -259,6 +260,8 @@ function initialize() {
     db.prepare("UPDATE line_ledger_entries SET updated_at = created_at WHERE updated_at IS NULL").run();
   }
   if (!ledgerColumns.includes("user_id")) db.exec("ALTER TABLE line_ledger_entries ADD COLUMN user_id TEXT");
+  const pendingInputColumns = db.prepare("PRAGMA table_info(line_pending_inputs)").all().map((row) => row.name);
+  if (!pendingInputColumns.includes("payload_cipher")) db.exec("ALTER TABLE line_pending_inputs ADD COLUMN payload_cipher TEXT");
   const profileColumns = db.prepare("PRAGMA table_info(line_profiles)").all().map((row) => row.name);
   if (!profileColumns.includes("user_id")) db.exec("ALTER TABLE line_profiles ADD COLUMN user_id TEXT");
   const holdingColumns = db.prepare("PRAGMA table_info(line_holdings)").all().map((row) => row.name);
@@ -517,11 +520,28 @@ function createStore() {
       type: row.input_type,
       label: row.label,
       createdAt: row.created_at,
-      expiresAt: row.expires_at
+      expiresAt: row.expires_at,
+      payload: row.payload_cipher ? decrypt(row.payload_cipher) : null
     } : null;
   }
 
-  function startLinePendingInput({ lineUserId, type, label, sourceMessageId }) {
+  function linePendingInput(lineUserId) {
+    if (!lineUserId) throw new Error("缺少 LINE 使用者");
+    return pendingLineInputByHash(accessHash(`line:${lineUserId}`));
+  }
+
+  function lineSourceMessageHandled({ lineUserId, sourceMessageId }) {
+    if (!lineUserId) throw new Error("缺少 LINE 使用者");
+    const messageId = String(sourceMessageId || "").slice(0, 80);
+    if (!messageId) return false;
+    const lineUserHash = accessHash(`line:${lineUserId}`);
+    return Boolean(
+      db.prepare("SELECT 1 FROM line_command_receipts WHERE line_user_hash = ? AND source_message_id = ?").get(lineUserHash, messageId)
+      || db.prepare("SELECT 1 FROM line_ledger_entries WHERE line_user_hash = ? AND source_message_id = ?").get(lineUserHash, messageId)
+    );
+  }
+
+  function startLinePendingInput({ lineUserId, type, label, sourceMessageId, payload = null }) {
     if (!lineUserId) throw new Error("缺少 LINE 使用者");
     const normalizedType = String(type || "").trim().slice(0, 40);
     const normalizedLabel = String(label || "目前項目").trim().slice(0, 80);
@@ -533,22 +553,30 @@ function createStore() {
       commandType: `start_pending_${normalizedType}`,
       action: () => {
         const previous = pendingLineInputByHash(lineUserHash);
+        const canceled = previous ? {
+          type: previous.type,
+          label: previous.label,
+          createdAt: previous.createdAt,
+          expiresAt: previous.expiresAt
+        } : null;
         db.prepare("DELETE FROM line_undo_targets WHERE line_user_hash = ?").run(lineUserHash);
         const now = new Date();
         const expiresAt = new Date(now.getTime() + linePendingInputMinutes * 60000).toISOString();
+        const payloadCipher = payload === null || payload === undefined ? null : encrypt(payload);
         db.prepare(`
-          INSERT INTO line_pending_inputs (line_user_hash, input_type, label, created_at, updated_at, expires_at)
-          VALUES (?, ?, ?, ?, ?, ?)
+          INSERT INTO line_pending_inputs (line_user_hash, input_type, label, created_at, updated_at, expires_at, payload_cipher)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
           ON CONFLICT(line_user_hash) DO UPDATE SET
             input_type = excluded.input_type,
             label = excluded.label,
             created_at = excluded.created_at,
             updated_at = excluded.updated_at,
-            expires_at = excluded.expires_at
-        `).run(lineUserHash, normalizedType, normalizedLabel, now.toISOString(), now.toISOString(), expiresAt);
+            expires_at = excluded.expires_at,
+            payload_cipher = excluded.payload_cipher
+        `).run(lineUserHash, normalizedType, normalizedLabel, now.toISOString(), now.toISOString(), expiresAt, payloadCipher);
         return {
           pending: { type: normalizedType, label: normalizedLabel, expiresAt },
-          canceled: previous
+          canceled
         };
       }
     });
@@ -1863,6 +1891,8 @@ function createStore() {
     lineCashflowForUser,
     lineLedgerSummary,
     lineLedgerEntries,
+    linePendingInput,
+    lineSourceMessageHandled,
     listReports,
     listOrders,
     markLineUndoTarget,

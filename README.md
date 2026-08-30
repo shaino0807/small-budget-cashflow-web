@@ -115,6 +115,19 @@ LINE 官方帳號整合需要在 Render 後臺設定 `LINE_CHANNEL_SECRET` 與 `
 
 若要啟用第二層 AI 解析，再於 Render 設定 `OPENAI_API_KEY`。系統永遠先跑本機規則，只有規則無法判斷或一句含多筆金額時才呼叫 OpenAI；API key 不得提交到 Git。未設定 key 時會自動維持規則模式。
 
+LINE 語音記帳 MVP 會接收使用者直接傳給官方帳號的 `audio` 訊息，從 LINE Message Content API 將音訊讀進後端記憶體，再以 OpenAI Audio Transcription 轉成中文文字。原始音訊不寫入磁碟或 SQLite；轉錄文字與候選帳目使用既有 AES-GCM 加密暫存，使用者按「確認記帳」後才建立正式帳目，按「取消」或逾期則不入帳。確認後會把轉錄文字與原始 LINE message ID 加密保存在帳目來源欄位供查帳，並沿用 `LINE_LEDGER_RETENTION_DAYS` 的刪除期限。
+
+啟用前需要：
+
+- Render 已設定 `LINE_CHANNEL_ACCESS_TOKEN` 與 `OPENAI_API_KEY`。
+- 將 `LINE_VOICE_TRANSCRIPTION_ENABLED` 明確改為 `1`；預設 `0`，避免未告知就把客戶音訊送往第三方服務。
+- 正式環境 Pilot 建議維持 `LINE_VOICE_PILOT_MODE=1`。用戶必須先輸入「啟用語音測試」，系統才會在 30 分鐘內接受下一段語音並顯示第三方轉錄告知；未授權的語音不會下載或送往 OpenAI。
+- 在隱私權政策與服務說明告知語音會送往 OpenAI 進行轉錄，並說明保存期間與刪除方式。
+- 預設只接受 60 秒、10 MB 以內的單筆中文記帳。一次說多筆、缺少金額／用途或辨識失敗都不會寫入。
+- `OPENAI_TRANSCRIPTION_MODEL` 預設為 `gpt-4o-mini-transcribe`；秒數、大小及逾時可由 `.env.example` 中的 `LINE_VOICE_*` 變數調整。
+
+Pilot 客戶先輸入「啟用語音測試」，再說「昨天晚餐三百五十元」。Bot 會先回傳日期、類型、分類、金額與備註；只有按「確認記帳」後才同步到帳本。辨識錯誤時按「取消」並重新錄製。
+
 LINE webhook 本地測試：
 
 ```powershell
@@ -132,6 +145,7 @@ LINE 記帳已支援以下文字格式：
 - `查明細`、`修改第2筆 180`、`刪除第3筆`：查詢或修正本月紀錄。
 - 待輸入時可按其他選項、按「取消」或輸入 `取消`／`按錯`；取消結果顯示 `+$0`，但不建立零元記帳。剛完成的 LINE 記帳預設可在 10 分鐘內撤銷一次。
 - `刪除全部資料`，再輸入 `確認刪除全部資料`：刪除 LINE 記帳、profile、ETF 部位與網頁綁定。
+- Pilot 語音記帳啟用後，先輸入 `啟用語音測試`，再傳送 60 秒內的單筆記帳語音；系統先轉錄並要求確認，不會直接入帳。
 
 LINE 使用者 ID 只保存雜湊；訊息來源與備註加密保存。完成六位數綁定後，網頁重新開啟時會自動讀取本月收入、投資流入、支出、投資買入、剩餘現金流、最近明細、profile 與 ETF 部位。網頁的「儲存」也會把 profile 與 ETF 部位同步回後端。
 

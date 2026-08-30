@@ -1,7 +1,9 @@
 const crypto = require("crypto");
 
 const lineReplyEndpoint = "https://api.line.me/v2/bot/message/reply";
+const lineContentEndpoint = "https://api-data.line.me/v2/bot/message";
 const openAiResponsesEndpoint = "https://api.openai.com/v1/responses";
+const openAiTranscriptionEndpoint = "https://api.openai.com/v1/audio/transcriptions";
 
 function lineChannelSecret() {
   return String(process.env.LINE_CHANNEL_SECRET || "");
@@ -9,6 +11,23 @@ function lineChannelSecret() {
 
 function lineChannelAccessToken() {
   return String(process.env.LINE_CHANNEL_ACCESS_TOKEN || "");
+}
+
+function boundedInteger(value, fallback, minimum, maximum) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.max(minimum, Math.min(maximum, Math.round(parsed))) : fallback;
+}
+
+function lineVoiceConfig() {
+  return {
+    enabled: process.env.LINE_VOICE_TRANSCRIPTION_ENABLED === "1" && Boolean(process.env.OPENAI_API_KEY),
+    pilotMode: process.env.LINE_VOICE_PILOT_MODE === "1",
+    model: String(process.env.OPENAI_TRANSCRIPTION_MODEL || "gpt-4o-mini-transcribe").slice(0, 80),
+    maxDurationSeconds: boundedInteger(process.env.LINE_VOICE_MAX_DURATION_SECONDS, 60, 5, 300),
+    maxBytes: boundedInteger(process.env.LINE_VOICE_MAX_BYTES, 10 * 1024 * 1024, 1024, 25 * 1024 * 1024),
+    downloadTimeoutMs: boundedInteger(process.env.LINE_VOICE_DOWNLOAD_TIMEOUT_MS, 12000, 3000, 30000),
+    transcriptionTimeoutMs: boundedInteger(process.env.LINE_VOICE_TRANSCRIPTION_TIMEOUT_MS, 20000, 5000, 45000)
+  };
 }
 
 function safeEqual(left, right) {
@@ -20,6 +39,7 @@ function safeEqual(left, right) {
 function lineReadiness() {
   const secret = lineChannelSecret();
   const token = lineChannelAccessToken();
+  const voice = lineVoiceConfig();
   return {
     channelSecretConfigured: secret.length >= 16,
     channelAccessTokenConfigured: token.length >= 32,
@@ -30,6 +50,11 @@ function lineReadiness() {
     ledgerCommandsEnabled: true,
     privacyDeleteEnabled: true,
     aiParserConfigured: Boolean(process.env.OPENAI_API_KEY && process.env.LINE_AI_PARSER_ENABLED === "1"),
+    voiceTranscriptionConfigured: voice.enabled,
+    voicePilotMode: voice.pilotMode,
+    voiceMaxDurationSeconds: voice.maxDurationSeconds,
+    voiceMaxBytes: voice.maxBytes,
+    voiceTranscriptionModel: voice.model,
     richMenuAutoDeploy: process.env.LINE_RICH_MENU_AUTO_DEPLOY === "1",
     replyDisabled: process.env.LINE_REPLY_DISABLED === "1"
   };
@@ -56,6 +81,101 @@ function parseLineWebhook(rawBody) {
   }
 }
 
+function wait(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+function voiceError(code, message) {
+  const error = new Error(message);
+  error.voiceCode = code;
+  return error;
+}
+
+function audioFilename(contentType = "") {
+  const normalized = String(contentType).split(";")[0].trim().toLowerCase();
+  const extension = {
+    "audio/aac": "aac",
+    "audio/flac": "flac",
+    "audio/m4a": "m4a",
+    "audio/mp4": "m4a",
+    "audio/mpeg": "mp3",
+    "audio/mp3": "mp3",
+    "audio/ogg": "ogg",
+    "audio/wav": "wav",
+    "audio/webm": "webm"
+  }[normalized] || "m4a";
+  return `line-voice.${extension}`;
+}
+
+async function downloadLineAudio(messageId, options = {}) {
+  const token = lineChannelAccessToken();
+  if (!token) throw voiceError("line_token_missing", "LINE 語音下載憑證尚未設定");
+  const config = lineVoiceConfig();
+  const fetchImpl = options.fetchImpl || fetch;
+  const waitImpl = options.waitImpl || wait;
+  const id = encodeURIComponent(String(messageId || ""));
+  if (!id) throw voiceError("message_id_missing", "LINE 語音訊息缺少 message ID");
+
+  let response = null;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    response = await fetchImpl(`${lineContentEndpoint}/${id}/content`, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(config.downloadTimeoutMs)
+    });
+    if (response.status !== 202) break;
+    if (attempt < 2) await waitImpl(400 * (attempt + 1));
+  }
+  if (response?.status === 202) throw voiceError("line_audio_processing", "LINE 尚在準備語音檔");
+  if (!response?.ok) {
+    const code = [404, 410].includes(response?.status) ? "line_audio_expired" : "line_audio_download_failed";
+    throw voiceError(code, `LINE 語音下載失敗（HTTP ${response?.status || "unknown"}）`);
+  }
+
+  const declaredSize = Number(response.headers?.get?.("content-length") || 0);
+  if (declaredSize > config.maxBytes) throw voiceError("audio_too_large", "語音檔案超過大小限制");
+  const contentType = String(response.headers?.get?.("content-type") || "audio/m4a").split(";")[0].trim().toLowerCase();
+  if (!contentType.startsWith("audio/") && contentType !== "application/octet-stream") {
+    throw voiceError("invalid_audio_type", "LINE 回傳的內容不是音訊格式");
+  }
+  const buffer = Buffer.from(await response.arrayBuffer());
+  if (!buffer.length) throw voiceError("empty_audio", "LINE 回傳空白語音檔");
+  if (buffer.length > config.maxBytes) throw voiceError("audio_too_large", "語音檔案超過大小限制");
+  return { buffer, contentType, filename: audioFilename(contentType) };
+}
+
+async function transcribeLineAudio(audio, options = {}) {
+  const config = lineVoiceConfig();
+  if (!config.enabled) throw voiceError("voice_disabled", "語音記帳功能尚未啟用");
+  const form = new FormData();
+  form.append("file", new Blob([audio.buffer], { type: audio.contentType || "audio/m4a" }), audio.filename || "line-voice.m4a");
+  form.append("model", config.model);
+  form.append("language", "zh");
+  form.append("response_format", "json");
+  form.append("prompt", "台灣中文記帳語音，常見詞包含早餐、午餐、晚餐、房租、薪水、獎金、ETF、股票、買入、配息、賣出、新台幣。只需逐字轉錄，不要改寫金額。");
+  const response = await (options.fetchImpl || fetch)(openAiTranscriptionEndpoint, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+    body: form,
+    signal: AbortSignal.timeout(config.transcriptionTimeoutMs)
+  });
+  if (!response.ok) throw voiceError("transcription_failed", `OpenAI 語音轉錄失敗（HTTP ${response.status}）`);
+  const payload = await response.json();
+  const transcript = String(payload?.text || "").replace(/\s+/g, " ").trim().slice(0, 500);
+  if (!transcript) throw voiceError("empty_transcript", "沒有辨識到可用的語音內容");
+  return transcript;
+}
+
+function voiceFailureReply(error) {
+  return {
+    voice_disabled: "語音記帳目前尚未啟用，請先使用文字記帳。",
+    line_audio_processing: "LINE 還在準備這段語音，請稍後再傳一次。",
+    line_audio_expired: "這段語音已無法下載，請重新錄一段 60 秒內的語音。",
+    audio_too_large: "這段語音檔案太大，請縮短為 60 秒內並重新傳送。",
+    empty_audio: "這段語音沒有可辨識的內容，請重新錄製。",
+    empty_transcript: "我沒有聽清楚，請用「日期、用途、金額」重新說一次，例如：昨天晚餐三百五十元。"
+  }[error?.voiceCode] || "語音辨識暫時失敗，這次沒有寫入帳本；請稍後重試或先用文字記帳。";
+}
+
 function connectionReplyText() {
   return [
     "LINE 記帳已接通。",
@@ -76,6 +196,61 @@ function firstAmount(text) {
   if (!match) return 0;
   const multiplier = /萬|w/i.test(match[2] || "") ? 10000 : /千|k/i.test(match[2] || "") ? 1000 : 1;
   return Math.round(Number(match[1]) * multiplier);
+}
+
+function chineseNumeralValue(value) {
+  const raw = String(value || "");
+  const digits = { 零: 0, 〇: 0, 一: 1, 二: 2, 兩: 2, 两: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9 };
+  const units = { 十: 10, 百: 100, 千: 1000, 萬: 10000, 万: 10000, 億: 100000000, 亿: 100000000 };
+  if (!raw || ![...raw].every((character) => character in digits || character in units)) return null;
+  if ([...raw].every((character) => character in digits)) {
+    return Number([...raw].map((character) => digits[character]).join(""));
+  }
+
+  let total = 0;
+  let section = 0;
+  let number = 0;
+  let lowestUnit = Infinity;
+  for (const character of raw) {
+    if (character in digits) {
+      number = digits[character];
+      continue;
+    }
+    const unit = units[character];
+    lowestUnit = Math.min(lowestUnit, unit);
+    if (unit < 10000) {
+      section += (number || 1) * unit;
+    } else {
+      section = (section + number) * unit;
+      total += section;
+      section = 0;
+    }
+    number = 0;
+  }
+  let result = total + section + number;
+  const finalCharacter = raw.at(-1);
+  const previousCharacter = raw.at(-2);
+  if (finalCharacter in digits && digits[finalCharacter] > 0 && lowestUnit >= 100 && previousCharacter !== "零" && previousCharacter !== "〇") {
+    result += digits[finalCharacter] * (lowestUnit / 10 - 1);
+  }
+  return Number.isSafeInteger(result) ? result : null;
+}
+
+function normalizeVoiceTranscript(text) {
+  const convert = (value) => {
+    const number = chineseNumeralValue(value);
+    return number === null ? value : String(number);
+  };
+  const numerals = "零〇一二兩两三四五六七八九十百千萬万億亿";
+  const currencyPattern = new RegExp(`([${numerals}]+)(?=\\s*(?:元|塊錢?|台幣|twd))`, "gi");
+  const amountContextPattern = new RegExp(`((?:花了?|買了?|付了?|繳了?|支出|收入|月薪|薪水|獎金|配息|收到|賣出|賣|投資|早餐|午餐|晚餐|宵夜|飲料|咖啡|房租|租金|交通|加油|停車|保險|保費|水費|電費|瓦斯|網路|電話費|手機費)\\s*)([${numerals}]+)`, "gi");
+  return String(text || "")
+    // Preserve the spoken boundary between a numeric ticker and a Chinese amount.
+    // Example: 「買0050一萬元」 must become 「買0050 10000元」, not 「買005010000元」.
+    .replace(currencyPattern, (_, value) => ` ${convert(value)}`)
+    .replace(amountContextPattern, (_, prefix, value) => `${prefix}${convert(value)}`)
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function firstTicker(text) {
@@ -234,6 +409,7 @@ function parseBindingMessage(text) {
 
 function parseLineCommand(text) {
   const raw = String(text || "").trim().replace(/[,，]/g, "");
+  if (/^啟用語音測試$/.test(raw)) return { intent: "command", command: "enable_voice_pilot" };
   if (/^(?:取消|按錯)$/.test(raw)) return { intent: "command", command: "cancel_current" };
   if (/^(?:記一筆)?支出$/.test(raw)) return { intent: "command", command: "prompt_expense" };
   if (/^(?:記一筆)?收入$/.test(raw)) return { intent: "command", command: "prompt_income" };
@@ -242,6 +418,7 @@ function parseLineCommand(text) {
   if (/^修改(?:上一筆|最後一筆)$/.test(raw)) return { intent: "command", command: "prompt_update_last" };
   if (/^(?:查詢?)?(?:本月)?(?:明細|摘要|統計)$/.test(raw)) return { intent: "command", command: "details" };
   if (/^確認刪除全部(?:資料|記帳|財務資料)$/.test(raw)) return { intent: "command", command: "confirm_delete_all" };
+  if (/^(?:確認|確認記帳|確認語音記帳)$/.test(raw)) return { intent: "command", command: "confirm_current" };
   if (/^刪除全部(?:資料|記帳|財務資料)$/.test(raw)) return { intent: "command", command: "request_delete_all" };
   const deleteIndexed = raw.match(/^刪除第?\s*(\d+)\s*筆$/);
   if (deleteIndexed) return { intent: "command", command: "delete_indexed", index: Number(deleteIndexed[1]) };
@@ -621,12 +798,152 @@ function cancelableTextMessage(text) {
   };
 }
 
+function voiceConfirmationMessage(text) {
+  return {
+    type: "text",
+    text,
+    quickReply: {
+      items: [
+        { type: "action", action: { type: "message", label: "確認記帳", text: "確認語音記帳" } },
+        { type: "action", action: { type: "message", label: "取消", text: "取消" } }
+      ]
+    }
+  };
+}
+
+function voiceLedgerCandidate(parsed) {
+  if (parsed?.intent === "ledger") return { entry: parsed, parser: "rules" };
+  if (parsed?.intent === "ledger_batch" && parsed.entries?.length === 1) {
+    return { entry: parsed.entries[0], parser: parsed.parser || "ai" };
+  }
+  if (parsed?.intent === "ledger_batch" && parsed.entries?.length > 1) return { reason: "multiple_entries" };
+  return { reason: parsed?.reason || "unrecognized" };
+}
+
+function voiceConfirmationText(transcript, entry) {
+  const date = taipeiDateParts(new Date(entry.occurredAt));
+  const dateText = `${date.year}-${String(date.month).padStart(2, "0")}-${String(date.day).padStart(2, "0")}`;
+  const details = [
+    `我聽到：「${transcript}」`,
+    "",
+    `日期：${dateText}`,
+    `類型：${ledgerTypeLabel(entry.type)}`,
+    `分類：${entry.category || "未分類"}`,
+    `金額：${formatMoney(entry.amount)}`
+  ];
+  if (entry.ticker) details.push(`標的：${entry.ticker}`);
+  details.push(`備註：${entry.note || entry.category || "語音記帳"}`);
+  details.push("", "請按「確認記帳」後才會寫入；若辨識錯誤請按「取消」並重新說一次。");
+  return details.join("\n");
+}
+
+async function handleLineAudioEvent(event, options = {}) {
+  const userId = event.source?.userId || "";
+  const config = lineVoiceConfig();
+  let replyText = "語音記帳暫時無法使用，請先用文字記帳。";
+  let messages = null;
+  let voiceStatus = "rejected";
+  let pending = false;
+  let transcript = "";
+  let parser = null;
+
+  if (!options.store || !userId) {
+    replyText = "LINE 記帳後端尚未準備好，請稍後再試。";
+  } else if (!config.enabled) {
+    replyText = voiceFailureReply(voiceError("voice_disabled", "disabled"));
+    voiceStatus = "disabled";
+  } else if (event.message?.contentProvider?.type !== "line") {
+    replyText = "目前只支援直接在 LINE 聊天室錄製或傳送的語音，這次沒有寫入帳本。";
+    voiceStatus = "unsupported_provider";
+  } else if (Number(event.message.duration || 0) > config.maxDurationSeconds * 1000) {
+    replyText = `語音請控制在 ${config.maxDurationSeconds} 秒內，這次沒有寫入帳本。`;
+    voiceStatus = "too_long";
+  } else {
+    const currentPending = options.store.linePendingInput(userId);
+    if (currentPending?.type === "voice_confirmation" && currentPending.payload?.sourceMessageId === event.message.id) {
+      transcript = currentPending.payload.transcript || "";
+      parser = currentPending.payload.parser || "rules";
+      replyText = voiceConfirmationText(transcript, currentPending.payload.entry);
+      messages = [voiceConfirmationMessage(replyText)];
+      voiceStatus = "awaiting_confirmation";
+      pending = true;
+    } else if (options.store.lineSourceMessageHandled({ lineUserId: userId, sourceMessageId: event.message.id })) {
+      replyText = "這段語音已經處理過，不會重複辨識或入帳。";
+      voiceStatus = "duplicate";
+    } else if (config.pilotMode && currentPending?.type !== "voice_pilot") {
+      replyText = "目前語音記帳正在小規模測試。若你同意將下一段語音送往 OpenAI 轉成文字，請先輸入「啟用語音測試」；這段語音沒有下載、沒有轉錄，也沒有寫入帳本。";
+      voiceStatus = "pilot_not_enabled";
+    } else {
+      try {
+        const audio = await downloadLineAudio(event.message.id, options);
+        transcript = await transcribeLineAudio(audio, options);
+        const candidate = voiceLedgerCandidate(await parseIncomingMessage(normalizeVoiceTranscript(transcript)));
+        if (candidate.reason === "multiple_entries") {
+          replyText = `我聽到：「${transcript}」\n\n目前一次只支援一筆記帳，請分開錄製；這次沒有寫入帳本。`;
+          voiceStatus = "multiple_entries";
+        } else if (!candidate.entry) {
+          replyText = `我聽到：「${transcript}」\n\n還缺少可確認的用途或金額，請用「日期、用途、金額」重新說一次；這次沒有寫入帳本。`;
+          voiceStatus = "unrecognized";
+        } else {
+          parser = candidate.parser;
+          const pendingResult = options.store.startLinePendingInput({
+            lineUserId: userId,
+            type: "voice_confirmation",
+            label: "語音記帳待確認",
+            sourceMessageId: event.message.id,
+            payload: {
+              transcript,
+              entry: candidate.entry,
+              sourceMessageId: String(event.message.id || "").slice(0, 80),
+              durationMs: Number(event.message.duration || 0),
+              contentType: audio.contentType,
+              transcriberModel: config.model,
+              parser
+            }
+          });
+          replyText = `${canceledPrefix(pendingResult.canceled)}${voiceConfirmationText(transcript, candidate.entry)}`;
+          messages = [voiceConfirmationMessage(replyText)];
+          voiceStatus = "awaiting_confirmation";
+          pending = true;
+        }
+      } catch (error) {
+        replyText = voiceFailureReply(error);
+        voiceStatus = error.voiceCode || "failed";
+      }
+    }
+  }
+
+  const result = await replyLineMessage(event.replyToken, messages || [{ type: "text", text: replyText }]);
+  return {
+    eventType: event.type,
+    messageType: event.message.type,
+    parsedIntent: pending ? "voice_confirmation" : "voice_help",
+    ledgerType: null,
+    ledgerCount: 0,
+    parser: parser ? `voice_${parser}` : "voice",
+    binding: null,
+    command: null,
+    commandDuplicate: false,
+    pending,
+    canceled: null,
+    voiceStatus,
+    transcriptPresent: Boolean(transcript),
+    userId: userId ? "present" : "missing",
+    ...result
+  };
+}
+
 async function handleLineWebhook(rawBody, options = {}) {
   const body = parseLineWebhook(rawBody);
   const events = Array.isArray(body.events) ? body.events : [];
   const replies = [];
   for (const event of events) {
-    if (event.type !== "message" || event.message?.type !== "text") continue;
+    if (event.type !== "message") continue;
+    if (event.message?.type === "audio") {
+      replies.push(await handleLineAudioEvent(event, options));
+      continue;
+    }
+    if (event.message?.type !== "text") continue;
     const text = String(event.message.text || "");
     const userId = event.source?.userId || "";
     let replyText = connectionReplyText();
@@ -647,6 +964,64 @@ async function handleLineWebhook(rawBody, options = {}) {
             });
             commandResult = { command: parsed.command, result };
             replyText = cancelReplyText(result);
+          } else if (parsed.command === "enable_voice_pilot") {
+            const voice = lineVoiceConfig();
+            if (!voice.enabled) {
+              commandResult = { command: parsed.command, result: { kind: "disabled" } };
+              replyText = "語音測試目前尚未開放，這次不會下載語音、送往 OpenAI 或寫入帳本。";
+            } else if (!voice.pilotMode) {
+              commandResult = { command: parsed.command, result: { kind: "not_required" } };
+              replyText = "語音記帳目前已開放，不需要另行啟用；傳送語音後仍須按「確認記帳」才會寫入。";
+            } else {
+              const pending = options.store.startLinePendingInput({
+                lineUserId: userId,
+                type: "voice_pilot",
+                label: "語音測試授權",
+                sourceMessageId: event.message.id
+              });
+              commandResult = { command: parsed.command, pending: true, result: pending };
+              replyText = [
+                `${canceledPrefix(pending.canceled)}已啟用一次語音測試，請在 30 分鐘內傳送下一段語音。`,
+                "該語音會從 LINE 下載到後端記憶體並送往 OpenAI 轉成文字；原始音訊不寫入磁碟。",
+                "系統只會建立待確認資料，必須再按「確認記帳」才會寫入帳本；辨識錯誤可按「取消」。"
+              ].join("\n");
+            }
+          } else if (parsed.command === "confirm_current") {
+            const pending = options.store.linePendingInput(userId);
+            const payload = pending?.type === "voice_confirmation" ? pending.payload : null;
+            if (!payload?.entry || !payload.sourceMessageId) {
+              replyText = "目前沒有待確認的語音記帳。請先傳送一段包含日期、用途與金額的語音。";
+              commandResult = { command: parsed.command, result: { kind: "none" } };
+            } else {
+              try {
+                const entry = options.store.addLineLedgerEntry({
+                  lineUserId: userId,
+                  ...payload.entry,
+                  source: {
+                    platform: "line",
+                    parser: `voice_${payload.parser || "rules"}`,
+                    messageId: payload.sourceMessageId,
+                    messageText: payload.transcript,
+                    replyToken: event.replyToken ? "present" : "missing",
+                    voice: {
+                      durationMs: payload.durationMs || 0,
+                      contentType: payload.contentType || "",
+                      transcriberModel: payload.transcriberModel || ""
+                    }
+                  }
+                });
+                options.store.clearLinePendingInput({ lineUserId: userId });
+                options.store.markLineUndoTarget({ lineUserId: userId, entries: [entry] });
+                const summary = options.store.lineLedgerSummary(userId);
+                commandResult = { command: parsed.command, result: { entry }, summary };
+                replyText = summaryReplyText(entry, summary);
+              } catch (error) {
+                if (error.statusCode !== 409) throw error;
+                options.store.clearLinePendingInput({ lineUserId: userId });
+                commandResult = { command: parsed.command, result: { duplicate: true } };
+                replyText = "這段語音已經記錄過，不會重複入帳。";
+              }
+            }
           } else if (prompt) {
             const pending = options.store.startLinePendingInput({
               lineUserId: userId,
@@ -800,7 +1175,11 @@ async function handleLineWebhook(rawBody, options = {}) {
         : `${recorded?.note || recorded?.category || ""} ${formatMoney(recorded?.amount)}`;
       messages = [summaryFlexMessage(title, subtitle, ledgerResult.summary)];
     } else if (commandResult?.summary && commandResult?.result?.entry) {
-      const actionTitle = commandResult.command.startsWith("delete") ? "已刪除記帳" : "已修改記帳";
+      const actionTitle = commandResult.command === "confirm_current"
+        ? "已確認語音記帳"
+        : commandResult.command.startsWith("delete")
+          ? "已刪除記帳"
+          : "已修改記帳";
       messages = [summaryFlexMessage(actionTitle, entryReplyText(commandResult.result.entry), commandResult.summary, false)];
     } else if (commandResult?.pending) {
       messages = [cancelableTextMessage(replyText)];
@@ -810,9 +1189,9 @@ async function handleLineWebhook(rawBody, options = {}) {
       eventType: event.type,
       messageType: event.message.type,
       parsedIntent: parsed.intent,
-      ledgerType: ledgerResult?.entry?.type || null,
-      ledgerCount: ledgerResult?.entries?.length || (ledgerResult?.entry ? 1 : 0),
-      parser: ledgerResult?.parser || "rules",
+      ledgerType: ledgerResult?.entry?.type || commandResult?.result?.entry?.type || null,
+      ledgerCount: ledgerResult?.entries?.length || (ledgerResult?.entry || commandResult?.result?.entry ? 1 : 0),
+      parser: ledgerResult?.parser || (commandResult?.command === "confirm_current" ? "voice" : "rules"),
       binding: bindingResult ? "linked" : null,
       command: commandResult?.command || null,
       commandDuplicate: Boolean(commandResult?.result?.duplicate),
