@@ -22,6 +22,8 @@ function lineVoiceConfig() {
   return {
     enabled: process.env.LINE_VOICE_TRANSCRIPTION_ENABLED === "1" && Boolean(process.env.OPENAI_API_KEY),
     pilotMode: process.env.LINE_VOICE_PILOT_MODE === "1",
+    consentVersion: String(process.env.LINE_VOICE_CONSENT_VERSION || "v1").trim().slice(0, 40) || "v1",
+    dailyLimit: boundedInteger(process.env.LINE_VOICE_DAILY_LIMIT, 30, 1, 100),
     model: String(process.env.OPENAI_TRANSCRIPTION_MODEL || "gpt-4o-mini-transcribe").slice(0, 80),
     maxDurationSeconds: boundedInteger(process.env.LINE_VOICE_MAX_DURATION_SECONDS, 60, 5, 300),
     maxBytes: boundedInteger(process.env.LINE_VOICE_MAX_BYTES, 10 * 1024 * 1024, 1024, 25 * 1024 * 1024),
@@ -52,6 +54,9 @@ function lineReadiness() {
     aiParserConfigured: Boolean(process.env.OPENAI_API_KEY && process.env.LINE_AI_PARSER_ENABLED === "1"),
     voiceTranscriptionConfigured: voice.enabled,
     voicePilotMode: voice.pilotMode,
+    voiceConsentMode: voice.pilotMode ? "single_use" : "persistent",
+    voiceConsentVersion: voice.consentVersion,
+    voiceDailyLimit: voice.dailyLimit,
     voiceMaxDurationSeconds: voice.maxDurationSeconds,
     voiceMaxBytes: voice.maxBytes,
     voiceTranscriptionModel: voice.model,
@@ -409,6 +414,9 @@ function parseBindingMessage(text) {
 
 function parseLineCommand(text) {
   const raw = String(text || "").trim().replace(/[,，]/g, "");
+  if (/^啟用語音記帳$/.test(raw)) return { intent: "command", command: "request_voice_consent" };
+  if (/^同意並啟用語音記帳$/.test(raw)) return { intent: "command", command: "accept_voice_consent" };
+  if (/^停用語音記帳$/.test(raw)) return { intent: "command", command: "disable_voice" };
   if (/^啟用語音測試$/.test(raw)) return { intent: "command", command: "enable_voice_pilot" };
   if (/^(?:取消|按錯)$/.test(raw)) return { intent: "command", command: "cancel_current" };
   if (/^(?:記一筆)?支出$/.test(raw)) return { intent: "command", command: "prompt_expense" };
@@ -884,6 +892,49 @@ function voiceConfirmationMessage(text) {
   };
 }
 
+function voicePrivacyUrl() {
+  const base = String(process.env.SITE_PUBLIC_BASE_URL || "https://shaino0807.github.io/small-budget-cashflow-web/").replace(/\/+$/, "");
+  return `${base}/privacy.html`;
+}
+
+function voiceConsentText(config) {
+  return [
+    "啟用語音記帳前，請先確認：",
+    "1. 你的 LINE 語音會由後端下載到記憶體，並送往 OpenAI 轉成文字；原始音訊不寫入磁碟。",
+    "2. 轉錄後只建立待確認資料，必須再按「確認記帳」才會寫入帳本。",
+    "3. 每位使用者每日最多轉錄 30 次；辨識模糊、失敗或超過上限都不會入帳。",
+    "4. 可隨時輸入「停用語音記帳」，或使用「刪除全部資料」清除相關資料。",
+    `隱私說明：${voicePrivacyUrl()}`,
+    "",
+    "若同意以上處理方式，請按「同意並啟用」。"
+  ].join("\n");
+}
+
+function voiceConsentMessage(config) {
+  return {
+    type: "text",
+    text: voiceConsentText(config),
+    quickReply: {
+      items: [
+        { type: "action", action: { type: "message", label: "同意並啟用", text: "同意並啟用語音記帳" } },
+        { type: "action", action: { type: "message", label: "取消", text: "取消" } }
+      ]
+    }
+  };
+}
+
+function parseVoiceLedgerTranscript(transcript) {
+  const normalized = normalizeVoiceTranscript(transcript);
+  const withoutDateOrTicker = normalized
+    .replace(/(?:\d{4}[年/-])?\d{1,2}[月/-]\d{1,2}日?/g, " ")
+    .replace(/\b(?:00\d{2,4}|0\d{4,5})\b/g, " ");
+  const amountMatches = withoutDateOrTicker.match(/\d+(?:\.\d+)?\s*(?:萬|千|[kw])?(?:\s*(?:元|塊|台幣|twd))?/gi) || [];
+  const segments = normalized.split(/[,，、;；。]|(?:以及|還有)/).map((value) => value.trim()).filter(Boolean);
+  const ledgerSegments = segments.map((value) => parseLedgerMessage(value)).filter((value) => value.intent === "ledger");
+  if (amountMatches.length > 1 || ledgerSegments.length > 1) return { intent: "help", reason: "multiple_entries" };
+  return parseLedgerMessage(normalized);
+}
+
 function voiceLedgerCandidate(parsed) {
   if (parsed?.intent === "ledger") return { entry: parsed, parser: "rules" };
   if (parsed?.intent === "ledger_batch" && parsed.entries?.length === 1) {
@@ -946,11 +997,60 @@ async function handleLineAudioEvent(event, options = {}) {
     } else if (config.pilotMode && currentPending?.type !== "voice_pilot") {
       replyText = "目前語音記帳正在小規模測試。若你同意將下一段語音送往 OpenAI 轉成文字，請先輸入「啟用語音測試」；這段語音沒有下載、沒有轉錄，也沒有寫入帳本。";
       voiceStatus = "pilot_not_enabled";
+    } else if (!config.pilotMode) {
+      const preference = options.store.lineVoicePreference(userId);
+      if (!preference.enabled || preference.consentVersion !== config.consentVersion) {
+        replyText = `尚未啟用語音記帳，請先輸入「啟用語音記帳」閱讀說明並同意；這段語音沒有下載、沒有轉錄，也沒有寫入帳本。\n${voicePrivacyUrl()}`;
+        voiceStatus = preference.enabled ? "consent_version_expired" : "consent_required";
+      } else {
+        const usage = options.store.consumeLineVoiceDailyAttempt({ lineUserId: userId, dailyLimit: config.dailyLimit });
+        if (!usage.allowed) {
+          replyText = `你今天的語音轉錄已達 ${config.dailyLimit} 次上限。這段語音沒有下載、沒有轉錄，也沒有寫入帳本；請改用文字記帳，明天（台灣時間）會重新計算。`;
+          voiceStatus = "daily_limit_reached";
+        } else {
+          try {
+            const audio = await downloadLineAudio(event.message.id, options);
+            transcript = await transcribeLineAudio(audio, options);
+            const candidate = voiceLedgerCandidate(parseVoiceLedgerTranscript(transcript));
+            if (candidate.reason === "multiple_entries") {
+              replyText = `我聽到：「${transcript}」\n\n目前一次只支援一筆記帳，請分開錄製；這次沒有寫入帳本。`;
+              voiceStatus = "multiple_entries";
+            } else if (!candidate.entry) {
+              replyText = `我聽到：「${transcript}」\n\n還缺少可確認的用途或金額，請用「日期、用途、金額」重新說一次；這次沒有寫入帳本。`;
+              voiceStatus = "unrecognized";
+            } else {
+              parser = candidate.parser;
+              const pendingResult = options.store.startLinePendingInput({
+                lineUserId: userId,
+                type: "voice_confirmation",
+                label: "語音記帳待確認",
+                sourceMessageId: event.message.id,
+                payload: {
+                  transcript,
+                  entry: candidate.entry,
+                  sourceMessageId: String(event.message.id || "").slice(0, 80),
+                  durationMs: Number(event.message.duration || 0),
+                  contentType: audio.contentType,
+                  transcriberModel: config.model,
+                  parser
+                }
+              });
+              replyText = `${canceledPrefix(pendingResult.canceled)}${voiceConfirmationText(transcript, candidate.entry)}`;
+              messages = [voiceConfirmationMessage(replyText)];
+              voiceStatus = "awaiting_confirmation";
+              pending = true;
+            }
+          } catch (error) {
+            replyText = voiceFailureReply(error);
+            voiceStatus = error.voiceCode || "failed";
+          }
+        }
+      }
     } else {
       try {
         const audio = await downloadLineAudio(event.message.id, options);
         transcript = await transcribeLineAudio(audio, options);
-        const candidate = voiceLedgerCandidate(await parseIncomingMessage(normalizeVoiceTranscript(transcript)));
+        const candidate = voiceLedgerCandidate(parseVoiceLedgerTranscript(transcript));
         if (candidate.reason === "multiple_entries") {
           replyText = `我聽到：「${transcript}」\n\n目前一次只支援一筆記帳，請分開錄製；這次沒有寫入帳本。`;
           voiceStatus = "multiple_entries";
@@ -1037,6 +1137,54 @@ async function handleLineWebhook(rawBody, options = {}) {
             });
             commandResult = { command: parsed.command, result };
             replyText = cancelReplyText(result);
+          } else if (parsed.command === "request_voice_consent" || (parsed.command === "enable_voice_pilot" && !lineVoiceConfig().pilotMode)) {
+            const voice = lineVoiceConfig();
+            if (!voice.enabled) {
+              commandResult = { command: parsed.command, result: { kind: "disabled" } };
+              replyText = "語音記帳目前尚未開放，這次不會下載語音、送往 OpenAI 或寫入帳本。";
+            } else {
+              const consentPending = options.store.startLinePendingInput({
+                lineUserId: userId,
+                type: "voice_consent",
+                label: "語音記帳同意待確認",
+                sourceMessageId: event.message.id,
+                payload: { consentVersion: voice.consentVersion }
+              });
+              commandResult = {
+                command: "request_voice_consent",
+                voiceConsentRequest: true,
+                pending: true,
+                result: consentPending
+              };
+              replyText = voiceConsentText(voice);
+            }
+          } else if (parsed.command === "accept_voice_consent") {
+            const voice = lineVoiceConfig();
+            if (!voice.enabled || voice.pilotMode) {
+              commandResult = { command: parsed.command, result: { kind: "disabled" } };
+              replyText = "正式語音記帳目前尚未開放，沒有建立授權。";
+            } else if (
+              options.store.linePendingInput(userId)?.type !== "voice_consent"
+              || options.store.linePendingInput(userId)?.payload?.consentVersion !== voice.consentVersion
+            ) {
+              commandResult = { command: parsed.command, result: { kind: "disclosure_required" } };
+              replyText = "請先輸入「啟用語音記帳」閱讀完整說明，再按「同意並啟用」；目前沒有建立授權。";
+            } else {
+              const consent = options.store.enableLineVoice({
+                lineUserId: userId,
+                consentVersion: voice.consentVersion,
+                sourceMessageId: event.message.id
+              });
+              commandResult = { command: parsed.command, result: consent };
+              replyText = `已啟用語音記帳。之後可直接傳送語音，每日最多 ${voice.dailyLimit} 次；每筆仍須按「確認記帳」才會寫入。可隨時輸入「停用語音記帳」。`;
+            }
+          } else if (parsed.command === "disable_voice") {
+            const disabled = options.store.disableLineVoice({
+              lineUserId: userId,
+              sourceMessageId: event.message.id
+            });
+            commandResult = { command: parsed.command, result: disabled };
+            replyText = "已停用語音記帳。之後收到的語音不會下載或送往 OpenAI；既有帳目不受影響。";
           } else if (parsed.command === "enable_voice_pilot") {
             const voice = lineVoiceConfig();
             if (!voice.enabled) {
@@ -1357,6 +1505,8 @@ async function handleLineWebhook(rawBody, options = {}) {
       messages = [deleteConfirmationMessage(replyText)];
     } else if (commandResult?.candidates?.length) {
       messages = [deleteCandidateMessage(replyText, commandResult.candidates)];
+    } else if (commandResult?.voiceConsentRequest) {
+      messages = [voiceConsentMessage(lineVoiceConfig())];
     } else if (commandResult?.pending) {
       messages = [cancelableTextMessage(replyText)];
     }

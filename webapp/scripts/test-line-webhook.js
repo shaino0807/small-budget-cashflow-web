@@ -224,6 +224,8 @@ async function testVoiceWebhook() {
     "LINE_REPLY_DISABLED",
     "LINE_VOICE_TRANSCRIPTION_ENABLED",
     "LINE_VOICE_PILOT_MODE",
+    "LINE_VOICE_CONSENT_VERSION",
+    "LINE_VOICE_DAILY_LIMIT",
     "LINE_VOICE_MAX_DURATION_SECONDS",
     "LINE_VOICE_MAX_BYTES",
     "OPENAI_API_KEY",
@@ -236,6 +238,7 @@ async function testVoiceWebhook() {
   let transcriptionStatus = 200;
   let lineDownloadCalls = 0;
   let lineProcessingResponses = 0;
+  let responseApiCalls = 0;
   let store = null;
   try {
     Object.assign(process.env, {
@@ -247,6 +250,8 @@ async function testVoiceWebhook() {
       LINE_REPLY_DISABLED: "1",
       LINE_VOICE_TRANSCRIPTION_ENABLED: "1",
       LINE_VOICE_PILOT_MODE: "1",
+      LINE_VOICE_CONSENT_VERSION: "v1",
+      LINE_VOICE_DAILY_LIMIT: "30",
       LINE_VOICE_MAX_DURATION_SECONDS: "60",
       LINE_VOICE_MAX_BYTES: String(10 * 1024 * 1024),
       OPENAI_API_KEY: "test-openai-key",
@@ -274,6 +279,7 @@ async function testVoiceWebhook() {
         });
       }
       if (endpoint.endsWith("/v1/responses")) {
+        responseApiCalls += 1;
         return new Response(JSON.stringify({
           output_text: JSON.stringify({
             entries: [
@@ -349,8 +355,41 @@ async function testVoiceWebhook() {
 
     process.env.LINE_VOICE_PILOT_MODE = "0";
 
+    const formalBlocked = await handleLineWebhook(lineEventBody({ ...voiceMessage, id: "voice-formal-before-consent" }), { store });
+    if (
+      formalBlocked.replies[0]?.voiceStatus !== "consent_required"
+      || lineDownloadCalls !== 1
+      || store.lineVoicePreference("Uvoice").enabled
+    ) {
+      throw new Error(`Formal voice consent gate downloaded audio or enabled consent: ${JSON.stringify(formalBlocked)}`);
+    }
+    const directConsent = await handleLineWebhook(lineEventBody({ id: "voice-consent-direct", type: "text", text: "同意並啟用語音記帳" }), { store });
+    if (directConsent.replies[0]?.canceled !== "disclosure_required" || store.lineVoicePreference("Uvoice").enabled) {
+      throw new Error(`Voice consent was accepted without disclosure: ${JSON.stringify(directConsent)}`);
+    }
+    const consentDisclosure = await handleLineWebhook(lineEventBody({ id: "voice-consent-disclosure", type: "text", text: "啟用語音記帳" }), { store });
+    if (
+      consentDisclosure.replies[0]?.command !== "request_voice_consent"
+      || store.lineVoicePreference("Uvoice").enabled
+      || store.linePendingInput("Uvoice")?.type !== "voice_consent"
+    ) {
+      throw new Error(`Voice disclosure incorrectly enabled consent: ${JSON.stringify(consentDisclosure)}`);
+    }
+    const acceptedConsent = await handleLineWebhook(lineEventBody({ id: "voice-consent-accept", type: "text", text: "同意並啟用語音記帳" }), { store });
+    if (
+      acceptedConsent.replies[0]?.command !== "accept_voice_consent"
+      || acceptedConsent.replies[0]?.canceled !== "enabled"
+      || !store.lineVoicePreference("Uvoice").enabled
+      || store.lineVoicePreference("Uvoice").consentVersion !== "v1"
+    ) {
+      throw new Error(`Persistent voice consent was not stored: ${JSON.stringify(acceptedConsent)}`);
+    }
+
     transcriptText = "今天午餐 120";
-    await handleLineWebhook(lineEventBody({ ...voiceMessage, id: "voice-2" }), { store });
+    const directAfterConsent = await handleLineWebhook(lineEventBody({ ...voiceMessage, id: "voice-2" }), { store });
+    if (directAfterConsent.replies[0]?.voiceStatus !== "awaiting_confirmation") {
+      throw new Error(`Direct voice after persistent consent was not accepted: ${JSON.stringify(directAfterConsent)}`);
+    }
     const canceled = await handleLineWebhook(lineEventBody({ id: "cancel-voice-2", type: "text", text: "取消" }), { store });
     if (canceled.replies[0]?.command !== "cancel_current" || store.lineLedgerSummary("Uvoice").expense !== 350) {
       throw new Error(`Canceled voice entry changed the ledger: ${JSON.stringify(canceled)}`);
@@ -382,6 +421,28 @@ async function testVoiceWebhook() {
     }
     await handleLineWebhook(lineEventBody({ id: "cancel-processing", type: "text", text: "取消" }), { store });
 
+    process.env.LINE_VOICE_CONSENT_VERSION = "v2";
+    const callsBeforeVersionGate = lineDownloadCalls;
+    const expiredConsent = await handleLineWebhook(lineEventBody({ ...voiceMessage, id: "voice-old-consent" }), { store });
+    if (expiredConsent.replies[0]?.voiceStatus !== "consent_version_expired" || lineDownloadCalls !== callsBeforeVersionGate) {
+      throw new Error(`Old voice consent version was not rejected before download: ${JSON.stringify(expiredConsent)}`);
+    }
+    process.env.LINE_VOICE_CONSENT_VERSION = "v1";
+
+    const disabledFormal = await handleLineWebhook(lineEventBody({ id: "voice-disable-formal", type: "text", text: "停用語音記帳" }), { store });
+    const callsBeforeDisabledGate = lineDownloadCalls;
+    const blockedAfterDisable = await handleLineWebhook(lineEventBody({ ...voiceMessage, id: "voice-after-disable" }), { store });
+    if (
+      disabledFormal.replies[0]?.canceled !== "disabled"
+      || store.lineVoicePreference("Uvoice").enabled
+      || blockedAfterDisable.replies[0]?.voiceStatus !== "consent_required"
+      || lineDownloadCalls !== callsBeforeDisabledGate
+    ) {
+      throw new Error(`Voice disable did not revoke access before download: ${JSON.stringify({ disabledFormal, blockedAfterDisable })}`);
+    }
+    await handleLineWebhook(lineEventBody({ id: "voice-consent-rerequest", type: "text", text: "啟用語音記帳" }), { store });
+    await handleLineWebhook(lineEventBody({ id: "voice-consent-reaccept", type: "text", text: "同意並啟用語音記帳" }), { store });
+
     const callsBeforeLimit = lineDownloadCalls;
     const tooLong = await handleLineWebhook(lineEventBody({ ...voiceMessage, id: "voice-long", duration: 61000 }), { store });
     if (tooLong.replies[0]?.voiceStatus !== "too_long" || lineDownloadCalls !== callsBeforeLimit) {
@@ -391,7 +452,7 @@ async function testVoiceWebhook() {
     transcriptText = "早餐六十五,午餐一百二";
     process.env.LINE_AI_PARSER_ENABLED = "1";
     const multiple = await handleLineWebhook(lineEventBody({ ...voiceMessage, id: "voice-multiple" }), { store });
-    if (multiple.replies[0]?.voiceStatus !== "multiple_entries" || multiple.replies[0]?.pending) {
+    if (multiple.replies[0]?.voiceStatus !== "multiple_entries" || multiple.replies[0]?.pending || responseApiCalls !== 0) {
       throw new Error(`Multiple voice entries were not rejected: ${JSON.stringify(multiple)}`);
     }
 
@@ -402,6 +463,37 @@ async function testVoiceWebhook() {
     }
 
     transcriptionStatus = 200;
+    const limitUser = "UvoiceLimit";
+    await handleLineWebhook(
+      lineEventBody({ id: "voice-limit-disclosure", type: "text", text: "啟用語音記帳" }, "event-voice-limit-disclosure", limitUser),
+      { store }
+    );
+    await handleLineWebhook(
+      lineEventBody({ id: "voice-limit-consent", type: "text", text: "同意並啟用語音記帳" }, "event-voice-limit-consent", limitUser),
+      { store }
+    );
+    for (let attempt = 0; attempt < 30; attempt += 1) {
+      const usage = store.consumeLineVoiceDailyAttempt({ lineUserId: limitUser, dailyLimit: 30 });
+      if (!usage.allowed || usage.attempts !== attempt + 1) throw new Error(`Daily voice attempt ${attempt + 1} was counted incorrectly`);
+    }
+    const callsBeforeDailyLimit = lineDownloadCalls;
+    const dailyLimited = await handleLineWebhook(
+      lineEventBody({ ...voiceMessage, id: "voice-limit-31" }, "event-voice-limit-31", limitUser),
+      { store }
+    );
+    if (dailyLimited.replies[0]?.voiceStatus !== "daily_limit_reached" || lineDownloadCalls !== callsBeforeDailyLimit) {
+      throw new Error(`31st daily voice attempt was not blocked before download: ${JSON.stringify(dailyLimited)}`);
+    }
+
+    const deletionUser = "UvoiceDeletion";
+    store.enableLineVoice({ lineUserId: deletionUser, consentVersion: "v1", sourceMessageId: "deletion-enable" });
+    store.consumeLineVoiceDailyAttempt({ lineUserId: deletionUser, dailyLimit: 30 });
+    store.deleteLineUserData({ lineUserId: deletionUser });
+    const resetUsage = store.consumeLineVoiceDailyAttempt({ lineUserId: deletionUser, dailyLimit: 30 });
+    if (store.lineVoicePreference(deletionUser).enabled || resetUsage.attempts !== 1) {
+      throw new Error("Delete-all did not remove voice consent and daily usage");
+    }
+
     process.env.LINE_VOICE_TRANSCRIPTION_ENABLED = "0";
     process.env.LINE_VOICE_PILOT_MODE = "1";
     const disabledConsent = await handleLineWebhook(lineEventBody({ id: "voice-pilot-disabled", type: "text", text: "啟用語音測試" }), { store });
@@ -415,6 +507,13 @@ async function testVoiceWebhook() {
     return {
       pilotConsentRequired: true,
       pilotDisabledSafe: true,
+      persistentConsentRequired: true,
+      disclosureDoesNotConsent: true,
+      consentVersionEnforced: true,
+      disableRevokesBeforeDownload: true,
+      dailyLimitThirty: true,
+      deleteAllRemovesVoiceData: true,
+      deterministicVoiceParsing: responseApiCalls === 0,
       confirmationRequired: true,
       duplicateTranscriptionBlocked: true,
       cancellationSafe: true,
@@ -480,6 +579,9 @@ async function main() {
     }
   }
   const commandCases = [
+    ["啟用語音記帳", "request_voice_consent"],
+    ["同意並啟用語音記帳", "accept_voice_consent"],
+    ["停用語音記帳", "disable_voice"],
     ["啟用語音測試", "enable_voice_pilot"],
     ["投資ETF", "prompt_investment"],
     ["取消", "cancel_current"],

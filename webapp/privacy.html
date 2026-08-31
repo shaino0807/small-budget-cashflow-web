@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>隱私權與語音記帳說明｜小資現金流</title>
+    <style>
+      :root { color-scheme: light; --ink: #173b35; --muted: #5d6e6a; --accent: #14856e; --line: #dbe7e3; --surface: #ffffff; --background: #f3f8f6; }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--background); color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", sans-serif; line-height: 1.75; }
+      main { width: min(760px, calc(100% - 32px)); margin: 32px auto; padding: clamp(24px, 5vw, 48px); background: var(--surface); border: 1px solid var(--line); border-radius: 24px; box-shadow: 0 14px 42px rgba(23, 59, 53, .08); }
+      h1 { margin: 0 0 8px; font-size: clamp(1.8rem, 6vw, 2.5rem); line-height: 1.25; }
+      h2 { margin: 32px 0 8px; font-size: 1.25rem; }
+      p, li { color: var(--muted); }
+      ul { padding-left: 1.25rem; }
+      a { color: var(--accent); font-weight: 650; }
+      .updated { margin: 0 0 28px; font-size: .95rem; }
+      .notice { padding: 16px 18px; border-left: 4px solid var(--accent); border-radius: 12px; background: #eaf6f2; color: var(--ink); }
+      .back { display: inline-block; margin-top: 32px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>隱私權與語音記帳說明</h1>
+      <p class="updated">最後更新：2026 年 8 月 31 日</p>
+
+      <p class="notice">語音記帳採「先轉錄、再確認」流程。辨識模糊、失敗、超過每日上限或未經確認時，一律不會寫入帳本。</p>
+
+      <h2>語音如何處理</h2>
+      <ul>
+        <li>你在 LINE 傳送的語音，會由本服務從 LINE 下載到後端記憶體，並送往 OpenAI Audio Transcription 轉成文字。</li>
+        <li>原始音訊只在處理期間存在於記憶體，不寫入本服務的磁碟或資料庫。</li>
+        <li>轉錄文字與候選帳目會加密暫存最多 30 分鐘。只有你按下「確認記帳」後，交易才會寫入帳本。</li>
+        <li>確認後，轉錄文字與來源資訊會加密保存在帳目中，最長保存 1,095 天，或在你主動刪除資料時提前移除。</li>
+      </ul>
+
+      <h2>第三方服務</h2>
+      <p>語音轉錄會使用 LINE Messaging API 與 OpenAI API，因此相關資料會由這些服務依其政策處理。OpenAI 說明 API 資料預設不會用於訓練模型，除非客戶主動選擇分享；實際處理仍以 OpenAI 當時的官方政策為準。請參閱 <a href="https://platform.openai.com/docs/models/default-usage-policies-by-endpoint" rel="noopener noreferrer">OpenAI API 資料控制說明</a>及 <a href="https://openai.com/business-data/" rel="noopener noreferrer">OpenAI 商業資料隱私說明</a>。</p>
+
+      <h2>同意、限制與停用</h2>
+      <ul>
+        <li>第一次使用前，必須在 LINE 輸入「啟用語音記帳」，閱讀告知後再按「同意並啟用」。</li>
+        <li>每位使用者每日最多送出 30 次語音轉錄，於台灣時間每日重新計算。</li>
+        <li>你可隨時在 LINE 輸入「停用語音記帳」。停用後的新語音不會由本服務下載或送往 OpenAI，既有帳目不會因此刪除。</li>
+        <li>若同意內容更新，系統會要求你重新閱讀並同意，新版本同意前不會處理語音。</li>
+      </ul>
+
+      <h2>刪除與你的控制權</h2>
+      <p>你可以刪除單筆帳目，或在 LINE 輸入「刪除全部資料」並再次確認。刪除全部資料會一併移除 LINE 記帳、ETF 部位、網頁綁定、語音同意狀態及語音用量紀錄。若需要協助，請直接透過本服務的 LINE 官方帳號聯絡。</p>
+
+      <h2>安全設計</h2>
+      <p>LINE 使用者識別以雜湊形式保存；待確認內容與已確認帳目的文字來源使用 AES-GCM 加密。系統對檔案大小、語音長度、逾時與重複訊息設有限制，但任何網路服務都無法保證零風險。</p>
+
+      <a class="back" href="./">返回小資現金流</a>
+    </main>
+  </body>
+</html>

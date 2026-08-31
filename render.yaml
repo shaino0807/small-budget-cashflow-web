@@ -87,7 +87,11 @@ services:
       - key: LINE_VOICE_TRANSCRIPTION_ENABLED
         value: "0"
       - key: LINE_VOICE_PILOT_MODE
-        value: "1"
+        value: "0"
+      - key: LINE_VOICE_CONSENT_VERSION
+        value: v1
+      - key: LINE_VOICE_DAILY_LIMIT
+        value: "30"
       - key: OPENAI_TRANSCRIPTION_MODEL
         value: gpt-4o-mini-transcribe
       - key: LINE_VOICE_MAX_DURATION_SECONDS

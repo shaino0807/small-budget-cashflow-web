@@ -115,18 +115,20 @@ LINE 官方帳號整合需要在 Render 後臺設定 `LINE_CHANNEL_SECRET` 與 `
 
 若要啟用第二層 AI 解析，再於 Render 設定 `OPENAI_API_KEY`。系統永遠先跑本機規則，只有規則無法判斷或一句含多筆金額時才呼叫 OpenAI；API key 不得提交到 Git。未設定 key 時會自動維持規則模式。
 
-LINE 語音記帳 MVP 會接收使用者直接傳給官方帳號的 `audio` 訊息，從 LINE Message Content API 將音訊讀進後端記憶體，再以 OpenAI Audio Transcription 轉成中文文字。原始音訊不寫入磁碟或 SQLite；轉錄文字與候選帳目使用既有 AES-GCM 加密暫存，使用者按「確認記帳」後才建立正式帳目，按「取消」或逾期則不入帳。確認後會把轉錄文字與原始 LINE message ID 加密保存在帳目來源欄位供查帳，並沿用 `LINE_LEDGER_RETENTION_DAYS` 的刪除期限。
+LINE 語音記帳會接收使用者直接傳給官方帳號的 `audio` 訊息，從 LINE Message Content API 將音訊讀進後端記憶體，再以 OpenAI Audio Transcription 轉成中文文字。原始音訊不寫入磁碟或 SQLite；轉錄文字與候選帳目使用既有 AES-GCM 加密暫存，使用者按「確認記帳」後才建立正式帳目，按「取消」或逾期則不入帳。確認後會把轉錄文字與原始 LINE message ID 加密保存在帳目來源欄位供查帳，並沿用 `LINE_LEDGER_RETENTION_DAYS` 的刪除期限。
 
 啟用前需要：
 
 - Render 已設定 `LINE_CHANNEL_ACCESS_TOKEN` 與 `OPENAI_API_KEY`。
-- 將 `LINE_VOICE_TRANSCRIPTION_ENABLED` 明確改為 `1`；預設 `0`，避免未告知就把客戶音訊送往第三方服務。
-- 正式環境 Pilot 建議維持 `LINE_VOICE_PILOT_MODE=1`。用戶必須先輸入「啟用語音測試」，系統才會在 30 分鐘內接受下一段語音並顯示第三方轉錄告知；未授權的語音不會下載或送往 OpenAI。
-- 在隱私權政策與服務說明告知語音會送往 OpenAI 進行轉錄，並說明保存期間與刪除方式。
+- 將 `LINE_VOICE_TRANSCRIPTION_ENABLED` 明確改為 `1`；版本庫與部署藍圖預設 `0`，先完成線上健康檢查再開啟。
+- 正式環境使用 `LINE_VOICE_PILOT_MODE=0`。用戶先輸入「啟用語音記帳」閱讀告知，再按「同意並啟用」；同意一次後可直接傳送語音。
+- `LINE_VOICE_CONSENT_VERSION` 預設 `v1`。版本變更時，舊同意會在音訊下載前失效並要求重新同意。
+- `LINE_VOICE_DAILY_LIMIT` 預設 `30`，依台灣時間限制每位 LINE 使用者每日最多 30 次；第 31 次會在下載音訊及呼叫 OpenAI 前拒絕。
+- 公開的 `privacy.html` 說明第三方轉錄、保存期間、停用及刪除方式，首頁頁尾亦提供入口。
 - 預設只接受 60 秒、10 MB 以內的單筆中文記帳。一次說多筆、缺少金額／用途或辨識失敗都不會寫入。
 - `OPENAI_TRANSCRIPTION_MODEL` 預設為 `gpt-4o-mini-transcribe`；秒數、大小及逾時可由 `.env.example` 中的 `LINE_VOICE_*` 變數調整。
 
-Pilot 客戶先輸入「啟用語音測試」，再說「昨天晚餐三百五十元」。Bot 會先回傳日期、類型、分類、金額與備註；只有按「確認記帳」後才同步到帳本。辨識錯誤時按「取消」並重新錄製。
+正式客戶先輸入「啟用語音記帳」並按「同意並啟用」，再說「昨天晚餐三百五十元」。Bot 會先回傳日期、類型、分類、金額與備註；只有按「確認記帳」後才同步到帳本。之後不必重複啟用，可直接傳送下一段語音；辨識錯誤時按「取消」並重新錄製，或輸入「停用語音記帳」撤銷後續語音處理。
 
 LINE webhook 本地測試：
 

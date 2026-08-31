@@ -183,6 +183,22 @@ function initialize() {
       payload_cipher TEXT
     );
     CREATE INDEX IF NOT EXISTS idx_line_pending_inputs_expiry ON line_pending_inputs(expires_at);
+    CREATE TABLE IF NOT EXISTS line_voice_preferences (
+      line_user_hash TEXT PRIMARY KEY,
+      enabled INTEGER NOT NULL DEFAULT 0,
+      consent_version TEXT,
+      enabled_at TEXT,
+      disabled_at TEXT,
+      updated_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS line_voice_daily_usage (
+      line_user_hash TEXT NOT NULL,
+      usage_date TEXT NOT NULL,
+      attempts INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY(line_user_hash, usage_date)
+    );
+    CREATE INDEX IF NOT EXISTS idx_line_voice_daily_usage_date ON line_voice_daily_usage(usage_date);
     CREATE TABLE IF NOT EXISTS line_undo_targets (
       line_user_hash TEXT PRIMARY KEY,
       entry_ids TEXT NOT NULL,
@@ -361,6 +377,10 @@ function validateSubmission(body) {
 
 function taipeiMonthKey(date = new Date()) {
   return new Date(date.getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 7);
+}
+
+function taipeiDateKey(date = new Date()) {
+  return new Date(date.getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
 function taipeiMonthRange(monthKey = taipeiMonthKey()) {
@@ -588,6 +608,112 @@ function createStore() {
     const pending = pendingLineInputByHash(lineUserHash);
     if (pending) db.prepare("DELETE FROM line_pending_inputs WHERE line_user_hash = ?").run(lineUserHash);
     return pending;
+  }
+
+  function lineVoicePreference(lineUserId) {
+    if (!lineUserId) throw new Error("缺少 LINE 使用者");
+    const lineUserHash = accessHash(`line:${lineUserId}`);
+    const row = db.prepare(`
+      SELECT enabled, consent_version, enabled_at, disabled_at, updated_at
+      FROM line_voice_preferences WHERE line_user_hash = ?
+    `).get(lineUserHash);
+    return row ? {
+      enabled: row.enabled === 1,
+      consentVersion: row.consent_version || null,
+      enabledAt: row.enabled_at || null,
+      disabledAt: row.disabled_at || null,
+      updatedAt: row.updated_at
+    } : {
+      enabled: false,
+      consentVersion: null,
+      enabledAt: null,
+      disabledAt: null,
+      updatedAt: null
+    };
+  }
+
+  function enableLineVoice({ lineUserId, consentVersion, sourceMessageId }) {
+    if (!lineUserId) throw new Error("缺少 LINE 使用者");
+    const version = String(consentVersion || "").trim().slice(0, 40);
+    if (!version) throw new Error("語音同意版本不正確");
+    const lineUserHash = accessHash(`line:${lineUserId}`);
+    return runLineCommandOnce({
+      lineUserHash,
+      sourceMessageId,
+      commandType: "enable_line_voice",
+      action: () => {
+        const now = new Date().toISOString();
+        db.prepare(`
+          INSERT INTO line_voice_preferences (
+            line_user_hash, enabled, consent_version, enabled_at, disabled_at, updated_at
+          ) VALUES (?, 1, ?, ?, NULL, ?)
+          ON CONFLICT(line_user_hash) DO UPDATE SET
+            enabled = 1,
+            consent_version = excluded.consent_version,
+            enabled_at = excluded.enabled_at,
+            disabled_at = NULL,
+            updated_at = excluded.updated_at
+        `).run(lineUserHash, version, now, now);
+        db.prepare(`
+          DELETE FROM line_pending_inputs
+          WHERE line_user_hash = ? AND input_type IN ('voice_confirmation', 'voice_pilot', 'voice_consent')
+        `).run(lineUserHash);
+        return { kind: "enabled", consentVersion: version, enabledAt: now };
+      }
+    });
+  }
+
+  function disableLineVoice({ lineUserId, sourceMessageId }) {
+    if (!lineUserId) throw new Error("缺少 LINE 使用者");
+    const lineUserHash = accessHash(`line:${lineUserId}`);
+    return runLineCommandOnce({
+      lineUserHash,
+      sourceMessageId,
+      commandType: "disable_line_voice",
+      action: () => {
+        const now = new Date().toISOString();
+        db.prepare(`
+          INSERT INTO line_voice_preferences (
+            line_user_hash, enabled, consent_version, enabled_at, disabled_at, updated_at
+          ) VALUES (?, 0, NULL, NULL, ?, ?)
+          ON CONFLICT(line_user_hash) DO UPDATE SET
+            enabled = 0,
+            consent_version = NULL,
+            disabled_at = excluded.disabled_at,
+            updated_at = excluded.updated_at
+        `).run(lineUserHash, now, now);
+        db.prepare(`
+          DELETE FROM line_pending_inputs
+          WHERE line_user_hash = ? AND input_type IN ('voice_confirmation', 'voice_pilot', 'voice_consent')
+        `).run(lineUserHash);
+        return { kind: "disabled", disabledAt: now };
+      }
+    });
+  }
+
+  function consumeLineVoiceDailyAttempt({ lineUserId, dailyLimit, now = new Date() }) {
+    if (!lineUserId) throw new Error("缺少 LINE 使用者");
+    const limit = Math.max(1, Math.min(100, Math.round(Number(dailyLimit) || 30)));
+    const lineUserHash = accessHash(`line:${lineUserId}`);
+    const usageDate = taipeiDateKey(now);
+    return immediateTransaction(() => {
+      const current = db.prepare(`
+        SELECT attempts FROM line_voice_daily_usage
+        WHERE line_user_hash = ? AND usage_date = ?
+      `).get(lineUserHash, usageDate);
+      const attempts = Number(current?.attempts || 0);
+      if (attempts >= limit) return { allowed: false, attempts, remaining: 0, limit, usageDate };
+      const nextAttempts = attempts + 1;
+      const updatedAt = new Date(now).toISOString();
+      db.prepare(`
+        INSERT INTO line_voice_daily_usage (line_user_hash, usage_date, attempts, updated_at)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(line_user_hash, usage_date) DO UPDATE SET
+          attempts = excluded.attempts,
+          updated_at = excluded.updated_at
+      `).run(lineUserHash, usageDate, nextAttempts, updatedAt);
+      return { allowed: true, attempts: nextAttempts, remaining: limit - nextAttempts, limit, usageDate };
+    });
   }
 
   function markLineUndoTarget({ lineUserId, entries = [] }) {
@@ -965,6 +1091,8 @@ function createStore() {
       db.prepare("DELETE FROM line_profiles WHERE line_user_hash = ?").run(row.line_user_hash);
       db.prepare("DELETE FROM line_command_receipts WHERE line_user_hash = ?").run(row.line_user_hash);
       db.prepare("DELETE FROM line_pending_inputs WHERE line_user_hash = ?").run(row.line_user_hash);
+      db.prepare("DELETE FROM line_voice_preferences WHERE line_user_hash = ?").run(row.line_user_hash);
+      db.prepare("DELETE FROM line_voice_daily_usage WHERE line_user_hash = ?").run(row.line_user_hash);
       db.prepare("DELETE FROM line_undo_targets WHERE line_user_hash = ?").run(row.line_user_hash);
       db.prepare("DELETE FROM line_report_bindings WHERE line_user_hash = ?").run(row.line_user_hash);
       db.prepare("DELETE FROM user_sessions WHERE user_id = ?").run(userId);
@@ -1534,6 +1662,8 @@ function createStore() {
       db.prepare("DELETE FROM line_profiles WHERE line_user_hash = ?").run(lineUserHash);
       db.prepare("DELETE FROM line_command_receipts WHERE line_user_hash = ?").run(lineUserHash);
       db.prepare("DELETE FROM line_pending_inputs WHERE line_user_hash = ?").run(lineUserHash);
+      db.prepare("DELETE FROM line_voice_preferences WHERE line_user_hash = ?").run(lineUserHash);
+      db.prepare("DELETE FROM line_voice_daily_usage WHERE line_user_hash = ?").run(lineUserHash);
       db.prepare("DELETE FROM line_undo_targets WHERE line_user_hash = ?").run(lineUserHash);
       db.prepare("DELETE FROM line_report_bindings WHERE line_user_hash = ?").run(lineUserHash);
       return deleted;
@@ -1902,6 +2032,8 @@ function createStore() {
     db.prepare("DELETE FROM line_command_receipts WHERE created_at < ?")
       .run(new Date(now.getTime() - 90 * 86400000).toISOString());
     db.prepare("DELETE FROM line_pending_inputs WHERE expires_at < ?").run(now.toISOString());
+    db.prepare("DELETE FROM line_voice_daily_usage WHERE usage_date < ?")
+      .run(taipeiDateKey(new Date(now.getTime() - 90 * 86400000)));
     db.prepare("DELETE FROM line_undo_targets WHERE expires_at < ?").run(now.toISOString());
     db.prepare("DELETE FROM line_ledger_entries WHERE occurred_at < ?")
       .run(new Date(now.getTime() - lineLedgerRetentionDays * 86400000).toISOString());
@@ -1922,6 +2054,7 @@ function createStore() {
     bindLineReport,
     cancelCurrentLineInput,
     clearLinePendingInput,
+    consumeLineVoiceDailyAttempt,
     close: () => db.close(),
     createOrder,
     createLineReportBinding,
@@ -1954,6 +2087,7 @@ function createStore() {
     lineDeleteCandidates,
     linePendingInput,
     lineSourceMessageHandled,
+    lineVoicePreference,
     listReports,
     listOrders,
     markLineUndoTarget,
@@ -1967,6 +2101,8 @@ function createStore() {
     revokeUserSession,
     setFollowupStatus,
     startLinePendingInput,
+    enableLineVoice,
+    disableLineVoice,
     replaceLineHoldingsForReport,
     replaceLineHoldingsForUser,
     updateIndexedLineLedgerEntry,
