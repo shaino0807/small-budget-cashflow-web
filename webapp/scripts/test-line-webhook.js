@@ -54,17 +54,164 @@ async function waitForServer() {
   throw new Error("API server did not start");
 }
 
-function lineEventBody(message, id = `event-${message.id}`) {
+function lineEventBody(message, id = `event-${message.id}`, userId = "Uvoice") {
   return JSON.stringify({
     destination: "test",
     events: [{
       type: "message",
       webhookEventId: id,
       replyToken: `reply-${id}`,
-      source: { type: "user", userId: "Uvoice" },
+      source: { type: "user", userId },
       message
     }]
   });
+}
+
+async function testTargetedDeleteWebhook(store) {
+  const userId = "Udelete";
+  const send = (id, text) => handleLineWebhook(
+    lineEventBody({ id, type: "text", text }, `event-${id}`, userId),
+    { store }
+  );
+  const add = (id, note, amount, hoursAgo) => store.addLineLedgerEntry({
+    lineUserId: userId,
+    type: "expense",
+    amount,
+    category: "伙食",
+    note,
+    occurredAt: new Date(Date.now() - hoursAgo * 3600000).toISOString(),
+    source: { platform: "line", messageId: id, messageText: `${note} ${amount}` }
+  });
+
+  add("delete-dinner-300", "晚餐", 300, 2);
+  add("delete-breakfast-65", "早餐", 65, 4);
+  add("delete-dinner-200", "晚餐", 200, 26);
+  add("delete-dinner-100", "晚餐", 100, 50);
+  const initialExpense = store.lineLedgerSummary(userId).expense;
+  if (initialExpense !== 665) throw new Error(`Targeted delete fixture total was incorrect: ${initialExpense}`);
+
+  const noMatch = await send("delete-none", "刪除宵夜");
+  if (
+    noMatch.replies[0]?.command !== "request_delete_matching"
+    || noMatch.replies[0]?.candidateCount !== 0
+    || noMatch.replies[0]?.pending
+    || store.linePendingInput(userId) !== null
+    || store.lineLedgerSummary(userId).expense !== initialExpense
+  ) {
+    throw new Error(`No-match targeted delete was not fail-closed: ${JSON.stringify(noMatch)}`);
+  }
+
+  const single = await send("delete-single", "刪除早餐");
+  if (
+    single.replies[0]?.command !== "request_delete_matching"
+    || single.replies[0]?.candidateCount !== 1
+    || !single.replies[0]?.pending
+    || store.linePendingInput(userId)?.type !== "delete_confirmation"
+    || store.lineLedgerSummary(userId).expense !== initialExpense
+  ) {
+    throw new Error(`Single targeted delete skipped confirmation: ${JSON.stringify(single)}`);
+  }
+  const canceled = await send("delete-single-cancel", "取消");
+  if (canceled.replies[0]?.canceled !== "pending" || store.lineLedgerSummary(userId).expense !== initialExpense) {
+    throw new Error(`Canceled targeted delete changed the ledger: ${JSON.stringify(canceled)}`);
+  }
+  const expiredConfirmation = await send("delete-confirm-without-pending", "確認刪除此筆");
+  if (expiredConfirmation.replies[0]?.ledgerCount !== 0 || store.lineLedgerSummary(userId).expense !== initialExpense) {
+    throw new Error(`Missing targeted delete pending state deleted an entry: ${JSON.stringify(expiredConfirmation)}`);
+  }
+
+  const multiple = await send("delete-multiple", "刪除晚餐");
+  const multiplePending = store.linePendingInput(userId);
+  if (
+    multiple.replies[0]?.candidateCount !== 3
+    || multiplePending?.type !== "delete_candidates"
+    || multiplePending.payload?.candidates?.map((entry) => entry.amount).join(",") !== "300,200,100"
+    || store.lineLedgerSummary(userId).expense !== initialExpense
+  ) {
+    throw new Error(`Multiple targeted delete candidates were unsafe: ${JSON.stringify({ multiple, multiplePending })}`);
+  }
+  const invalidSelection = await send("delete-invalid-selection", "選擇刪除第9筆");
+  if (
+    invalidSelection.replies[0]?.candidateCount !== 3
+    || store.linePendingInput(userId)?.type !== "delete_candidates"
+    || store.lineLedgerSummary(userId).expense !== initialExpense
+  ) {
+    throw new Error(`Invalid targeted delete selection changed state unsafely: ${JSON.stringify(invalidSelection)}`);
+  }
+  const selected = await send("delete-select-second", "選擇刪除第2筆");
+  if (
+    selected.replies[0]?.candidateCount !== 1
+    || store.linePendingInput(userId)?.type !== "delete_confirmation"
+    || store.linePendingInput(userId)?.payload?.candidates?.[0]?.amount !== 200
+    || store.lineLedgerSummary(userId).expense !== initialExpense
+  ) {
+    throw new Error(`Targeted delete selection did not require final confirmation: ${JSON.stringify(selected)}`);
+  }
+  const confirmed = await send("delete-confirm-second", "確認刪除此筆");
+  if (
+    confirmed.replies[0]?.command !== "confirm_delete_selected"
+    || confirmed.replies[0]?.ledgerCount !== 1
+    || confirmed.replies[0]?.ledgerType !== "expense"
+    || store.lineLedgerSummary(userId).expense !== 465
+    || store.linePendingInput(userId) !== null
+  ) {
+    throw new Error(`Targeted delete removed the wrong entry: ${JSON.stringify(confirmed)}`);
+  }
+  const repeatedConfirmation = await send("delete-confirm-second", "確認刪除此筆");
+  if (repeatedConfirmation.replies[0]?.ledgerCount !== 0 || store.lineLedgerSummary(userId).expense !== 465) {
+    throw new Error(`Repeated targeted delete confirmation removed another entry: ${JSON.stringify(repeatedConfirmation)}`);
+  }
+
+  await send("delete-stale-search", "刪除晚餐");
+  await send("delete-stale-select", "選擇刪除第1筆");
+  await wait(5);
+  store.updateIndexedLineLedgerEntry({
+    lineUserId: userId,
+    index: 1,
+    amount: 333,
+    sourceMessageId: "delete-stale-mutation"
+  });
+  const staleConfirmation = await send("delete-stale-confirm", "確認刪除此筆");
+  if (
+    staleConfirmation.replies[0]?.ledgerCount !== 0
+    || store.lineLedgerSummary(userId).expense !== 498
+    || store.linePendingInput(userId) !== null
+  ) {
+    throw new Error(`Stale targeted delete candidate was not rejected: ${JSON.stringify(staleConfirmation)}`);
+  }
+
+  const todayDinner = await send("delete-today-dinner", "刪除今天的晚餐");
+  if (
+    todayDinner.replies[0]?.candidateCount !== 1
+    || store.linePendingInput(userId)?.type !== "delete_confirmation"
+    || store.linePendingInput(userId)?.payload?.candidates?.[0]?.amount !== 333
+    || store.lineLedgerSummary(userId).expense !== 498
+  ) {
+    throw new Error(`Positive date-scoped targeted delete was unsafe: ${JSON.stringify(todayDinner)}`);
+  }
+  await send("delete-today-dinner-cancel", "取消");
+  const todayNoMatch = await send("delete-today-none", "取消今天的午餐");
+  if (todayNoMatch.replies[0]?.candidateCount !== 0 || store.lineLedgerSummary(userId).expense !== 498) {
+    throw new Error(`Date-scoped targeted delete was not fail-closed: ${JSON.stringify(todayNoMatch)}`);
+  }
+  const deleteBreakfast = await send("delete-breakfast-final", "刪除早餐");
+  if (deleteBreakfast.replies[0]?.candidateCount !== 1) throw new Error(`Single targeted delete candidate disappeared: ${JSON.stringify(deleteBreakfast)}`);
+  const confirmBreakfast = await send("delete-breakfast-confirm", "確認刪除此筆");
+  if (confirmBreakfast.replies[0]?.ledgerCount !== 1 || store.lineLedgerSummary(userId).expense !== 433) {
+    throw new Error(`Single targeted delete confirmation failed: ${JSON.stringify(confirmBreakfast)}`);
+  }
+
+  return {
+    noMatchFailClosed: true,
+    singleRequiresConfirmation: true,
+    cancellationSafe: true,
+    missingOrExpiredPendingSafe: true,
+    multipleChoiceSafe: true,
+    invalidChoiceSafe: true,
+    staleCandidateRejected: true,
+    repeatedConfirmationSafe: true,
+    dateScopeSafe: true
+  };
 }
 
 async function testVoiceWebhook() {
@@ -264,6 +411,7 @@ async function testVoiceWebhook() {
     const disabled = await handleLineWebhook(lineEventBody({ ...voiceMessage, id: "voice-disabled" }), { store });
     if (disabled.replies[0]?.voiceStatus !== "disabled") throw new Error(`Disabled voice mode was accepted: ${JSON.stringify(disabled)}`);
 
+    const targetedDelete = await testTargetedDeleteWebhook(store);
     return {
       pilotConsentRequired: true,
       pilotDisabledSafe: true,
@@ -276,7 +424,8 @@ async function testVoiceWebhook() {
       lineProcessingRetry: true,
       multipleEntriesRejected: true,
       transcriptionFailClosed: true,
-      disabledFailClosed: true
+      disabledFailClosed: true,
+      targetedDelete
     };
   } finally {
     if (store) store.close();
@@ -336,6 +485,10 @@ async function main() {
     ["取消", "cancel_current"],
     ["按錯", "cancel_current"],
     ["確認語音記帳", "confirm_current"],
+    ["刪除晚餐", "request_delete_matching"],
+    ["取消今天的晚餐", "request_delete_matching"],
+    ["選擇刪除第2筆", "select_delete_candidate"],
+    ["確認刪除此筆", "confirm_delete_selected"],
     ["查明細", "details"],
     ["修改上一筆 80", "update_last"],
     ["上一筆改成 120", "update_last"],

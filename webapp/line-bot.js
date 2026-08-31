@@ -418,15 +418,30 @@ function parseLineCommand(text) {
   if (/^修改(?:上一筆|最後一筆)$/.test(raw)) return { intent: "command", command: "prompt_update_last" };
   if (/^(?:查詢?)?(?:本月)?(?:明細|摘要|統計)$/.test(raw)) return { intent: "command", command: "details" };
   if (/^確認刪除全部(?:資料|記帳|財務資料)$/.test(raw)) return { intent: "command", command: "confirm_delete_all" };
+  if (/^確認刪除此筆$/.test(raw)) return { intent: "command", command: "confirm_delete_selected" };
   if (/^(?:確認|確認記帳|確認語音記帳)$/.test(raw)) return { intent: "command", command: "confirm_current" };
   if (/^刪除全部(?:資料|記帳|財務資料)$/.test(raw)) return { intent: "command", command: "request_delete_all" };
   const deleteIndexed = raw.match(/^刪除第?\s*(\d+)\s*筆$/);
   if (deleteIndexed) return { intent: "command", command: "delete_indexed", index: Number(deleteIndexed[1]) };
   if (/^刪除(?:上一筆|最後一筆)$/.test(raw)) return { intent: "command", command: "delete_last" };
+  const selectDeleteCandidate = raw.match(/^選擇刪除第?\s*(\d+)\s*筆$/);
+  if (selectDeleteCandidate) return { intent: "command", command: "select_delete_candidate", index: Number(selectDeleteCandidate[1]) };
   const updateIndexed = raw.match(/^修改第?\s*(\d+)\s*筆\s*(?:金額)?\s*(\d+(?:\.\d+)?(?:萬|千|[kw])?)$/i);
   if (updateIndexed) return { intent: "command", command: "update_indexed", index: Number(updateIndexed[1]), amount: firstAmount(updateIndexed[2]) };
   const update = raw.match(/^(?:(?:修改)(?:上一筆|最後一筆)|(?:上一筆|最後一筆)改成?)\s*(?:金額)?\s*(\d+(?:\.\d+)?(?:萬|千|[kw])?)$/i);
   if (update) return { intent: "command", command: "update_last", amount: firstAmount(update[1]) };
+  const deleteMatching = raw.match(/^(?:刪除|取消)(?:(今天|昨天|昨日)的?)?(.+)$/);
+  if (deleteMatching) {
+    const query = String(deleteMatching[2] || "").replace(/(?:的)?(?:記帳|紀錄|记录)$/, "").trim().slice(0, 40);
+    if (query) {
+      return {
+        intent: "command",
+        command: "request_delete_matching",
+        query,
+        dateScope: deleteMatching[1] === "今天" ? "today" : deleteMatching[1] ? "yesterday" : null
+      };
+    }
+  }
   return null;
 }
 
@@ -798,6 +813,64 @@ function cancelableTextMessage(text) {
   };
 }
 
+function deleteCandidateLine(entry, index = null) {
+  const date = taipeiDateParts(new Date(entry.occurredAt));
+  const prefix = index === null ? "" : `${index}. `;
+  const subject = entry.note || entry.ticker || entry.category || ledgerTypeLabel(entry.type);
+  return `${prefix}${date.month}/${date.day} ${subject} ${formatMoney(entry.amount)}`;
+}
+
+function deleteCandidateMessage(text, candidates) {
+  return {
+    type: "text",
+    text,
+    quickReply: {
+      items: [
+        ...candidates.slice(0, 5).map((entry, index) => ({
+          type: "action",
+          action: {
+            type: "message",
+            label: `第${index + 1}筆 ${formatMoney(entry.amount)}`.slice(0, 20),
+            text: `選擇刪除第${index + 1}筆`
+          }
+        })),
+        { type: "action", action: { type: "message", label: "取消", text: "取消" } }
+      ]
+    }
+  };
+}
+
+function deleteConfirmationMessage(text) {
+  return {
+    type: "text",
+    text,
+    quickReply: {
+      items: [
+        { type: "action", action: { type: "message", label: "確認刪除", text: "確認刪除此筆" } },
+        { type: "action", action: { type: "message", label: "取消", text: "取消" } }
+      ]
+    }
+  };
+}
+
+function deleteConfirmationText(entry) {
+  return [
+    "請確認要刪除這筆記帳：",
+    deleteCandidateLine(entry),
+    `類型：${ledgerTypeLabel(entry.type)}`,
+    `分類：${entry.category || "未分類"}`,
+    "",
+    "只有按「確認刪除」後才會移除；若選錯請按「取消」。"
+  ].join("\n");
+}
+
+function deleteDateKey(dateScope) {
+  if (!dateScope) return null;
+  const date = new Date(Date.now() - (dateScope === "yesterday" ? 86400000 : 0));
+  const parts = taipeiDateParts(date);
+  return `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`;
+}
+
 function voiceConfirmationMessage(text) {
   return {
     type: "text",
@@ -1022,6 +1095,105 @@ async function handleLineWebhook(rawBody, options = {}) {
                 replyText = "這段語音已經記錄過，不會重複入帳。";
               }
             }
+          } else if (parsed.command === "request_delete_matching") {
+            const canceled = options.store.clearLinePendingInput({ lineUserId: userId });
+            const search = options.store.lineDeleteCandidates({
+              lineUserId: userId,
+              query: parsed.query,
+              dateKey: deleteDateKey(parsed.dateScope),
+              limit: 5
+            });
+            if (!search.candidates.length) {
+              commandResult = { command: parsed.command, result: { kind: "none" }, candidates: [] };
+              const dateText = parsed.dateScope === "today" ? "今天" : parsed.dateScope === "yesterday" ? "昨天" : "最近 90 天";
+              replyText = `${canceledPrefix(canceled)}找不到${dateText}符合「${parsed.query}」的記帳，沒有刪除任何資料。請換更明確的用途、分類或標的名稱。`;
+            } else {
+              const pendingType = search.candidates.length === 1 ? "delete_confirmation" : "delete_candidates";
+              const pending = options.store.startLinePendingInput({
+                lineUserId: userId,
+                type: pendingType,
+                label: search.candidates.length === 1 ? "指定刪除待確認" : "指定刪除候選",
+                sourceMessageId: event.message.id,
+                payload: {
+                  query: parsed.query,
+                  dateKey: search.dateKey,
+                  total: search.total,
+                  candidates: search.candidates
+                }
+              });
+              commandResult = {
+                command: parsed.command,
+                pending: true,
+                result: pending,
+                candidates: search.candidates,
+                deleteConfirmation: search.candidates.length === 1
+              };
+              replyText = search.candidates.length === 1
+                ? deleteConfirmationText(search.candidates[0])
+                : [
+                    `找到 ${search.total} 筆符合「${parsed.query}」的記帳${search.total > search.candidates.length ? "，先列出最近 5 筆" : ""}：`,
+                    ...search.candidates.map((entry, index) => deleteCandidateLine(entry, index + 1)),
+                    "",
+                    "請選擇要刪除的編號；選擇後仍需再次確認，現在尚未刪除。"
+                  ].join("\n");
+            }
+          } else if (parsed.command === "select_delete_candidate") {
+            const current = options.store.linePendingInput(userId);
+            const candidates = current?.type === "delete_candidates" && Array.isArray(current.payload?.candidates)
+              ? current.payload.candidates
+              : [];
+            const selected = candidates[Number(parsed.index) - 1] || null;
+            if (!selected) {
+              commandResult = {
+                command: parsed.command,
+                pending: Boolean(candidates.length),
+                result: { kind: candidates.length ? "invalid_selection" : "none" },
+                candidates
+              };
+              replyText = candidates.length
+                ? `請選擇第 1 到第 ${candidates.length} 筆；目前沒有刪除任何資料。`
+                : "目前沒有待選擇的刪除候選，請先輸入例如「刪除晚餐」。";
+            } else {
+              const pending = options.store.startLinePendingInput({
+                lineUserId: userId,
+                type: "delete_confirmation",
+                label: "指定刪除待確認",
+                sourceMessageId: event.message.id,
+                payload: {
+                  query: current.payload.query,
+                  dateKey: current.payload.dateKey,
+                  candidates: [selected]
+                }
+              });
+              commandResult = {
+                command: parsed.command,
+                pending: true,
+                result: pending,
+                candidates: [selected],
+                deleteConfirmation: true
+              };
+              replyText = deleteConfirmationText(selected);
+            }
+          } else if (parsed.command === "confirm_delete_selected") {
+            const current = options.store.linePendingInput(userId);
+            const selected = current?.type === "delete_confirmation" ? current.payload?.candidates?.[0] : null;
+            if (!selected?.id || !selected.updatedAt) {
+              commandResult = { command: parsed.command, result: { kind: "none" } };
+              replyText = "目前沒有待確認的指定刪除項目，沒有刪除任何資料。";
+            } else {
+              const result = options.store.deleteSelectedLineLedgerEntry({
+                lineUserId: userId,
+                entryId: selected.id,
+                expectedUpdatedAt: selected.updatedAt,
+                sourceMessageId: event.message.id
+              });
+              options.store.clearLinePendingInput({ lineUserId: userId });
+              const summary = options.store.lineLedgerSummary(userId);
+              commandResult = { command: parsed.command, result, summary };
+              replyText = result.entry
+                ? ["已刪除指定記帳", entryReplyText(result.entry), ...compactSummaryLines(summary), "回到網頁按「重新整理」即可同步最新結果。"].join("\n")
+                : "這筆記帳已不存在或在確認前被修改，因此沒有刪除任何資料。請重新搜尋後再選擇。";
+            }
           } else if (prompt) {
             const pending = options.store.startLinePendingInput({
               lineUserId: userId,
@@ -1177,10 +1349,14 @@ async function handleLineWebhook(rawBody, options = {}) {
     } else if (commandResult?.summary && commandResult?.result?.entry) {
       const actionTitle = commandResult.command === "confirm_current"
         ? "已確認語音記帳"
-        : commandResult.command.startsWith("delete")
+        : commandResult.command.includes("delete")
           ? "已刪除記帳"
           : "已修改記帳";
       messages = [summaryFlexMessage(actionTitle, entryReplyText(commandResult.result.entry), commandResult.summary, false)];
+    } else if (commandResult?.deleteConfirmation) {
+      messages = [deleteConfirmationMessage(replyText)];
+    } else if (commandResult?.candidates?.length) {
+      messages = [deleteCandidateMessage(replyText, commandResult.candidates)];
     } else if (commandResult?.pending) {
       messages = [cancelableTextMessage(replyText)];
     }
@@ -1196,6 +1372,7 @@ async function handleLineWebhook(rawBody, options = {}) {
       command: commandResult?.command || null,
       commandDuplicate: Boolean(commandResult?.result?.duplicate),
       pending: Boolean(commandResult?.pending),
+      candidateCount: commandResult?.candidates?.length || 0,
       canceled: commandResult?.result?.canceled?.label || commandResult?.result?.kind || null,
       userId: event.source?.userId ? "present" : "missing",
       ...result

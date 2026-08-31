@@ -1268,6 +1268,44 @@ function createStore() {
     return lineEntriesByHash(accessHash(`line:${lineUserId}`), monthKey, limit);
   }
 
+  function lineDeleteCandidates({ lineUserId, query, dateKey = null, limit = 5 }) {
+    if (!lineUserId) throw new Error("缺少 LINE 使用者");
+    const normalizedQuery = String(query || "").trim().slice(0, 40);
+    if (!normalizedQuery) return { query: "", dateKey: null, candidates: [], total: 0 };
+    const normalizedDateKey = /^\d{4}-\d{2}-\d{2}$/.test(String(dateKey || "")) ? String(dateKey) : null;
+    const lineUserHash = accessHash(`line:${lineUserId}`);
+    const recentStart = new Date(Date.now() - 90 * 86400000).toISOString();
+    const rows = db.prepare(`
+      SELECT * FROM line_ledger_entries
+      WHERE line_user_hash = ? AND occurred_at >= ?
+      ORDER BY occurred_at DESC, created_at DESC
+      LIMIT 100
+    `).all(lineUserHash, recentStart).map(publicLineEntry);
+    const normalize = (value) => String(value || "")
+      .toLowerCase()
+      .replace(/[\s,，。.!！?？、的]/g, "");
+    const needle = normalize(normalizedQuery);
+    const entryDateKey = (entry) => new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Taipei",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    }).format(new Date(entry.occurredAt));
+    const typeLabel = { expense: "支出", income: "收入", investment: "投資買入", investment_income: "投資流入" };
+    const matches = rows.filter((entry) => {
+      if (normalizedDateKey && entryDateKey(entry) !== normalizedDateKey) return false;
+      const categoryAlias = entry.category === "伙食" ? "伙食餐飲" : entry.category;
+      const haystack = normalize([entry.note, categoryAlias, entry.ticker, typeLabel[entry.type]].filter(Boolean).join(" "));
+      return Boolean(needle) && haystack.includes(needle);
+    });
+    return {
+      query: normalizedQuery,
+      dateKey: normalizedDateKey,
+      candidates: matches.slice(0, Math.max(1, Math.min(5, Number(limit) || 5))),
+      total: matches.length
+    };
+  }
+
   function updateLineLedgerEntryByHash({ lineUserHash, entryId, patch = {} }) {
     const row = db.prepare("SELECT * FROM line_ledger_entries WHERE id = ? AND line_user_hash = ?").get(entryId, lineUserHash);
     if (!row) return null;
@@ -1568,6 +1606,27 @@ function createStore() {
       new Date().toISOString(),
       encrypt(payload)
     );
+  }
+
+  function deleteSelectedLineLedgerEntry({ lineUserId, entryId, expectedUpdatedAt, sourceMessageId }) {
+    if (!lineUserId) throw new Error("缺少 LINE 使用者");
+    const lineUserHash = accessHash(`line:${lineUserId}`);
+    const normalizedEntryId = String(entryId || "").slice(0, 80);
+    const normalizedExpectedUpdatedAt = String(expectedUpdatedAt || "").slice(0, 40);
+    return runLineCommandOnce({
+      lineUserHash,
+      sourceMessageId,
+      commandType: "delete_selected",
+      action: () => {
+        const row = db.prepare("SELECT * FROM line_ledger_entries WHERE id = ? AND line_user_hash = ?").get(normalizedEntryId, lineUserHash);
+        if (!row) return { entry: null, reason: "missing" };
+        const actualUpdatedAt = String(row.updated_at || row.created_at || "");
+        if (!normalizedExpectedUpdatedAt || actualUpdatedAt !== normalizedExpectedUpdatedAt) {
+          return { entry: null, reason: "stale" };
+        }
+        return { entry: deleteLineLedgerEntryByHash({ lineUserHash, entryId: normalizedEntryId }) };
+      }
+    });
   }
 
   function listOrders(adminKey, limit = 100) {
@@ -1871,6 +1930,7 @@ function createStore() {
     createUserSession,
     addLineLedgerEntryForReport,
     deleteIndexedLineLedgerEntry,
+    deleteSelectedLineLedgerEntry,
     deleteLineLedgerEntryForReport,
     deleteLineUserData,
     deleteLineUserDataForReport,
@@ -1891,6 +1951,7 @@ function createStore() {
     lineCashflowForUser,
     lineLedgerSummary,
     lineLedgerEntries,
+    lineDeleteCandidates,
     linePendingInput,
     lineSourceMessageHandled,
     listReports,
