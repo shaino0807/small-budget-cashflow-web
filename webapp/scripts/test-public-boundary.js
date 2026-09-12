@@ -37,8 +37,10 @@ async function main() {
     }
   } finally { server.kill(); }
   const blueprint = fs.readFileSync(path.join(root, "..", "render.yaml"), "utf8");
-  assert.match(blueprint, /key: LINE_IMAGE_PARSER_ENABLED\s+value: "0"/);
-  assert.match(fs.readFileSync(path.join(root, ".env.example"), "utf8"), /LINE_IMAGE_PARSER_ENABLED=0/);
+  for (const key of ["LINE_IMAGE_PARSER_ENABLED", "LINE_VOICE_TRANSCRIPTION_ENABLED"]) {
+    assert.ok(new RegExp(`key: ${key}\\r?\\n(?:[ \\t]+#[^\\r\\n]*\\r?\\n)*[ \\t]+sync: false`).test(blueprint), `${key} must preserve the operator's live value`);
+    assert.ok(fs.readFileSync(path.join(root, ".env.example"), "utf8").includes(`${key}=0`), `${key} must default to disabled on initial setup`);
+  }
   assert.match(fs.readFileSync(path.join(root, "..", ".github/workflows/pages.yml"), "utf8"), /path: dist\/public/);
   // Exercise the service-worker cache contract without a browser or network.
   const handlers = {};
