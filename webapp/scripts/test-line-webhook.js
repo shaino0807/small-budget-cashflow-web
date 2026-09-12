@@ -508,6 +508,12 @@ async function testVoiceWebhook() {
     }
     const disabled = await handleLineWebhook(lineEventBody({ ...voiceMessage, id: "voice-disabled" }), { store });
     if (disabled.replies[0]?.voiceStatus !== "disabled") throw new Error(`Disabled voice mode was accepted: ${JSON.stringify(disabled)}`);
+    delete process.env.LINE_VOICE_TRANSCRIPTION_ENABLED;
+    const downloadsBeforeUnset = lineDownloadCalls;
+    const unset = await handleLineWebhook(lineEventBody({ ...voiceMessage, id: "voice-unset" }), { store });
+    if (unset.replies[0]?.voiceStatus !== "disabled" || lineDownloadCalls !== downloadsBeforeUnset) {
+      throw new Error("Missing voice gate must block before downloading audio");
+    }
 
     const targetedDelete = await testTargetedDeleteWebhook(store);
     return {

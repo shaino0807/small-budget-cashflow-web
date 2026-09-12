@@ -36,6 +36,8 @@ const image = (user, fetchImpl = fakeFetch, id, sourceType) => handleLineWebhook
 async function main() {
   store.setLineImageConsent("disabled", true);
   await image("disabled"); assert.equal(calls, 0, "disabled must not download");
+  delete process.env.LINE_IMAGE_PARSER_ENABLED;
+  await image("disabled"); assert.equal(calls, 0, "missing operator flag must not download");
   // Only this isolated, network-denied process enables the branch under test.
   process.env.LINE_IMAGE_PARSER_ENABLED = "1";
   await image("no-consent"); assert.equal(calls, 0);

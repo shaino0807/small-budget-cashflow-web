@@ -86,7 +86,9 @@ services:
       - key: OPENAI_LINE_PARSER_MODEL
         value: gpt-5.4-nano
       - key: LINE_VOICE_TRANSCRIPTION_ENABLED
-        value: "0"
+        # Operator-managed consent feature gate. Set 0 on initial setup.
+        # Subsequent Blueprint syncs must preserve the current service value.
+        sync: false
       - key: LINE_VOICE_PILOT_MODE
         value: "0"
       - key: LINE_VOICE_CONSENT_VERSION
@@ -104,7 +106,8 @@ services:
       - key: LINE_VOICE_TRANSCRIPTION_TIMEOUT_MS
         value: "20000"
       - key: LINE_IMAGE_PARSER_ENABLED
-        value: "0"
+        # Keep the live kill switch independent of code deployments; initial value 0.
+        sync: false
       - key: OPENAI_STATEMENT_MODEL
         value: gpt-4.1-mini
     disk:
