@@ -23,9 +23,10 @@ for (const copy of requiredPrivacyCopy) {
 if (!index.includes('href="./privacy.html"')) throw new Error("Homepage footer does not link to privacy.html");
 if (!envExample.includes("LINE_VOICE_DAILY_LIMIT=30")) throw new Error(".env.example daily voice limit is not 30");
 if (!envExample.includes("LINE_VOICE_PILOT_MODE=0")) throw new Error(".env.example is not configured for persistent consent mode");
-if (!/key: LINE_VOICE_TRANSCRIPTION_ENABLED\s+value: "0"/.test(renderBlueprint)) {
-  throw new Error("Render blueprint must keep voice transcription disabled during code deployment");
+if (!/key: LINE_VOICE_TRANSCRIPTION_ENABLED\r?\n(?:[ \t]+#[^\r\n]*\r?\n)*[ \t]+sync: false/.test(renderBlueprint)) {
+  throw new Error("Render blueprint must preserve the operator-managed voice gate during code deployment");
 }
+if (!envExample.includes("LINE_VOICE_TRANSCRIPTION_ENABLED=0")) throw new Error("Initial voice setup must default to disabled");
 if (!/key: LINE_VOICE_DAILY_LIMIT\s+value: "30"/.test(renderBlueprint)) {
   throw new Error("Render blueprint daily voice limit is not 30");
 }
@@ -37,5 +38,6 @@ console.log(JSON.stringify({
   encryptedPendingRetentionDisclosed: true,
   confirmedRetentionDisclosed: true,
   dailyLimit: 30,
-  safeDeployDefault: "off"
+  initialSetupDefault: "off",
+  deploymentPreservesOperatorValue: true
 }, null, 2));
