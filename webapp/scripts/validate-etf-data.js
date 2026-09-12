@@ -58,6 +58,11 @@ assert(
   "股票來源日期必須等於股票行情資料列的真正最大日期"
 );
 assert(
+  db.metadata?.sourceFreshness?.sources?.tpexStockDaily?.sourceDataDate === latestDate((db.stocks?.items || [])
+    .filter((row) => row.latestPrice?.source === "tpex-mainboard-daily-close-quotes").map((row) => row.latestPrice.date)),
+  "櫃買來源日期必須等於目前保留的官方行情資料列日期"
+);
+assert(
   db.metadata?.sourceFreshness?.sources?.priceSeries?.sourceDataDate === latestDate((db.priceSeries?.items || []).map((row) => row.date)),
   "價格折線來源日期必須等於價格資料列的真正最大日期"
 );

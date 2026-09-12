@@ -3531,7 +3531,7 @@ function renderDatabaseView() {
   const officialAssetTypesCount = db?.etfs?.filter((etf) => etf.assetTypes?.length).length || 0;
   const freshnessSources = Object.entries(db?.metadata?.sourceFreshness?.sources || {});
   const sourceNames = { etfMaster: "ETF 基本資料", stockMaster: "股票基本資料", twseStockDaily: "上市股票行情", tpexStockDaily: "上櫃股票行情", priceSeries: "歷史價格", issuerHoldings: "投信成分股", issuerNav: "投信淨值" };
-  const sourceStatuses = { observed_without_source_date: "未提供日期", current: "更新時檢核通過", stale: "資料較舊", missing: "缺少資料", failed: "讀取失敗" };
+  const sourceStatuses = { observed_without_source_date: "未提供日期", current: "更新時檢核通過", stale: "資料較舊", missing: "缺少資料", missing_date: "缺少來源日期", preserved_previous_snapshot: "保留前次資料", failed: "讀取失敗" };
 
   q("#dataQuality").innerHTML = `
     <section class="score-panel">
