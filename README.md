@@ -174,6 +174,12 @@ node webapp\scripts\deploy-line-rich-menu.js
 
 `render.yaml` 已準備 Render Docker Web Service、Singapore 區域、1 GB 持久磁碟及健康檢查。Render 持久磁碟需要付費 Web Service。建立 Blueprint 時只需另外輸入後臺專用的 `GITHUB_ACTIONS_TOKEN`；此 token 不會進入前端。每次頁面開啟都會要求後臺檢查更新，後臺最多每 15 分鐘安全觸發一次 GitHub Actions，避免流量成長後對 GitHub 與官方資料來源造成濫用。
 
+## 記帳與設定改善（本機版本）
+
+多筆文字改為完整預覽、確認後整批入帳；年度預設、月份資料及 ETF 刪除會自動保存完整設定，同步失敗保留本機草稿並提示重試。LINE 圖片明細功能預設關閉；開放後，使用者輸入「啟用圖片記帳」並同意，才會處理圖片，辨識結果仍需確認後入帳。
+
+功能限制、測試方式及部署邊界見 [記帳改善說明](docs/ledger-improvements.md)。這段說明不代表線上服務已更新。
+
 ## Portable project skills
 
 Portable project-local skills live in:

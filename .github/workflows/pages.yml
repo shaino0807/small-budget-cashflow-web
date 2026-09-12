@@ -18,7 +18,11 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  regression:
+    uses: ./.github/workflows/ledger-regressions.yml
+
   update-data-and-deploy:
+    needs: regression
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -71,10 +75,13 @@ jobs:
           CONSULTATION_FEE_TWD: ${{ vars.CONSULTATION_FEE_TWD }}
         run: node webapp/scripts/build-runtime-config.js
 
+      - name: Stage public files only
+        run: node webapp/scripts/build-public-site.js
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: webapp
+          path: dist/public
 
       - name: Deploy to GitHub Pages
         id: deployment

@@ -69,6 +69,12 @@ function lineEventBody(message, id = `event-${message.id}`, userId = "Uvoice") {
 
 async function testTargetedDeleteWebhook(store) {
   const userId = "Udelete";
+  const now = Date.now();
+  const elapsedToday = (now + 8 * 3600000) % 86400000;
+  // Today's fixtures stay today even when this test runs shortly after midnight in Taiwan.
+  const fixtureTime = (hoursAgo) => new Date(now - (hoursAgo < 24
+    ? elapsedToday * hoursAgo / 24
+    : hoursAgo * 3600000)).toISOString();
   const send = (id, text) => handleLineWebhook(
     lineEventBody({ id, type: "text", text }, `event-${id}`, userId),
     { store }
@@ -79,7 +85,7 @@ async function testTargetedDeleteWebhook(store) {
     amount,
     category: "伙食",
     note,
-    occurredAt: new Date(Date.now() - hoursAgo * 3600000).toISOString(),
+    occurredAt: fixtureTime(hoursAgo),
     source: { platform: "line", messageId: id, messageText: `${note} ${amount}` }
   });
 
@@ -939,6 +945,20 @@ async function main() {
       headers: reportAccess
     });
     if (holdings.status !== 200 || holdings.body.holdings.length !== 2) throw new Error(`Holdings PATCH failed: ${JSON.stringify(holdings)}`);
+    const financialSettings = {
+      profile: { monthlyIncome: 72000, fixedExpense: 20000, insuranceExpense: 2500, loanExpense: 0, cashSavings: 100000, monthlyInvestment: 8000, age: 35, retirementMonthlyNeed: 30000 },
+      monthlyCashflows: Object.fromEntries(Array.from({ length: 12 }, (_, index) => [index + 1, { monthlyIncome: 72000, fixedExpense: 20000, insuranceExpense: 2500, loanExpense: 0, monthlyInvestment: 8000 }])),
+      holdings: [{ ticker: "0056", type: "高股息", assetKind: "etf", amount: 12000, lots: [{ price: 30, amount: 12000 }] }]
+    };
+    const saveSettings = (settings, headers = reportAccess) => request("/api/financial-settings", { method: "PATCH", headers, body: JSON.stringify({ reportId, settings }) });
+    if ((await saveSettings(financialSettings, {})).status === 200) throw new Error("Financial settings accepted without access code");
+    if ((await saveSettings(financialSettings)).status !== 200) throw new Error("Financial settings save failed");
+    const savedSettings = await request(`/api/users/me/cashflow?reportId=${encodeURIComponent(reportId)}`, { method: "GET", headers: reportAccess });
+    if (savedSettings.body.cashflow.holdings[0]?.amount !== 12000 || savedSettings.body.cashflow.financialSettings.monthlyCashflows[12].monthlyIncome !== 72000) throw new Error("Financial settings readback lost ETF subtype or annual months");
+    financialSettings.holdings = [];
+    if ((await saveSettings(financialSettings)).status !== 200) throw new Error("Empty ETF save failed");
+    const emptySettings = await request(`/api/users/me/cashflow?reportId=${encodeURIComponent(reportId)}`, { method: "GET", headers: reportAccess });
+    if (emptySettings.body.cashflow.holdings.length || emptySettings.body.cashflow.financialSettings.holdings.length) throw new Error("Deleted ETF restored on readback");
     const deletedEntry = await request(`/api/ledger/${webEntry.body.entry.id}?reportId=${encodeURIComponent(reportId)}`, {
       method: "DELETE",
       headers: reportAccess
