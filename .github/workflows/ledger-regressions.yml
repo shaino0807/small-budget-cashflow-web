@@ -1,0 +1,25 @@
+name: Ledger regression checks
+
+on:
+  workflow_call:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'webapp/**'
+      - '.github/workflows/**'
+      - 'render.yaml'
+
+permissions:
+  contents: read
+
+jobs:
+  ledger:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify ledger, persistence, image guards and both browser sizes
+        run: node webapp/scripts/run-ledger-regressions.js --browser

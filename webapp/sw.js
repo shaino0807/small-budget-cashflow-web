@@ -1,8 +1,10 @@
-const cacheName = "cashflow-map-v27";
+const cacheName = "cashflow-map-v31";
 const assets = [
   "./",
   "./index.html",
   "./styles.css",
+  "./journal.css",
+  "./cashflow-visual.js",
   "./app.js",
   "./runtime-config.js",
   "./data/etf-database.json",
@@ -29,10 +31,10 @@ self.addEventListener("fetch", (event) => {
   const isAppShell = request.mode === "navigate" || [".html", ".css", ".js"].some((suffix) => url.pathname.endsWith(suffix));
   if (isAppShell) {
     event.respondWith(
-      fetch(request)
+      fetch(request, { cache: "no-cache" })
         .then((response) => {
           const copy = response.clone();
-          caches.open(cacheName).then((cache) => cache.put(request, copy));
+          if (response.ok) caches.open(cacheName).then((cache) => cache.put(request, copy));
           return response;
         })
         .catch(() => caches.match(request))

@@ -409,6 +409,9 @@ function publicReport(row, entitlements = []) {
 
 function createStore() {
   const db = initialize();
+  db.exec(`CREATE TABLE IF NOT EXISTS line_financial_settings (line_user_hash TEXT PRIMARY KEY, payload_cipher TEXT NOT NULL, updated_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS line_image_preferences (line_user_hash TEXT PRIMARY KEY, enabled INTEGER NOT NULL);
+    CREATE TABLE IF NOT EXISTS line_image_attempts (line_user_hash TEXT NOT NULL, message_id TEXT NOT NULL, day TEXT NOT NULL, PRIMARY KEY(line_user_hash, message_id));`);
   const insertReport = db.prepare(`
     INSERT INTO reports (
       id, user_id, anonymous_id, access_hash, check_type, report_status, input_version, report_version,
@@ -848,6 +851,8 @@ function createStore() {
       lastOccurredAt: countByTicker.get(holding.ticker)?.lastOccurredAt || holding.updatedAt
     }));
     summary.profile = lineProfileByHash(lineUserHash);
+    const settings = db.prepare("SELECT payload_cipher, updated_at FROM line_financial_settings WHERE line_user_hash = ?").get(lineUserHash);
+    summary.financialSettings = settings ? { ...decrypt(settings.payload_cipher), updatedAt: settings.updated_at } : null;
     summary.holdings = summary.etfPositions.map((position) => ({ ticker: position.ticker, amount: position.amount }));
     summary.recentEntries = lineEntriesByHash(lineUserHash, range.monthKey, 8);
     summary.remaining = summary.income + summary.investmentIncome - summary.expense - summary.investment;
@@ -1089,6 +1094,9 @@ function createStore() {
       db.prepare("DELETE FROM line_ledger_entries WHERE line_user_hash = ?").run(row.line_user_hash);
       db.prepare("DELETE FROM line_holdings WHERE line_user_hash = ?").run(row.line_user_hash);
       db.prepare("DELETE FROM line_profiles WHERE line_user_hash = ?").run(row.line_user_hash);
+      db.prepare("DELETE FROM line_financial_settings WHERE line_user_hash = ?").run(row.line_user_hash);
+      db.prepare("DELETE FROM line_image_preferences WHERE line_user_hash = ?").run(row.line_user_hash);
+      db.prepare("DELETE FROM line_image_attempts WHERE line_user_hash = ?").run(row.line_user_hash);
       db.prepare("DELETE FROM line_command_receipts WHERE line_user_hash = ?").run(row.line_user_hash);
       db.prepare("DELETE FROM line_pending_inputs WHERE line_user_hash = ?").run(row.line_user_hash);
       db.prepare("DELETE FROM line_voice_preferences WHERE line_user_hash = ?").run(row.line_user_hash);
@@ -1245,14 +1253,17 @@ function createStore() {
     return { eventCounts, reportCounts, conversions };
   }
 
+  let transactionSerial = 0;
   function immediateTransaction(action) {
-    db.exec("BEGIN IMMEDIATE");
+    const name = 'cashflow_' + (++transactionSerial);
+    db.exec('SAVEPOINT ' + name);
     try {
       const result = action();
-      db.exec("COMMIT");
+      db.exec('RELEASE ' + name);
       return result;
     } catch (error) {
-      db.exec("ROLLBACK");
+      db.exec('ROLLBACK TO ' + name);
+      db.exec('RELEASE ' + name);
       throw error;
     }
   }
@@ -1292,6 +1303,17 @@ function createStore() {
       merged.loanExpense,
       now
     );
+    const saved = db.prepare("SELECT payload_cipher FROM line_financial_settings WHERE line_user_hash = ?").get(lineUserHash);
+    if (saved) {
+      const settings = decrypt(saved.payload_cipher);
+      for (const field of ["monthlyIncome", "fixedExpense", "insuranceExpense", "loanExpense"]) {
+        if (!Object.prototype.hasOwnProperty.call(profile, field)) continue;
+        const previous = settings.profile[field];
+        settings.profile[field] = merged[field];
+        for (const month of Object.values(settings.monthlyCashflows)) if (month[field] === previous) month[field] = merged[field];
+      }
+      db.prepare("UPDATE line_financial_settings SET payload_cipher = ?, updated_at = ? WHERE line_user_hash = ?").run(encrypt(settings), now, lineUserHash);
+    }
     return { ...merged, updatedAt: now };
   }
 
@@ -1660,6 +1682,9 @@ function createStore() {
       db.prepare("DELETE FROM line_ledger_entries WHERE line_user_hash = ?").run(lineUserHash);
       db.prepare("DELETE FROM line_holdings WHERE line_user_hash = ?").run(lineUserHash);
       db.prepare("DELETE FROM line_profiles WHERE line_user_hash = ?").run(lineUserHash);
+      db.prepare("DELETE FROM line_financial_settings WHERE line_user_hash = ?").run(lineUserHash);
+      db.prepare("DELETE FROM line_image_preferences WHERE line_user_hash = ?").run(lineUserHash);
+      db.prepare("DELETE FROM line_image_attempts WHERE line_user_hash = ?").run(lineUserHash);
       db.prepare("DELETE FROM line_command_receipts WHERE line_user_hash = ?").run(lineUserHash);
       db.prepare("DELETE FROM line_pending_inputs WHERE line_user_hash = ?").run(lineUserHash);
       db.prepare("DELETE FROM line_voice_preferences WHERE line_user_hash = ?").run(lineUserHash);
@@ -1736,6 +1761,88 @@ function createStore() {
       new Date().toISOString(),
       encrypt(payload)
     );
+  }
+
+  function saveFinancialSettings({ userId, reportId, accessCode, settings }) {
+    const hash = userId ? memberLineUserHash(userId) : boundLineUserHash(reportId, accessCode);
+    if (!settings || !settings.profile || !settings.monthlyCashflows || !Array.isArray(settings.holdings) || settings.holdings.length > 100) throw new Error("財務設定格式不正確");
+    const numeric = (value) => {
+      if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || value > 1000000000) throw new Error("財務設定金額不正確");
+      return value;
+    };
+    const fields = ["monthlyIncome", "fixedExpense", "insuranceExpense", "loanExpense", "cashSavings", "monthlyInvestment", "age", "retirementMonthlyNeed"];
+    const profile = Object.fromEntries(fields.map((field) => [field, numeric(settings.profile[field])]));
+    const monthlyCashflows = {};
+    for (let month = 1; month <= 12; month++) {
+      monthlyCashflows[month] = Object.fromEntries(["monthlyIncome", "fixedExpense", "insuranceExpense", "loanExpense", "monthlyInvestment"].map((field) => {
+        const value = settings.monthlyCashflows[month]?.[field];
+        return [field, value === "" || value == null ? "" : numeric(value)];
+      }));
+    }
+    if (JSON.stringify(settings.holdings).length > 80000) throw new Error("部位資料過大");
+    const holdings = settings.holdings.map((holding) => {
+      if (!holding || typeof holding.ticker !== "string" || !Array.isArray(holding.lots) || holding.lots.length > 100) throw new Error("部位資料不正確");
+      numeric(holding.amount);
+      holding.lots.forEach((lot) => { numeric(lot.amount); numeric(lot.price); });
+      return holding;
+    });
+    return immediateTransaction(() => {
+      updateLineProfileByHash(hash, profile);
+      replaceLineHoldingsByHash(hash, holdings.filter((holding) => holding.assetKind === "etf" || /ETF/i.test(holding.type || "") || /^0\d{3,5}[A-Z]?$/.test(holding.ticker)).map((holding) => ({ ticker: holding.ticker, amount: holding.lots.reduce((sum, lot) => sum + lot.amount, 0) })));
+      const updatedAt = new Date().toISOString();
+      const payload = { profile, monthlyCashflows, holdings };
+      db.prepare("INSERT INTO line_financial_settings VALUES (?, ?, ?) ON CONFLICT(line_user_hash) DO UPDATE SET payload_cipher = excluded.payload_cipher, updated_at = excluded.updated_at").run(hash, encrypt(payload), updatedAt);
+      return { ...payload, updatedAt };
+    });
+  }
+
+  function setLineImageConsent(lineUserId, enabled) {
+    const hash = accessHash(`line:${lineUserId}`);
+    db.prepare("INSERT INTO line_image_preferences VALUES (?, ?) ON CONFLICT(line_user_hash) DO UPDATE SET enabled = excluded.enabled").run(hash, enabled ? 1 : 0);
+    if (!enabled) clearLinePendingInput({ lineUserId });
+  }
+
+  function lineImageConsent(lineUserId) {
+    return db.prepare("SELECT enabled FROM line_image_preferences WHERE line_user_hash = ?").get(accessHash(`line:${lineUserId}`))?.enabled === 1;
+  }
+
+  function claimLineImageAttempt(lineUserId, messageId) {
+    const hash = accessHash(`line:${lineUserId}`), day = taipeiDateKey(new Date());
+    return immediateTransaction(() => {
+      db.prepare("DELETE FROM line_image_attempts WHERE day < ?").run(day);
+      if (db.prepare("SELECT 1 FROM line_image_attempts WHERE line_user_hash = ? AND message_id = ?").get(hash, messageId)) return false;
+      if (db.prepare("SELECT COUNT(*) AS n FROM line_image_attempts WHERE line_user_hash = ? AND day = ?").get(hash, day).n >= 10) return false;
+      db.prepare("INSERT INTO line_image_attempts VALUES (?, ?, ?)").run(hash, messageId, day);
+      return true;
+    });
+  }
+
+  function confirmLineBatch(lineUserId) {
+    return immediateTransaction(() => {
+      const pending = linePendingInput(lineUserId);
+      if (pending?.type !== "batch_confirmation" || !pending.payload?.entries?.length) throw new Error("目前沒有待確認的明細，請重新傳送。");
+      const payload = pending.payload;
+      if (payload.parser === "statement_image" && (process.env.LINE_IMAGE_PARSER_ENABLED !== "1" || !lineImageConsent(lineUserId) || lineBatchDuplicateWarnings(lineUserId, payload.entries).length)) throw new Error("圖片功能或同意已停用，或已有疑似重複帳目，請重新核對。");
+      const entries = payload.entries.map((entry, index) => addLineLedgerEntry({ lineUserId, ...entry,
+        source: { platform: "line", parser: payload.parser, messageId: `${payload.sourceMessageId}:${index + 1}`, messageText: entry.note || "", sourceLine: entry.sourceLine || null } }));
+      clearLinePendingInput({ lineUserId });
+      markLineUndoTarget({ lineUserId, entries });
+      return entries;
+    });
+  }
+
+  function lineBatchDuplicateWarnings(lineUserId, entries) {
+    const hash = accessHash(`line:${lineUserId}`);
+    const seen = new Set();
+    return entries.flatMap((entry, index) => {
+      const key = `${taipeiDateKey(new Date(entry.occurredAt))}:${entry.amount}`;
+      if (seen.has(key)) return [`第 ${index + 1} 筆與本張明細有同日、同金額紀錄，請先釐清是否重複。`];
+      seen.add(key);
+      const range = taipeiMonthRange(taipeiMonthKey(new Date(entry.occurredAt)));
+      const matches = db.prepare("SELECT occurred_at FROM line_ledger_entries WHERE line_user_hash = ? AND amount = ? AND occurred_at >= ? AND occurred_at < ?").all(hash, entry.amount, range.start, range.end);
+      return matches.some((row) => taipeiDateKey(new Date(row.occurred_at)) === taipeiDateKey(new Date(entry.occurredAt)))
+        ? [`第 ${index + 1} 筆已有同日、同金額紀錄，請先查明細；若是另一筆交易，請用文字單獨記帳。`] : [];
+    });
   }
 
   function deleteSelectedLineLedgerEntry({ lineUserId, entryId, expectedUpdatedAt, sourceMessageId }) {
@@ -2032,6 +2139,7 @@ function createStore() {
     db.prepare("DELETE FROM line_command_receipts WHERE created_at < ?")
       .run(new Date(now.getTime() - 90 * 86400000).toISOString());
     db.prepare("DELETE FROM line_pending_inputs WHERE expires_at < ?").run(now.toISOString());
+    db.prepare("DELETE FROM line_image_attempts WHERE day < ?").run(taipeiDateKey(now));
     db.prepare("DELETE FROM line_voice_daily_usage WHERE usage_date < ?")
       .run(taipeiDateKey(new Date(now.getTime() - 90 * 86400000)));
     db.prepare("DELETE FROM line_undo_targets WHERE expires_at < ?").run(now.toISOString());
@@ -2045,6 +2153,12 @@ function createStore() {
 
   return {
     addEvent,
+    saveFinancialSettings,
+    setLineImageConsent,
+    lineImageConsent,
+    claimLineImageAttempt,
+    confirmLineBatch,
+    lineBatchDuplicateWarnings,
     addLineLedgerEntryForUser,
     analytics,
     applyPaymentNotification,

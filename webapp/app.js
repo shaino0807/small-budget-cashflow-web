@@ -364,7 +364,9 @@ function applyMemberReport(report) {
 }
 
 function applyMemberBootstrap(bootstrap) {
+  const draft = hasUnsyncedFinancialDraft() ? financialSettingsSnapshot() : null;
   if (bootstrap.report) applyMemberReport(bootstrap.report);
+  if (draft) Object.assign(state, draft);
   if (bootstrap.cashflow) {
     if (!state.reportMeta) state.reportMeta = {};
     state.reportMeta.lineSummary = bootstrap.cashflow;
@@ -389,6 +391,7 @@ function refreshMemberAuthUi() {
   q("#quickCheckPanel").hidden = loginRequired;
   q("#sampleBtn").hidden = loginRequired;
   q("#saveBtn").hidden = loginRequired;
+  q("#saveFinancialDataBtn").hidden = loginRequired;
   document.querySelectorAll(".app-tabs .tab").forEach((tab) => {
     if (tab.dataset.view === "landingView") return;
     if (tab.classList.contains("admin-tab") && new URLSearchParams(location.search).get("admin") === "1") return;
@@ -2047,6 +2050,22 @@ function dashboardReminders(snapshot) {
   return reminders;
 }
 
+function cashflowCompositionHtml(values, label = "本月現金流分配") {
+  const data = cashflowComposition(values);
+  if (!data.base) return '<p class="panel-note cashflow-no-data">尚無金額可顯示；記錄收入與支出後，就能看見分配。</p>';
+  const equation = data.shortfall > 0
+    ? `流入 ${formatMoney(data.income)} ＋ 缺口 ${formatMoney(data.shortfall)} ＝ 支出與投資 ${formatMoney(data.outflow)}`
+    : `流入 ${formatMoney(data.income)} ＝ 支出與投資 ${formatMoney(data.outflow)} ＋ 剩餘 ${formatMoney(data.remaining)}`;
+  return `<figure class="cashflow-composition" data-cashflow-base="${data.base}">
+    <figcaption>${escapeHtml(label)} · ${equation}</figcaption>
+    <div class="cashflow-track" role="img" aria-label="${escapeHtml(equation)}">
+      ${data.segments.map((item) => `<span class="cashflow-segment ${item.key}" style="width:${item.percent.toFixed(4)}%" aria-hidden="true"></span>`).join("")}
+    </div>
+    <div class="cashflow-legend">${data.segments.map((item) => `<span>${item.label}<strong>${formatMoney(item.amount)}</strong>（${item.percent.toFixed(1)}%）</span>`).join("")}</div>
+    ${data.shortfall > 0 ? `<p class="cashflow-shortfall">目前記錄的支出與投資超過流入 ${formatMoney(data.shortfall)}；長條顯示流出構成，尚未記錄的收入不會自動補入。</p>` : ""}
+  </figure>`;
+}
+
 function renderDashboard() {
   const root = q("#dashboardContent");
   if (!root) return;
@@ -2077,6 +2096,7 @@ function renderDashboard() {
       <article class="dashboard-metric investment" data-dashboard-metric="investment"><span>實際投資買入</span><strong>${actualMetric(snapshot.actual.investment)}</strong></article>
       <article class="dashboard-metric remaining ${snapshot.hasActualEntries && snapshot.actual.remaining < 0 ? "is-negative" : ""}" data-dashboard-metric="remaining"><span>實際剩餘現金流</span><strong>${actualMetric(snapshot.actual.remaining)}</strong></article>
     </div>
+    ${snapshot.hasActualEntries ? cashflowCompositionHtml(snapshot.actual, "本月實際現金流") : '<p class="panel-note">開始記錄本月實際收支後，這裡會顯示分配長條；預算不會代替實際帳。</p>'}
     <section class="dashboard-budget-comparison" aria-label="預算與實際比較">
       <div><span>本月預算剩餘</span><strong>${formatMoney(snapshot.budget.remaining)}</strong></div>
       <div><span>目前實際剩餘</span><strong>${snapshot.hasActualEntries ? formatMoney(snapshot.actual.remaining) : "尚無實際帳"}</strong></div>
@@ -2095,13 +2115,19 @@ function renderDashboard() {
         ${snapshot.hasActualEntries ? `
           ${expenseCategoryOverviewHtml(snapshot.actual)}
           ${ledgerBreakdownHtml(snapshot.actual)}
-          <div class="dashboard-entry-list">
-            ${snapshot.recentEntries.slice(0, 6).map((entry) => `
-              <article class="dashboard-entry">
-                <span>${escapeHtml(lineEntryText(entry))}</span>
-                <strong class="entry-${escapeHtml(entry.type)}">${lineEntrySignedAmount(entry)}</strong>
-              </article>
-            `).join("")}
+          <div class="dashboard-entry-list journal-ledger-wrap">
+            <table class="journal-ledger">
+              <caption>最近 ${Math.min(snapshot.recentEntries.length, 6)} 筆；其餘明細可於健檢報告的 LINE 記帳區查看。</caption>
+              <thead><tr><th scope="col">日期</th><th scope="col">描述</th><th scope="col">類型</th><th scope="col">金額</th></tr></thead>
+              <tbody>${snapshot.recentEntries.slice(0, 6).map((entry) => `
+                <tr class="dashboard-entry">
+                  <td>${escapeHtml(new Date(entry.occurredAt).toLocaleDateString("zh-TW", { month: "numeric", day: "numeric" }))}</td>
+                  <td>${escapeHtml(entry.note || entry.ticker || canonicalLedgerCategory(entry.type, entry.category))}<small>${escapeHtml(canonicalLedgerCategory(entry.type, entry.category))}</small></td>
+                  <td>${({ income: "收入", expense: "支出", investment: "投資買入", investment_income: "投資流入" })[entry.type] || "記帳"}</td>
+                  <td class="entry-${escapeHtml(entry.type)}">${lineEntrySignedAmount(entry)}</td>
+                </tr>
+              `).join("")}</tbody>
+            </table>
           </div>
         ` : `
           <div class="dashboard-empty">
@@ -2270,20 +2296,29 @@ function initTypewriter() {
 }
 
 function initScrollAnimations() {
-  const animated = document.querySelectorAll("[data-animate]");
+  const animated = document.querySelectorAll("[data-animate], #journalExampleBar .cashflow-track");
   if (!animated.length) return;
-  if (!("IntersectionObserver" in window)) {
+  if (!("IntersectionObserver" in window) || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     animated.forEach((item) => item.classList.add("is-visible"));
     return;
   }
+  document.body.classList.add("motion-ready");
   const observer = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       if (!entry.isIntersecting) return;
       entry.target.classList.add("is-visible");
       observer.unobserve(entry.target);
     });
-  }, { threshold: 0.18 });
-  animated.forEach((item) => observer.observe(item));
+  }, { threshold: 0.05 });
+  document.querySelectorAll(".stagger-grid").forEach((group) => {
+    [...group.children].filter((item) => item.hasAttribute("data-animate")).forEach((item, index) => {
+      item.style.setProperty("--reveal-delay", `${Math.min(index, 5) * 90}ms`);
+    });
+  });
+  // Paint the starting state before observing above-the-fold elements.
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    animated.forEach((item) => observer.observe(item));
+  }));
 }
 
 function initStickyNav() {
@@ -2299,7 +2334,7 @@ function loadBrandFonts() {
   const link = document.createElement("link");
   link.dataset.brandFonts = "true";
   link.rel = "stylesheet";
-  link.href = "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&family=DM+Serif+Display&family=Syne:wght@600;700;800&display=swap";
+  link.href = "https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@500;600;700&display=swap";
   document.head.appendChild(link);
 }
 
@@ -3038,40 +3073,24 @@ function lineSyncHtml() {
   `;
 }
 
+function isEtfHolding(holding) {
+  return holding.assetKind === "etf" || Boolean(findEtf(holding.ticker))
+    || /^0\d{3,5}[A-Z]?$/.test(String(holding.ticker || "").toUpperCase()) || /ETF/i.test(holding.type || "");
+}
+
 function syncLineEtfPositions(positions = []) {
-  const normalizedPositions = positions
-    .map((position) => ({ ticker: String(position.ticker || "").trim().toUpperCase(), amount: Number(position.amount || 0) }))
-    .filter((position) => position.ticker && position.amount > 0);
-
-  state.holdings = state.holdings
-    .map((holding) => {
-      const lots = (holding.lots || []).filter((lot) => lot.source !== "line");
-      return { ...holding, lots, amount: lots.reduce((sum, lot) => sum + Number(lot.amount || 0), 0) };
-    })
-    .filter((holding) => !holding.lineSynced || holdingAmount(holding) > 0);
-
-  normalizedPositions.forEach((position) => {
-    let holding = state.holdings.find((item) => String(item.ticker || "").trim().toUpperCase() === position.ticker);
-    if (!holding) {
-      holding = normalizeHolding({
-        ticker: position.ticker,
-        name: `LINE ${position.ticker}`,
-        type: "ETF",
-        amount: 0,
-        lots: [],
-        dividendYield: 0,
-        expenseRatio: 0,
-        sector: "未分類",
-        lineSynced: true
-      });
-      holding.lots = [];
-      state.holdings.push(holding);
-    }
-    holding.lots = [
-      ...(holding.lots || []).filter((lot) => lot.source !== "line"),
-      { price: latestMarketPrice(position.ticker) || 0, amount: position.amount, source: "line" }
-    ];
-    holding.amount = holdingAmount(holding);
+  const previous = state.holdings;
+  state.holdings = previous.filter((holding) => !isEtfHolding(holding));
+  positions.filter((position) => position.ticker && Number(position.amount) > 0).forEach((position) => {
+    const ticker = String(position.ticker).trim().toUpperCase();
+    const existing = previous.find((holding) => isEtfHolding(holding) && holding.ticker.toUpperCase() === ticker);
+    const holding = existing || normalizeHolding({ ticker, name: ticker, type: "ETF", amount: Number(position.amount) });
+    holding.lots = existing && holdingAmount(existing) === Number(position.amount)
+      ? existing.lots.map((lot) => ({ ...lot, source: "web" }))
+      : [{ price: latestMarketPrice(ticker) || 0, amount: Number(position.amount), source: "web" }];
+    holding.amount = Number(position.amount);
+    holding.lineSynced = true;
+    state.holdings.push(holding);
   });
   enrichHoldingsFromDatabase();
   mergeDuplicateHoldings();
@@ -3081,7 +3100,16 @@ function applyLineSummaryToState(summary) {
   if (!summary?.linked) return false;
   const month = Number(String(summary.month || "").slice(5, 7));
   if (!Number.isInteger(month) || month < 1 || month > 12) return false;
-  syncLineEtfPositions(summary.holdings || summary.etfPositions || []);
+  if (!hasUnsyncedFinancialDraft()) {
+    if (summary.financialSettings) {
+      state.profile = { ...state.profile, ...summary.financialSettings.profile };
+      state.monthlyCashflows = normalizeMonthlyCashflows(summary.financialSettings.monthlyCashflows, state.profile);
+      state.holdings = summary.financialSettings.holdings.map(normalizeHolding);
+    }
+    if (summary.profile?.updatedAt || summary.financialSettings || summary.holdings?.length || summary.etfPositions?.length) syncLineEtfPositions(summary.holdings || summary.etfPositions || []);
+  }
+  updateProfileInputs();
+  renderMonthlyCashflows();
   state.reportMeta.lineAppliedAt = new Date().toISOString();
   renderHoldings();
   return true;
@@ -3113,6 +3141,7 @@ async function createLineBinding() {
 
 async function refreshLineSummary({ silent = false } = {}) {
   const meta = state.reportMeta;
+  const requestedFinancialSignature = JSON.stringify(financialSettingsSnapshot());
   if (!backendAvailable() || (!authState.authenticated && (!meta?.reportId || !meta.accessCode))) return null;
   try {
     const reportQuery = meta?.reportId ? `&reportId=${encodeURIComponent(meta.reportId)}` : "";
@@ -3136,7 +3165,7 @@ async function refreshLineSummary({ silent = false } = {}) {
             body: JSON.stringify({
               reportId: meta?.reportId || null,
               holdings: state.holdings
-                .filter((holding) => holding.type === "ETF")
+                .filter(isEtfHolding)
                 .map((holding) => ({ ticker: holding.ticker, amount: holdingAmount(holding) }))
                 .filter((holding) => holding.ticker && holding.amount > 0)
             })
@@ -3148,7 +3177,7 @@ async function refreshLineSummary({ silent = false } = {}) {
     }
     state.reportMeta.lineSummary = result.cashflow;
     if (result.cashflow.linked) state.reportMeta.lineBinding = { status: "linked", linkedAt: result.cashflow.linkedAt };
-    applyLineSummaryToState(result.cashflow);
+    if (JSON.stringify(financialSettingsSnapshot()) === requestedFinancialSignature) applyLineSummaryToState(result.cashflow);
     persist();
     refreshReports();
     if (!silent) showToast(result.cashflow.linked ? "LINE 記帳摘要已更新。" : "尚未完成 LINE 綁定。");
@@ -3159,33 +3188,86 @@ async function refreshLineSummary({ silent = false } = {}) {
   }
 }
 
+let financialSaveTimer;
+let financialSaveQueue = Promise.resolve();
+let manualFinancialSave = null;
+function setFinancialSaveStatus(status, message) {
+  const output = q("#financialSaveStatus");
+  if (output) { output.dataset.status = status; output.textContent = message; }
+  document.querySelectorAll("[data-save-financial]").forEach((button) => {
+    button.disabled = status === "saving";
+    button.setAttribute("aria-busy", String(status === "saving"));
+  });
+  const button = q("#saveFinancialDataBtn");
+  if (button) button.textContent = status === "saving" ? "儲存中…" : "儲存全部變更";
+}
+
+function saveAllFinancialChanges() {
+  if (manualFinancialSave) return manualFinancialSave;
+  const save = async () => {
+    try {
+      clearTimeout(financialSaveTimer);
+      persist();
+      return await syncWebFinancialData();
+    } catch (error) {
+      setFinancialSaveStatus("error", "無法儲存，請保留此頁並重試：" + error.message);
+      return false;
+    }
+  };
+  manualFinancialSave = save().finally(() => { manualFinancialSave = null; });
+  return manualFinancialSave;
+}
+function financialSettingsSnapshot() {
+  return structuredClone({ profile: state.profile, monthlyCashflows: state.monthlyCashflows,
+    holdings: state.holdings.map((holding) => ({ ...holding, assetKind: isEtfHolding(holding) ? "etf" : "stock" })) });
+}
+function financialOwner() { return authState.authenticated ? authState.user?.id : state.reportMeta?.reportId; }
+function hasUnsyncedFinancialDraft() {
+  return Boolean(state.financialDraft?.dirty && state.financialDraft.owner === financialOwner());
+}
+function queueFinancialSave() {
+  state.financialDraft = { dirty: true, owner: financialOwner() };
+  try { persist(); } catch (error) {
+    setFinancialSaveStatus("error", "瀏覽器無法保存修改，請保留此頁並重試：" + error.message);
+    return;
+  }
+  setFinancialSaveStatus("pending", "有新的變更，等待同步。");
+  clearTimeout(financialSaveTimer);
+  financialSaveTimer = setTimeout(() => syncWebFinancialData(), 600);
+}
 async function syncWebFinancialData({ silent = false } = {}) {
   const meta = state.reportMeta;
-  if (!backendAvailable() || (!authState.authenticated && (!meta?.reportId || !meta.accessCode)) || !meta?.lineSummary?.linked) return false;
-  try {
-    const reportHeaders = meta?.accessCode ? { "X-Report-Access-Code": meta.accessCode } : {};
-    await apiRequest("/api/profile", {
-      method: "PATCH",
-      headers: reportHeaders,
-      body: JSON.stringify({ reportId: meta?.reportId || null, profile: state.profile })
-    });
-    await apiRequest("/api/holdings", {
-      method: "PATCH",
-      headers: reportHeaders,
-      body: JSON.stringify({
-        reportId: meta?.reportId || null,
-        holdings: state.holdings
-          .filter((holding) => holding.type === "ETF")
-          .map((holding) => ({ ticker: holding.ticker, amount: holdingAmount(holding) }))
-          .filter((holding) => holding.ticker && holding.amount > 0)
-      })
-    });
-    if (!silent) showToast("已同步到 LINE 現金流帳本。");
-    return true;
-  } catch (error) {
-    if (!silent) showToast(error.message);
+  if (!backendAvailable() || (!authState.authenticated && (!meta?.reportId || !meta.accessCode)) || !meta?.lineSummary?.linked) {
+    setFinancialSaveStatus("local", "已儲存到此瀏覽器；尚未同步至帳號，其他裝置無法讀取。");
     return false;
   }
+  const snapshot = financialSettingsSnapshot(), owner = financialOwner();
+  const signature = JSON.stringify(snapshot);
+  state.financialDraft = { dirty: true, owner };
+  persist();
+  const headers = meta.accessCode ? { "X-Report-Access-Code": meta.accessCode } : {};
+  const save = async () => {
+    if (financialOwner() !== owner) return false;
+    setFinancialSaveStatus("saving", "正在儲存年度預設、月份設定與持股部位…");
+    try {
+      await apiRequest("/api/financial-settings", { method: "PATCH", headers,
+        body: JSON.stringify({ reportId: meta.reportId || null, settings: snapshot }) });
+      const latestSaved = financialOwner() === owner && JSON.stringify(financialSettingsSnapshot()) === signature;
+      if (latestSaved) state.financialDraft = { dirty: false, owner };
+      persist();
+      if (latestSaved) setFinancialSaveStatus("saved", "已儲存並同步，可重新開啟網站查看。");
+      else setFinancialSaveStatus("pending", "先前修改已同步，還有新的變更待儲存。");
+      if (!silent && latestSaved) showToast("年度預設、月份設定與 ETF 部位已儲存並同步");
+      return true;
+    } catch (error) {
+      persist();
+      setFinancialSaveStatus("error", "同步失敗，修改保留在此瀏覽器；請按「儲存全部變更」重試。");
+      showToast("同步失敗，修改保留在此瀏覽器；請按儲存重試：" + error.message);
+      return false;
+    }
+  };
+  financialSaveQueue = financialSaveQueue.then(save, save);
+  return financialSaveQueue;
 }
 
 function clearLineSyncedState(summary) {
@@ -3216,6 +3298,8 @@ async function deleteAllLineData() {
   const confirmed = window.confirm("確定刪除全部 LINE 記帳、ETF 部位、財務設定與網頁綁定？刪除後無法復原。");
   if (!confirmed) return;
   try {
+    clearTimeout(financialSaveTimer);
+    await financialSaveQueue;
     const reportQuery = meta?.reportId ? `?reportId=${encodeURIComponent(meta.reportId)}` : "";
     const reportHeaders = meta?.accessCode ? { "X-Report-Access-Code": meta.accessCode } : {};
     await apiRequest(`/api/users/me/data${reportQuery}`, {
@@ -3226,6 +3310,7 @@ async function deleteAllLineData() {
       }
     });
     clearLineSyncedState(meta.lineSummary);
+    state.financialDraft = null;
     delete state.reportMeta.lineSummary;
     delete state.reportMeta.lineBinding;
     delete state.reportMeta.lineAppliedAt;
@@ -3445,6 +3530,8 @@ function renderDatabaseView() {
   const classifiedCount = db?.etfs?.filter((etf) => etf.displayClassification?.confidence === "rule_based").length || 0;
   const officialAssetTypesCount = db?.etfs?.filter((etf) => etf.assetTypes?.length).length || 0;
   const freshnessSources = Object.entries(db?.metadata?.sourceFreshness?.sources || {});
+  const sourceNames = { etfMaster: "ETF 基本資料", stockMaster: "股票基本資料", twseStockDaily: "上市股票行情", tpexStockDaily: "上櫃股票行情", priceSeries: "歷史價格", issuerHoldings: "投信成分股", issuerNav: "投信淨值" };
+  const sourceStatuses = { observed_without_source_date: "未提供日期", current: "更新時檢核通過", stale: "資料較舊", missing: "缺少資料", failed: "讀取失敗" };
 
   q("#dataQuality").innerHTML = `
     <section class="score-panel">
@@ -3465,10 +3552,10 @@ function renderDatabaseView() {
       <div class="source-freshness-list">
         ${freshnessSources.map(([name, source]) => `
           <article>
-            <strong>${name}</strong>
-            <span>${source.sourceDataDate || "官方端點未提供日期"}</span>
-            <span class="badge">${source.status}</span>
-            <small>${source.evidence}</small>
+            <strong>${escapeHtml(sourceNames[name] || name)}</strong>
+            <span class="source-date">資料日期：${escapeHtml(source.sourceDataDate || "官方端點未提供日期")}</span>
+            <span class="badge" title="${escapeHtml(source.status || "unknown")}">${escapeHtml(sourceStatuses[source.status] || "待確認")}</span>
+            <small>${escapeHtml(source.evidence || "尚無來源說明")}</small>
           </article>
         `).join("")}
       </div>
@@ -4009,7 +4096,7 @@ function syncMemberBottomNav() {
 function scrollToWorkspaceSection(sectionId) {
   if (!sectionId) return;
   window.setTimeout(() => {
-    q(`#${sectionId}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    q(`#${sectionId}`)?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
     if (sectionId === "monthlyCashflowSection") {
       centerActiveMonthTab();
     }
@@ -4047,7 +4134,7 @@ function goTo(viewId, sectionId = "", memberNav = "", options = {}) {
   syncWorkspaceTabs();
   syncMemberBottomNav();
   if (viewId === "simulationView") requestAnimationFrame(() => drawSimulationChart(latestReport.simulation));
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  window.scrollTo({ top: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
 }
 
 function returnFromUpgrade() {
@@ -4075,6 +4162,27 @@ function bindGotoButtons() {
 }
 
 function bindEvents() {
+  document.querySelectorAll("[data-start-finances]").forEach((button) => button.addEventListener("click", (event) => {
+    event.preventDefault();
+    if (authState.configured && !authState.authenticated) {
+      goTo("landingView");
+      scrollToWorkspaceSection("memberAuthGate");
+    } else if (authState.authenticated && authState.user?.onboardingCompleted) {
+      goTo("dashboardView");
+    } else {
+      goTo("landingView", "", "", { allowMemberOnboarding: true });
+      scrollToWorkspaceSection("quickCheckPanel");
+    }
+  }));
+  for (const eventType of ["input", "change", "click"]) {
+    document.addEventListener(eventType, (event) => {
+      if (!event.target.closest("#inputView")) return;
+      const before = JSON.stringify(financialSettingsSnapshot());
+      queueMicrotask(() => {
+        if (JSON.stringify(financialSettingsSnapshot()) !== before) queueFinancialSave();
+      });
+    }, true);
+  }
   q("#lineLoginBtn")?.addEventListener("click", beginLineLogin);
   q("#memberLineLoginBtn")?.addEventListener("click", beginLineLogin);
   q("#logoutBtn")?.addEventListener("click", () => logoutMember(false));
@@ -4139,6 +4247,9 @@ function bindEvents() {
     state.consent.accepted = event.target.checked;
     state.consent.acceptedAt = event.target.checked ? new Date().toISOString() : null;
     persist();
+    if (!q("#quickValidationErrors").hidden) {
+      showValidationErrors("#quickValidationErrors", quickValidationErrors());
+    }
     refreshVisibleDetailedValidation();
   });
   q("#contactChannel").addEventListener("change", (event) => {
@@ -4168,11 +4279,7 @@ function bindEvents() {
     goTo("freeReportView");
     await saveGeneratedReport();
   });
-  q("#saveBtn").addEventListener("click", async () => {
-    persist();
-    const synced = await syncWebFinancialData({ silent: true });
-    showToast(synced ? "已儲存並同步到 LINE 現金流帳本" : "已儲存到此瀏覽器");
-  });
+  document.querySelectorAll("[data-save-financial]").forEach((button) => button.addEventListener("click", saveAllFinancialChanges));
   q("#sampleBtn").addEventListener("click", () => {
     state = normalizeState(structuredClone(sampleState));
     updateProfileInputs();
@@ -4255,7 +4362,7 @@ async function init() {
   if (new URLSearchParams(location.search).get("admin") === "1") {
     q(".admin-tab").hidden = false;
   }
-  initTypewriter();
+  if (q("#journalExampleBar")) q("#journalExampleBar").innerHTML = cashflowCompositionHtml({ income: 42000, expense: 33000 }, "每月收支示範");
   initScrollAnimations();
   initStickyNav();
   loadBrandFonts();
@@ -4270,6 +4377,7 @@ async function init() {
   refreshReports();
   await handlePaymentReturn();
   await refreshLineSummary({ silent: true });
+  if (hasUnsyncedFinancialDraft()) await syncWebFinancialData();
   registerServiceWorker();
   trackEvent("page_opened", { path: location.pathname });
   refreshDatabaseFromServer("open");

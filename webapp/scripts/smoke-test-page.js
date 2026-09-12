@@ -251,9 +251,9 @@ async function main() {
         hasServices: Boolean(document.querySelector("#servicePanel")),
         hasTestimonials: Boolean(document.querySelector("#testimonialPanel")),
         hasCta: Boolean(document.querySelector("#contactPanel")),
-        hasMotionStage: Boolean(document.querySelector(".motion-stage .flow-line i")),
-        hasMotionCards: document.querySelectorAll(".motion-cards div").length === 3,
-        hasAdvancedInputEntry: text.includes("填家庭收支與 ETF 配置"),
+        hasMotionStage: Boolean(document.querySelector("#journalExampleBar .cashflow-track")),
+        hasMotionCards: document.querySelectorAll(".journal-hero [data-animate]").length === 3,
+        hasAdvancedInputEntry: text.includes("進階填寫家庭收支"),
         hasIg: text.includes("@chendino080077"),
         headerStatus: document.querySelector("#headerStatus")?.textContent,
         painKicker: document.querySelector("#painPoints .section-kicker")?.textContent,
@@ -280,15 +280,9 @@ async function main() {
           "正式 LINE / 表單網址提供後"
         ].some((copy) => text.includes(copy)),
         headerHeight: Math.round(document.querySelector(".brand-nav")?.getBoundingClientRect().height || 0),
-        heroFontSize: parseFloat(getComputedStyle(document.querySelector(".hero-copy h2")).fontSize),
-        heroContentTopGap: Math.round(
-          document.querySelector(".hero-copy")?.getBoundingClientRect().top
-          - document.querySelector(".hero-section")?.getBoundingClientRect().top
-        ),
-        heroProofDisplay: getComputedStyle(document.querySelector(".hero-proof")).display,
-        heroActionsDisplay: getComputedStyle(document.querySelector(".hero-actions")).display,
-        gateEyebrowColor: getComputedStyle(document.querySelector(".member-auth-gate .eyebrow")).color,
-        heroEyebrowColor: getComputedStyle(document.querySelector(".hero-section .eyebrow")).color,
+        heroFontSize: parseFloat(getComputedStyle(document.querySelector("#landingTitle")).fontSize),
+        heroImageLoaded: document.querySelector(".journal-hero-photo")?.complete && document.querySelector(".journal-hero-photo")?.naturalWidth > 0,
+        contactReadable: [...document.querySelectorAll(".final-cta .contact-card")].every(e => getComputedStyle(e).color === "rgb(36, 69, 59)" && getComputedStyle(e).opacity === "1"),
         bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
       };
     })()`);
@@ -459,6 +453,29 @@ async function main() {
       consentVisible: Boolean(document.querySelector("#dataConsent"))
     }))()`);
 
+    await send(ws, "Runtime.evaluate", { expression: `(() => {
+      const consent = document.querySelector("#dataConsent");
+      consent.checked = false;
+      consent.dispatchEvent(new Event("change", { bubbles: true }));
+      document.querySelector("#quickGenerateBtn").click();
+    })()` });
+    await wait(450);
+    const consentErrorLayout = await evalValue(ws, `(() => {
+      const error = document.querySelector("#quickValidationErrors");
+      const step = document.querySelector(".consent-step");
+      return {
+        visible: !error.hidden,
+        gap: error.getBoundingClientRect().top - step.getBoundingClientRect().bottom,
+        bodyOverflow: Math.max(0, document.documentElement.scrollWidth - innerWidth)
+      };
+    })()`);
+    await send(ws, "Runtime.evaluate", { expression: `(() => {
+      const consent = document.querySelector("#dataConsent");
+      consent.checked = true;
+      consent.dispatchEvent(new Event("change", { bubbles: true }));
+    })()` });
+    const consentErrorCleared = await evalValue(ws, `document.querySelector("#quickValidationErrors").hidden`);
+
     await send(ws, "Runtime.evaluate", {
       expression: `(() => {
         const consent = document.querySelector("#dataConsent");
@@ -528,6 +545,7 @@ async function main() {
           entries: []
         };
         summary.entries = summary.recentEntries.map((entry, index) => ({ ...entry, id: "00000000-0000-4000-8000-00000000000" + index }));
+        state.financialDraft = null;
         state.reportMeta.lineSummary = summary;
         applyLineSummaryToState(summary);
         applyLineSummaryToState(summary);
@@ -545,8 +563,9 @@ async function main() {
         expense: Number(row?.querySelector('[data-month-field="fixedExpense"]')?.value || 0),
         investment: Number(row?.querySelector('[data-month-field="monthlyInvestment"]')?.value || 0),
         ticker: holding?.querySelector('[data-field="ticker"]')?.value || "",
-        lineLots: holding?.querySelectorAll(".lot-row.is-line-synced").length || 0,
-        lineAmount: Number(holding?.querySelector('.lot-row.is-line-synced [data-lot-field="amount"]')?.value || 0),
+        lineLots: holding?.querySelectorAll(".lot-row").length || 0,
+        editable: !holding?.querySelector("[data-holding-amount]")?.readOnly,
+        lineAmount: Number(holding?.querySelector('.lot-row [data-lot-field="amount"]')?.value || 0),
         recentEntries: document.querySelectorAll("#freeReport .ledger-entry-row").length,
         categoryBreakdowns: document.querySelectorAll("#freeReport .ledger-breakdowns details").length,
         privacyDelete: Boolean(document.querySelector("#freeReport #deleteLineDataBtn"))
@@ -573,7 +592,7 @@ async function main() {
       actualRemaining: document.querySelector('.dashboard-budget-comparison > div:nth-child(2) strong')?.textContent || "",
       variance: document.querySelector('.dashboard-budget-comparison > div:nth-child(3) strong')?.textContent || "",
       recentEntries: document.querySelectorAll("#dashboardRecentEntries .dashboard-entry").length,
-      recentAmounts: [...document.querySelectorAll("#dashboardRecentEntries .dashboard-entry strong")].map((item) => item.textContent || ""),
+      recentAmounts: [...document.querySelectorAll("#dashboardRecentEntries .dashboard-entry td:last-child")].map((item) => item.textContent || ""),
       reminderCount: document.querySelectorAll(".dashboard-reminder").length,
       categoryBreakdowns: document.querySelectorAll("#dashboardRecentEntries .ledger-breakdowns details").length,
       expenseCategorySummaryRows: document.querySelectorAll("#dashboardRecentEntries .expense-category-bar").length,
@@ -668,7 +687,7 @@ async function main() {
     const headerNavigation = await evalValue(ws, `(() => ({
       activeView: document.querySelector(".view.is-active")?.id,
       solutionVisible: document.querySelector("#solutionPanel")?.offsetParent !== null,
-      bookingConfigured: document.querySelector('.site-links [data-focus-section="contactPanel"]')?.dataset.goto === "landingView",
+      aboutConfigured: document.querySelector('.site-links [data-focus-section="aboutDino"]')?.dataset.goto === "landingView",
       homeButtonCount: document.querySelectorAll('[data-goto="landingView"]').length
     }))()`);
 
@@ -762,6 +781,80 @@ async function main() {
       fs.writeFileSync(screenshotPath, Buffer.from(shot.data, "base64"));
     }
 
+    const financialCheck = await send(ws, "Runtime.evaluate", { awaitPromise: true, returnByValue: true, expression: `(async () => {
+      const originalApi = apiRequest;
+      const originalState = structuredClone(state);
+      const originalAuth = structuredClone(authState);
+      const originalConfirm = window.confirm;
+      const saved = [];
+      try {
+        authState.authenticated = true;
+        authState.user = { id: "synthetic-member", onboardingCompleted: true };
+        state.financialDraft = null;
+        state.reportMeta.lineSummary = { linked: true };
+        apiRequest = async (url, options) => { saved.push(JSON.parse(options.body).settings); return { ok: true }; };
+        goTo("inputView");
+        const income = document.querySelector("#monthlyIncome");
+        income.value = "72000"; income.dispatchEvent(new Event("input", { bubbles: true }));
+        document.querySelector("#applyProfileToMonthsBtn").click();
+        state.holdings = [];
+        renderHoldings();
+        await Promise.resolve();
+        clearTimeout(financialSaveTimer);
+        const saveButton = document.querySelector("#saveFinancialDataBtn");
+        let finishSave;
+        apiRequest = async (url, options) => {
+          saved.push(JSON.parse(options.body).settings);
+          return new Promise((resolve) => { finishSave = resolve; });
+        };
+        saveButton.click();
+        await Promise.resolve();
+        const savingVisible = saveButton.disabled && saveButton.textContent.includes("儲存中") && document.querySelector("#financialSaveStatus").dataset.status === "saving";
+        saveButton.click();
+        const repeatedClickBlocked = saved.length === 1;
+        finishSave({ ok: true });
+        const synced = await manualFinancialSave;
+        const savedVisible = !saveButton.disabled && document.querySelector("#financialSaveStatus").dataset.status === "saved";
+        const latest = saved.at(-1);
+        const oldReport = { id: "old", payload: { input: { profile: { monthlyIncome: 10000 }, holdings: [{ ticker: "0056", type: "ETF", amount: 5000 }], monthlyCashflows: {} } } };
+        const cashflow = { linked: true, month: "2026-09", profile: { updatedAt: "now" }, holdings: [], financialSettings: latest };
+        applyMemberBootstrap({ report: oldReport, cashflow });
+        const restored = state.profile.monthlyIncome === 72000 && state.monthlyCashflows[12].monthlyIncome === 72000 && state.holdings.length === 0;
+        state.profile.monthlyIncome = 73000;
+        apiRequest = async () => { throw new Error("synthetic offline"); };
+        const failed = !(await syncWebFinancialData({ silent: true }));
+        const failureVisible = document.querySelector("#financialSaveStatus").dataset.status === "error" && !saveButton.disabled;
+        // Simulate same-account reload from the actual browser storage, then stale bootstrap.
+        state = normalizeState(JSON.parse(localStorage.getItem(storageKey)));
+        applyMemberBootstrap({ report: oldReport, cashflow });
+        const draftSurvives = state.profile.monthlyIncome === 73000 && hasUnsyncedFinancialDraft();
+        apiRequest = async (url, options) => { saved.push(JSON.parse(options.body).settings); return { ok: true }; };
+        const retry = await syncWebFinancialData({ silent: true });
+        let releaseSave;
+        financialSaveQueue = new Promise((resolve) => { releaseSave = resolve; });
+        const deletionCalls = [];
+        window.confirm = () => true;
+        apiRequest = async (url) => { deletionCalls.push(url); return { ok: true }; };
+        const deleting = deleteAllLineData();
+        await Promise.resolve();
+        const deleteWaitedForSave = deletionCalls.length === 0;
+        releaseSave(true);
+        await deleting;
+        const deletionClearedDraft = state.financialDraft === null && deletionCalls.length === 1;
+        authState.authenticated = false;
+        state.reportMeta = {};
+        await saveAllFinancialChanges();
+        const localOnlyVisible = document.querySelector("#financialSaveStatus").dataset.status === "local" && document.querySelector("#financialSaveStatus").textContent.includes("此瀏覽器");
+        const panelFits = document.querySelector(".financial-save-panel").getBoundingClientRect().right <= document.documentElement.clientWidth;
+        return { synced, savingVisible, repeatedClickBlocked, savedVisible, failureVisible, localOnlyVisible, panelFits, restored, failed, draftSurvives, retry, deleteWaitedForSave, deletionClearedDraft, emptyEtfSaved: latest.holdings.length === 0, allMonthsSaved: latest.monthlyCashflows[12].monthlyIncome === 72000 };
+      } finally {
+        clearTimeout(financialSaveTimer);
+        apiRequest = originalApi; window.confirm = originalConfirm; state = originalState; Object.assign(authState, originalAuth);
+        persist();
+      }
+    })()` });
+    if (financialCheck.exceptionDetails) throw new Error(financialCheck.exceptionDetails.exception?.description || "financial UI check failed");
+    const financialPersistence = financialCheck.result.value;
     const failedApiResponses = await evalValue(ws, "window.__smokeFailedApiResponses || []");
     const result = {
       url: targetUrl,
@@ -771,6 +864,7 @@ async function main() {
       failedRequests: failures,
       badResponses,
       failedApiResponses,
+      financialPersistence,
       landing,
       requiredValidation,
       advancedInput,
@@ -781,6 +875,8 @@ async function main() {
       annualBudgetSync,
       detailedValidationCleared,
       consentStep,
+      consentErrorLayout,
+      consentErrorCleared,
       freeReport,
       lineApplied,
       dashboard,
@@ -794,13 +890,13 @@ async function main() {
       f5Persistence,
       dashboardF5Persistence,
       database,
-      passed: consoleErrors.length === 0
+      passed: Object.values(financialPersistence).every(Boolean) && consoleErrors.length === 0
         && runtimeErrors.length === 0
         && failures.length === 0
         && badResponses.length === 0
         && landing.activeView === "landingView"
         && landing.brand === "Chen Dino"
-        && landing.heroTitle.includes("掌握本月現金流")
+        && landing.heroTitle.includes("理財，是為了好好生活")
         && landing.hasPain
         && landing.hasSolution
         && landing.hasFlow
@@ -813,8 +909,8 @@ async function main() {
         && landing.hasIg
         && landing.headerStatus === "個人現金流管理"
         && landing.painKicker === "常見現金流困境"
-        && landing.painTitle === "複雜的財務資訊，往往使決策失去優先順序"
-        && landing.solutionTitle === "依序完成資料輸入，逐步建立現金流分析"
+        && landing.painTitle === "錢的事，一次整理一點就好。"
+        && landing.solutionTitle === "從五個小問題，開始認識自己的現金流。"
         && landing.quickCheckTitle === "現金流基礎評估"
         && landing.serviceTitle === "從基礎健檢到完整規劃，依需求取得合適分析"
         && landing.testimonialTitle === "清楚的分析流程，協助使用者掌握下一步"
@@ -828,8 +924,8 @@ async function main() {
           "確認資料保存並產生健檢報告"
         ].join("|")
         && landing.memberTitles.join("|") === [
-          "本月總覽",
-          "家庭財務資料",
+          "把這個月，看得更清楚。",
+          "一起，把生活安排好。",
           "現金流健檢報告",
           "專業分析方案",
           "完整財務分析報告",
@@ -837,13 +933,10 @@ async function main() {
           "現金流與配息月曆"
         ].join("|")
         && !landing.internalCopyLeaked
-        && landing.headerHeight <= (mobileViewport ? 66 : 78)
-        && (!mobileViewport || landing.heroFontSize === 40)
-        && (!mobileViewport || landing.heroContentTopGap <= 80)
-        && landing.heroProofDisplay === (mobileViewport ? "none" : "grid")
-        && landing.heroActionsDisplay === (mobileViewport ? "grid" : "flex")
-        && landing.gateEyebrowColor === "rgb(18, 101, 78)"
-        && landing.heroEyebrowColor === "rgb(185, 243, 222)"
+        && landing.headerHeight <= 130
+        && landing.heroFontSize >= 29
+        && landing.heroImageLoaded
+        && landing.contactReadable
         && landing.bodyOverflow === 0
         && requiredValidation.step === "1"
         && requiredValidation.errorsVisible
@@ -856,7 +949,7 @@ async function main() {
         && advancedInput.activeMonth === new Date().getMonth() + 1
         && advancedInput.hasHoldingEditor
         && advancedInput.panelBackdrop === "none"
-        && advancedInput.title.includes("家庭財務資料")
+        && advancedInput.title === "一起，把生活安排好。"
         && simpleHoldingEditor.addButtonLabel.includes("新增部位")
         && simpleHoldingEditor.primaryInputCount === 2
         && simpleHoldingEditor.ticker === "00919"
@@ -888,6 +981,10 @@ async function main() {
         && detailedValidationCleared
         && consentStep.step === "6"
         && consentStep.consentVisible
+        && consentErrorLayout.visible
+        && consentErrorLayout.gap >= 20
+        && consentErrorLayout.bodyOverflow === 0
+        && consentErrorCleared
         && freeReport.activeView === "freeReportView"
         && freeReport.hasWorkspaceNav
         && (mobileViewport ? freeReport.workspaceNavDisplay === "none" : freeReport.workspaceNavDisplay !== "none")
@@ -912,6 +1009,7 @@ async function main() {
         && lineApplied.expense === 33000
         && lineApplied.investment === 8000
         && lineApplied.ticker === "0056"
+        && lineApplied.editable
         && lineApplied.lineLots === 1
         && lineApplied.lineAmount === 10000
         && lineApplied.recentEntries === 2
@@ -966,7 +1064,7 @@ async function main() {
         && workspaceJump.bodyOverflow === 0
         && headerNavigation.activeView === "dashboardView"
         && !headerNavigation.solutionVisible
-        && headerNavigation.bookingConfigured
+        && headerNavigation.aboutConfigured
         && headerNavigation.homeButtonCount >= 3
         && upgradeNavigation.activeView === "upgradeView"
         && upgradeNavigation.backButtonCount === 2
@@ -1002,7 +1100,8 @@ async function main() {
         && database.bodyOverflow === 0
     };
     console.log(JSON.stringify(result, null, 2));
-    process.exit(result.passed ? 0 : 1);
+    ws.close();
+    process.exitCode = result.passed ? 0 : 1;
   } finally {
     if (chromeProcess && !chromeProcess.killed) chromeProcess.kill();
     if (serverProcess && !serverProcess.killed) serverProcess.kill();

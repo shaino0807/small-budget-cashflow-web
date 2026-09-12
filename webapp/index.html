@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#04342C" />
+    <meta name="theme-color" content="#f8f5ef" />
     <title>Chen Dino 個人現金流管理</title>
     <script>
       if (location.protocol === "file:") {
@@ -16,27 +16,28 @@
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./journal.css" />
   </head>
-  <body>
+  <body class="journal-theme">
+    <a class="skip-link" href="#mainContent">跳到主要內容</a>
     <header class="app-header brand-nav">
       <a class="brand" href="#top" data-goto="landingView" aria-label="Chen Dino 首頁">
-        <span class="brand-mark" aria-hidden="true">CD</span>
         <div>
           <h1>Chen Dino</h1>
           <p id="headerStatus" role="status" aria-live="polite" aria-atomic="true">個人現金流管理</p>
         </div>
       </a>
       <nav class="site-links" aria-label="網站導覽">
-        <a href="#solutionPanel" data-goto="landingView" data-focus-section="solutionPanel">痛點解法</a>
-        <a href="#quickCheckPanel" data-goto="landingView" data-focus-section="quickCheckPanel">快速健檢</a>
-        <a href="#contactPanel" data-goto="landingView" data-focus-section="contactPanel">健檢服務預約</a>
+        <a href="#solutionPanel" data-goto="landingView" data-focus-section="solutionPanel">生活理財</a>
+        <a href="#quickCheckPanel" data-start-finances>收支工具</a>
+        <a href="#aboutDino" data-goto="landingView" data-focus-section="aboutDino">關於 Dino</a>
       </nav>
       <div class="header-actions">
         <button class="secondary-button mini-button header-home-button" data-goto="landingView" type="button">首頁</button>
         <button class="secondary-button mini-button" id="lineLoginBtn" type="button" hidden>LINE 登入</button>
         <button class="secondary-button mini-button" id="logoutBtn" type="button" hidden>登出</button>
-        <button class="icon-button" id="sampleBtn" type="button" title="套用範例資料" aria-label="套用範例資料">範</button>
-        <button class="icon-button" id="saveBtn" type="button" title="儲存目前資料" aria-label="儲存目前資料">存</button>
+        <button class="icon-button" id="sampleBtn" type="button" title="套用範例資料" aria-label="套用範例資料">範例</button>
+        <button class="icon-button" id="saveBtn" data-save-financial type="button" title="儲存目前資料" aria-label="儲存目前資料">儲存</button>
       </div>
     </header>
 
@@ -52,89 +53,60 @@
     </nav>
 
     <main class="site-main" id="top">
+      <span id="mainContent" tabindex="-1"></span>
       <section id="landingView" class="view is-active" aria-labelledby="landingTitle">
-        <section class="member-auth-gate" id="memberAuthGate" hidden aria-labelledby="memberAuthTitle">
-          <div>
-            <span class="eyebrow">Chen Dino 會員</span>
-            <h2 id="memberAuthTitle">LINE 會員登入</h2>
-            <p>使用 LINE 帳號登入，安全取回跨裝置同步的家庭收支、ETF 部位與記帳資料。</p>
+        <section class="journal-hero" aria-labelledby="landingTitle">
+          <div class="journal-intro" data-animate>
+            <span class="journal-kicker">CHEN DINO · 日常理財誌</span>
+            <h2 id="landingTitle">理財，是為了<span>好好生活。</span></h2>
+            <p>把難懂的金融，聊成每天用得上的小事。</p>
           </div>
-          <button class="primary-button" id="memberLineLoginBtn" type="button">使用 LINE 登入</button>
-        </section>
-        <section class="hero-section fullbleed" aria-label="小資現金流健檢">
-          <div class="section-inner hero-inner">
-            <div class="hero-copy" data-animate>
-              <span class="eyebrow">每月可運用資金 5,000 至 10,000 元的規劃方案</span>
-              <h2 id="landingTitle" data-typewriter="掌握本月現金流，建立儲蓄、償債與投資順序">掌握本月現金流，建立儲蓄、償債與投資順序</h2>
-              <p>依序輸入收入、必要支出與存款資料，快速取得清楚且可執行的現金流建議。</p>
-              <div class="hero-actions">
-                <a class="primary-button cta-link" href="#quickCheckPanel">開始 3 分鐘健檢</a>
-                <a class="secondary-button cta-link" href="#solutionPanel">先看怎麼做</a>
-                <button class="secondary-button" data-goto="inputView" type="button">填家庭收支與 ETF 配置</button>
-              </div>
-              <div class="hero-motion-strip" aria-label="現金流即時分配動畫">
-                <span>收入進來</span>
-                <i></i>
-                <span>支出扣掉</span>
-                <i></i>
-                <span>留下可分配</span>
-              </div>
-            </div>
-            <div class="hero-proof" data-animate>
-              <span>Chen Dino 陳迪諾</span>
-              <strong>不用先懂投資術語，先把錢的順序排對。</strong>
-              <ul class="feature-list">
-                <li>每月剩多少</li>
-                <li>安全水位夠不夠</li>
-                <li>這筆錢該不該投資</li>
-              </ul>
-              <div class="motion-stage" aria-label="現金流動畫示意">
-                <div class="flow-line flow-line-one">
-                  <span>收入</span>
-                  <i></i>
-                  <strong>42,000</strong>
-                </div>
-                <div class="flow-line flow-line-two">
-                  <span>必要支出</span>
-                  <i></i>
-                  <strong>33,000</strong>
-                </div>
-                <div class="flow-line flow-line-three">
-                  <span>可分配</span>
-                  <i></i>
-                  <strong>9,000</strong>
-                </div>
-                <div class="motion-cards">
-                  <div>先存</div>
-                  <div>先還</div>
-                  <div>再投資</div>
-                </div>
-              </div>
-            </div>
+          <img class="journal-hero-photo" data-animate src="./assets/journal-home.png" width="2048" height="768" fetchpriority="high" alt="暖陽灑進閱讀角落，木桌上放著陶杯、茶壺與書本" />
+          <div class="journal-invitation" data-animate>
+            <div><h3>每個月都有收入，為什麼還是存不下錢？</h3><p>從每月收支開始，找出金錢的去向，留一點空間給想過的生活。</p></div>
+            <a class="primary-button journal-cta" href="#quickCheckPanel" data-start-finances>開始整理我的收支<img src="./assets/icons/arrow-right.svg" alt="" width="20" height="20" /></a>
           </div>
         </section>
-
+        <section class="journal-example" data-animate aria-labelledby="journalExampleTitle">
+          <div class="journal-section-heading"><h3 id="journalExampleTitle">把這個月，看得更清楚。</h3><span class="example-label">示範資料</span></div>
+          <p class="journal-lede">收入、支出、剩下的錢，在同一個地方慢慢整理。</p>
+          <div class="journal-metrics">
+            <div class="journal-remaining"><span>本月可運用</span><strong>NT$9,000</strong></div>
+            <div><span>本月收入</span><strong>NT$42,000</strong></div>
+            <div class="journal-expense"><span>本月支出</span><strong>NT$33,000</strong></div>
+          </div>
+          <div id="journalExampleBar"></div>
+          <div class="journal-ledger-wrap"><table class="journal-ledger">
+            <caption>最近 3 筆示範，非全部明細；金額不代表你的個人帳目。</caption>
+            <thead><tr><th scope="col">日期</th><th scope="col">描述</th><th scope="col">收支類型</th><th scope="col">金額（NT$）</th></tr></thead>
+            <tbody><tr><td>9/10</td><td>超市採買</td><td>支出</td><td class="entry-expense">−1,280</td></tr><tr><td>9/09</td><td>薪資入帳</td><td>收入</td><td class="entry-income">+42,000</td></tr><tr><td>9/08</td><td>Render.com 續約</td><td>支出</td><td class="entry-expense">−230</td></tr></tbody>
+          </table></div>
+        </section>
+        <section class="journal-about" id="aboutDino" aria-labelledby="aboutDinoTitle">
+          <div data-animate><span class="journal-kicker">LIFE FIRST, THEN INVEST.</span><h3 id="aboutDinoTitle">先看懂生活，<br />再安排投資。</h3><p>我是 Dino。希望用簡單的方式，陪你理解金融，也理解自己與金錢的關係。</p><p>先把收支和生活安頓好，再一起思考下一步。</p><a class="text-link-button" href="https://www.instagram.com/chendino080077/" target="_blank" rel="noopener noreferrer">到 IG 看我的日常分享</a></div>
+          <img src="./assets/journal-notebook.png" width="1659" height="948" loading="lazy" alt="木桌上的墨綠陶杯、空白筆記本與筆" />
+        </section>
         <section class="section-block" id="painPoints">
           <div class="section-inner">
             <div class="section-kicker" data-animate>常見現金流困境</div>
             <div class="section-heading" data-animate>
-              <h2>複雜的財務資訊，往往使決策失去優先順序</h2>
-              <p>透過導引式流程，依序完成資料整理、結果分析與行動規劃。</p>
+              <h2>錢的事，一次整理一點就好。</h2>
+              <p>不用一次弄懂所有投資名詞。先從眼前的生活開始。</p>
             </div>
             <div class="pain-grid stagger-grid">
               <article data-animate>
                 <span>01</span>
-                <h3>收支資訊缺乏整理順序</h3>
+                <h3>先看看，錢都去了哪裡</h3>
                 <p>收入、固定支出、負債與投資資料分散，難以快速掌握整體現金流。</p>
               </article>
               <article data-animate>
                 <span>02</span>
-                <h3>財務資料輸入負擔過高</h3>
+                <h3>不用一口氣填完所有資料</h3>
                 <p>欄位過多或缺乏引導時，容易增加整理家庭財務資料的負擔。</p>
               </article>
               <article data-animate>
                 <span>03</span>
-                <h3>缺少即時且可執行的回饋</h3>
+                <h3>知道下一步，才安心</h3>
                 <p>若缺少明確分析與建議，即使完成記錄，也難以決定下一步行動。</p>
               </article>
             </div>
@@ -145,7 +117,7 @@
           <div class="section-inner solution-layout">
             <div data-animate>
               <span class="eyebrow">導引式分析流程</span>
-              <h2>依序完成資料輸入，逐步建立現金流分析</h2>
+              <h2>從五個小問題，開始認識自己的現金流。</h2>
               <p>分析涵蓋收入、支出、存款、財務壓力與目標，完成後即可取得初步報告。</p>
             </div>
             <div class="solution-steps stagger-grid">
@@ -159,6 +131,14 @@
           </div>
         </section>
 
+        <section class="member-auth-gate" id="memberAuthGate" hidden aria-labelledby="memberAuthTitle">
+          <div>
+            <span class="eyebrow">Chen Dino 會員</span>
+            <h2 id="memberAuthTitle">LINE 會員登入</h2>
+            <p>使用 LINE 帳號登入，安全取回跨裝置同步的家庭收支、ETF 部位與記帳資料。</p>
+          </div>
+          <button class="primary-button" id="memberLineLoginBtn" type="button">使用 LINE 登入</button>
+        </section>
         <section class="quick-check flow-panel" id="quickCheckPanel" aria-labelledby="quickCheckTitle">
           <div class="section-inner">
             <div class="flow-shell" data-animate>
@@ -350,7 +330,7 @@
         <div class="section-title dashboard-heading">
           <div>
             <span class="dashboard-period" id="dashboardPeriod">本月</span>
-            <h2 id="dashboardTitle">本月總覽</h2>
+            <h2 id="dashboardTitle">把這個月，看得更清楚。</h2>
             <p>分開顯示本月實際記帳與原定預算，立即看見目前差額。</p>
           </div>
           <button class="secondary-button mini-button" id="refreshDashboardBtn" type="button" aria-label="重新整理本月總覽">更新</button>
@@ -361,7 +341,7 @@
       <section id="inputView" class="view app-view" aria-labelledby="inputTitle">
         <div class="section-title">
           <div>
-            <h2 id="inputTitle">家庭財務資料</h2>
+            <span class="journal-kicker">OUR EVERYDAY PLAN</span><h2 id="inputTitle">一起，把生活安排好。</h2>
             <p>依月份記錄家庭收支與投資部位，建立完整的財務分析基礎。</p>
           </div>
           <button class="primary-button" id="generateBtn" type="button">產生報告</button>
@@ -423,6 +403,14 @@
           </section>
         </div>
         <div class="validation-errors" id="profileValidationErrors" role="alert" hidden></div>
+        <div class="financial-save-panel">
+          <div>
+            <strong>保存本次填寫的資料</strong>
+            <p>一次儲存年度預設、12 個月份與 ETF／個股部位。</p>
+            <p id="financialSaveStatus" role="status" aria-live="polite" aria-atomic="true">填寫完成後，按下儲存確認保存結果。</p>
+          </div>
+          <button class="primary-button" id="saveFinancialDataBtn" data-save-financial type="button" aria-describedby="financialSaveStatus">儲存全部變更</button>
+        </div>
       </section>
 
       <section id="databaseView" class="view app-view" aria-labelledby="databaseTitle">
@@ -540,32 +528,33 @@
 
     <nav class="member-bottom-nav" aria-label="會員主要功能">
       <button class="member-nav-item" data-member-nav="overview" data-goto="dashboardView" type="button">
-        <span class="member-nav-icon" aria-hidden="true">⌂</span>
+        <img class="member-nav-icon" src="./assets/icons/house.svg" alt="" width="20" height="20" />
         <span>總覽</span>
       </button>
       <button class="member-nav-item" data-member-nav="ledger" data-goto="dashboardView" data-focus-section="dashboardRecentEntries" type="button">
-        <span class="member-nav-icon" aria-hidden="true">＋</span>
+        <img class="member-nav-icon" src="./assets/icons/journal-text.svg" alt="" width="20" height="20" />
         <span>記帳</span>
       </button>
       <button class="member-nav-item" data-member-nav="budget" data-goto="inputView" data-focus-section="monthlyCashflowSection" type="button">
-        <span class="member-nav-icon" aria-hidden="true">▤</span>
+        <img class="member-nav-icon" src="./assets/icons/calendar3.svg" alt="" width="20" height="20" />
         <span>預算</span>
       </button>
       <button class="member-nav-item" data-member-nav="invest" data-goto="inputView" data-focus-section="etfAllocationSection" type="button">
-        <span class="member-nav-icon" aria-hidden="true">↗</span>
+        <img class="member-nav-icon" src="./assets/icons/graph-up.svg" alt="" width="20" height="20" />
         <span>投資</span>
       </button>
       <button class="member-nav-item" data-member-nav="report" data-goto="freeReportView" type="button">
-        <span class="member-nav-icon" aria-hidden="true">◎</span>
+        <img class="member-nav-icon" src="./assets/icons/file-earmark-text.svg" alt="" width="20" height="20" />
         <span>報告</span>
       </button>
     </nav>
 
     <footer class="disclaimer">
       本網站僅供教育與財務規劃參考，不構成任何投資建議、買賣建議或保證報酬。所有投資皆有風險，使用者應自行判斷並承擔投資結果。
-      <a href="./privacy.html">隱私權與語音記帳說明</a>
+      <a href="./privacy.html">隱私權與語音／圖片記帳說明</a>
     </footer>
 
+    <script src="./cashflow-visual.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>

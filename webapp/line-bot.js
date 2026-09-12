@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const { readStatementImage, parseStatementImage, statementError } = require("./statement-reader");
 
 const lineReplyEndpoint = "https://api.line.me/v2/bot/message/reply";
 const lineContentEndpoint = "https://api-data.line.me/v2/bot/message";
@@ -52,6 +53,10 @@ function lineReadiness() {
     ledgerCommandsEnabled: true,
     privacyDeleteEnabled: true,
     aiParserConfigured: Boolean(process.env.OPENAI_API_KEY && process.env.LINE_AI_PARSER_ENABLED === "1"),
+    imageParserConfigured: Boolean(process.env.OPENAI_API_KEY && process.env.LINE_IMAGE_PARSER_ENABLED === "1" && token),
+    imageDailyLimit: 10,
+    imageMaxBytes: 8388608,
+    imageMaxEntries: 40,
     voiceTranscriptionConfigured: voice.enabled,
     voicePilotMode: voice.pilotMode,
     voiceConsentMode: voice.pilotMode ? "single_use" : "persistent",
@@ -194,7 +199,9 @@ function formatMoney(value) {
 }
 
 function firstAmount(text) {
-  const normalized = String(text || "").replace(/[,，]/g, "");
+  const normalized = String(text || "").replace(/[,，]/g, "")
+    .replace(/(?:\d{4}\s*[年/-]\s*)?\d{1,2}\s*[月/-]\s*\d{1,2}\s*[日號]?/g, " ")
+    .replace(/\b[A-Z]+-\d+\b/gi, " ");
   const ticker = firstTicker(normalized);
   const amountText = ticker ? normalized.replace(new RegExp(`\\b${ticker}\\b`, "i"), " ") : normalized;
   const match = amountText.match(/(?:NT\$?\s*)?(\d+(?:\.\d+)?)\s*(萬|千|[kw])?(?:\s*(?:元|塊|台幣|twd))?/i);
@@ -262,7 +269,8 @@ function firstTicker(text) {
   const value = String(text || "").toUpperCase();
   const numeric = value.match(/\b(00\d{2,4}|0\d{4,5})\b/);
   if (numeric) return numeric[1];
-  const alpha = value.match(/\b([A-Z]{2,5})\b/);
+  if (!/ETF|股票|投資|證券|配息|股息|買入|賣出/.test(value)) return "";
+  const alpha = value.replace(/\b[\w.-]+\.(?:COM|NET|IO)\b/g, "").match(/\b([A-Z]{2,5})\b/);
   return alpha && alpha[1] !== "ETF" ? alpha[1] : "";
 }
 
@@ -285,7 +293,7 @@ function taipeiDateParts(value = new Date()) {
 }
 
 function parseOccurredAt(text, now = new Date()) {
-  const raw = String(text || "");
+  const raw = String(text || "").replace(/\s+/g, "");
   const today = taipeiDateParts(now);
   let date = new Date(`${today.year}-${String(today.month).padStart(2, "0")}-${String(today.day).padStart(2, "0")}T12:00:00+08:00`);
   if (/前天/.test(raw)) date = new Date(date.getTime() - 2 * 86400000);
@@ -306,11 +314,11 @@ function expenseCategory(text) {
   if (/房租|租金|管理費/.test(raw)) return "房租";
   if (/保險|保費/.test(raw)) return "保險";
   if (/貸款|房貸|車貸|信貸|還款/.test(raw)) return "貸款";
-  if (/水費|電費|瓦斯|網路|電話費|手機費/.test(raw)) return "生活帳單";
+  if (/水費|電費|瓦斯|網路|電話費|手機費|電話帳單|續約|訂閱|render\.com/i.test(raw)) return "生活帳單";
   if (/交際|應酬|請客|送禮|聚餐|生日|慶生|禮物|伴手禮|紅包|婚禮|喜宴|宴客|聚會/.test(raw)) return "交際";
   if (/衣服|衣物|服飾|外套|褲子|裙子|鞋子|包包|項鍊|首飾|耳環|戒指|手鍊|手錶|帽子|襪子|眼鏡|皮夾/.test(raw)) return "服飾";
   if (/伙食|早餐|午餐|晚餐|飲料|咖啡|餐|吃|便當|宵夜/.test(raw)) return "伙食";
-  if (/交通|加油|停車|捷運|火車|計程車/.test(raw)) return "交通";
+  if (/交通|加油|停車|捷運|火車|計程車|uber/i.test(raw)) return "交通";
   if (/醫療|看醫生|藥/.test(raw)) return "醫療";
   if (/電影|遊戲|娛樂|唱歌|旅遊/.test(raw)) return "娛樂";
   if (/學費|課程|補習|書籍/.test(raw)) return "教育";
@@ -466,12 +474,18 @@ function shouldUseAiParser(text, deterministic) {
   if (process.env.LINE_AI_PARSER_ENABLED !== "1" || !process.env.OPENAI_API_KEY) return false;
   if (["missing_amount", "missing_income_amount", "missing_expense_amount", "missing_investment_details", "unrealized_investment_gain"].includes(deterministic.reason)) return false;
   if (deterministic.intent === "help") return true;
-  const withoutTicker = String(text || "").replace(/\b(?:00\d{2,4}|0\d{4,5})\b/g, "");
-  return (withoutTicker.match(/\d+(?:\.\d+)?\s*(?:萬|千|[kw]|元|塊)?/gi) || []).length > 1;
+  return transactionAmountCount(text) > 1;
+}
+
+function transactionAmountCount(text) {
+  const normalized = String(text).replace(/[,，](?=\d{3}\b)/g, "")
+    .replace(/(?:\d{4}\s*[年/-]\s*)?\d{1,2}\s*[月/-]\s*\d{1,2}\s*[日號]?/g, "")
+    .replace(/\b[A-Z]+-\d+\b/gi, "").replace(/\b(?:00\d{2,4}|0\d{4,5})\b/g, "");
+  return (normalized.match(/\d+(?:\.\d+)?\s*(?:萬|千|[kw])?/gi) || []).length;
 }
 
 async function parseLedgerMessageWithAi(text) {
-  if (!firstAmount(text)) return null;
+  if (!firstAmount(text) || String(text).length > 5000) return null;
   const today = taipeiDateParts();
   const response = await fetch(openAiResponsesEndpoint, {
     method: "POST",
@@ -485,11 +499,11 @@ async function parseLedgerMessageWithAi(text) {
       input: [
         {
           role: "system",
-          content: "你是台灣家庭記帳文字解析器。只抽取使用者明確說出的交易，不推測不存在的金額。買生活用品是 expense；買 ETF 或股票是 investment；ETF 或股票配息、已賣出收到的款項是 investment_income；薪水或一般收到款項是 income。收入分類優先使用本薪、獎金、額外收入、其他收入；支出分類優先使用房租、伙食、交通、交際、服飾、生活帳單、保險、貸款、醫療、娛樂、教育、家庭、其他支出。尚未賣出的帳面獲利不算現金收入。最多拆成 5 筆。日期使用 Asia/Taipei。"
+          content: "你是台灣家庭記帳文字解析器。只抽取使用者明確說出的交易，不推測不存在的金額。買生活用品是 expense；買 ETF 或股票是 investment；ETF 或股票配息、已賣出收到的款項是 investment_income；薪水或一般收到款項是 income。收入分類優先使用本薪、獎金、額外收入、其他收入；支出分類優先使用房租、伙食、交通、交際、服飾、生活帳單、保險、貸款、醫療、娛樂、教育、家庭、其他支出。尚未賣出的帳面獲利不算現金收入。最多拆成 50 筆，不可漏掉任何交易；無法完整處理時回傳空陣列。商家名稱及網址不是投資標的。日期使用 Asia/Taipei。"
         },
         {
           role: "user",
-          content: `今天是 ${today.year}-${String(today.month).padStart(2, "0")}-${String(today.day).padStart(2, "0")}。請解析：${String(text || "").slice(0, 500)}`
+          content: `今天是 ${today.year}-${String(today.month).padStart(2, "0")}-${String(today.day).padStart(2, "0")}。請解析：${String(text || "")}`
         }
       ],
       text: {
@@ -503,7 +517,7 @@ async function parseLedgerMessageWithAi(text) {
             properties: {
               entries: {
                 type: "array",
-                maxItems: 5,
+                maxItems: 50,
                 items: {
                   type: "object",
                   additionalProperties: false,
@@ -528,25 +542,36 @@ async function parseLedgerMessageWithAi(text) {
   });
   if (!response.ok) throw new Error(`OpenAI parser HTTP ${response.status}`);
   const payload = JSON.parse(openAiOutputText(await response.json()) || "{}");
-  const entries = (payload.entries || []).slice(0, 5).map((entry) => {
-    const type = ["income", "expense", "investment", "investment_income"].includes(entry.type) ? entry.type : null;
+  if (!Array.isArray(payload.entries) || payload.entries.length > 50) throw new Error("辨識筆數不完整");
+  const entries = payload.entries.map((entry) => {
+    let type = ["income", "expense", "investment", "investment_income"].includes(entry.type) ? entry.type : null;
+    const servicePattern = /\b(?:[a-z0-9-]+\.)+(?:com|net|io|co|app|org)\b|續約|訂閱|服務費/i;
+    const serviceExpense = servicePattern.test(String(entry.note || ""))
+      || (payload.entries.length === 1 && servicePattern.test(text) && !/ETF|股票|投資|買入/i.test(text));
+    if (type === "investment" && serviceExpense) type = "expense";
     const amount = Math.round(Number(entry.amount));
     if (!type || !Number.isFinite(amount) || amount <= 0 || amount > 1000000000) return null;
     let category = String(entry.category || (type === "expense" ? "其他支出" : type === "income" ? "其他收入" : type === "investment_income" ? "投資流入" : "ETF")).slice(0, 30);
+    if (type === "expense" && serviceExpense) category = "生活帳單";
     if (type === "expense" && category === "餐飲") category = "伙食";
     if (type === "income" && ["固定收入", "月薪", "薪水"].includes(category)) category = "本薪";
     if (type === "income" && category === "收入") category = "其他收入";
+    if (type === "investment") category = "投資買入";
+    if (type === "investment_income" && !["投資配息", "投資賣出", "投資流入"].includes(category)) category = "投資流入";
+    if (type === "expense" && /^(?:ETF|股票|投資.*|本薪|薪水|獎金|收入|其他收入)$/.test(category)) category = expenseCategory(entry.note);
+    if (type === "income" && /^(?:ETF|股票|投資.*|.*支出|生活帳單)$/.test(category)) category = incomeCategory(entry.note);
     const occurred = new Date(entry.occurredAt);
     return {
       type,
       amount,
       category,
-      ticker: entry.ticker ? String(entry.ticker).trim().toUpperCase().slice(0, 12) : "",
+      ticker: ["investment", "investment_income"].includes(type) && entry.ticker ? String(entry.ticker).trim().toUpperCase().slice(0, 12) : "",
       note: String(entry.note || category).slice(0, 80),
       occurredAt: Number.isFinite(occurred.getTime()) ? occurred.toISOString() : parseOccurredAt(text),
       profilePatch: profilePatchFor({ raw: text, type, category, amount })
     };
   }).filter(Boolean);
+  if (entries.length !== payload.entries.length) throw new Error("部分交易辨識失敗");
   return entries.length ? { intent: "ledger_batch", entries, parser: "ai" } : null;
 }
 
@@ -555,12 +580,18 @@ async function parseIncomingMessage(text) {
   if (command) return command;
   const binding = parseBindingMessage(text);
   if (binding) return binding;
+  if (String(text).trim().split(/\n|；|;/).filter((line) => line.trim()).length > 1) {
+    return parseMultilineLedger(text);
+  }
   const deterministic = parseLedgerMessage(text);
+  if (transactionAmountCount(text) > 1 && !shouldUseAiParser(text, deterministic)) return { intent: "batch_review", entries: [], unresolved: ["這則訊息包含多個金額，請每行輸入一筆，整批尚未入帳。"] };
   if (!shouldUseAiParser(text, deterministic)) return deterministic;
   try {
-    return await parseLedgerMessageWithAi(text) || deterministic;
+    const parsed = await parseLedgerMessageWithAi(text);
+    if (parsed && transactionAmountCount(text) === parsed.entries.length) return parsed;
+    return { intent: "batch_review", entries: [], unresolved: ["無法完整辨識，請每行輸入一筆日期、用途與金額。"] };
   } catch {
-    return deterministic;
+    return { intent: "batch_review", entries: [], unresolved: ["辨識失敗，尚未入帳，請每行輸入一筆。"] };
   }
 }
 
@@ -819,6 +850,51 @@ function cancelableTextMessage(text) {
       }]
     }
   };
+}
+
+// Every nonempty source line is accounted for. Unknown lines block the whole batch.
+function parseMultilineLedger(text) {
+  const lines = String(text).split(/\n|；|;/).map((line) => line.trim());
+  if (text.length > 5000 || lines.filter(Boolean).length > 60) return { intent: "batch_review", entries: [], unresolved: ["內容超過 60 行或 5,000 字，請分批傳送。"] };
+  let date = "";
+  const entries = [], unresolved = [];
+  for (const [lineIndex, original] of lines.entries()) {
+    if (!original) continue;
+    const line = original.replace(/^[・•·\-*]\s*/, "").trim();
+    const prefix = line.match(/^(?:(\d{4})\s*[年/-]\s*)?(\d{1,2})\s*[月/-]\s*(\d{1,2})\s*[日號]?\s*[:：]?/);
+    if (prefix) {
+      date = `${prefix[1] || date.slice(0, 4) || taipeiDateParts().year}-${prefix[2].padStart(2, "0")}-${prefix[3].padStart(2, "0")}`;
+      const check = new Date(`${date}T12:00:00+08:00`);
+      if (!Number.isFinite(check.getTime()) || taipeiDateParts(check).day !== Number(prefix[3])) {
+        date = "";
+        unresolved.push(`${original}（日期無效）`); continue;
+      }
+    }
+    const body = prefix ? line.slice(prefix[0].length).trim() : line;
+    if (!body) continue;
+    if (body.length > 300) { unresolved.push(`原文第 ${lineIndex + 1} 行超過 300 字，請縮短用途後重傳；尚未入帳。`); continue; }
+    const amounts = body.replace(/[,，]/g, "").replace(/\b[A-Z]+-\d+\b/gi, "").replace(/\b(?:00\d{2,4}|0\d{4,5})\b/g, "").match(/\d+(?:\.\d+)?\s*(?:萬|千|[kw])?/gi) || [];
+    if (amounts.length !== 1 || /(?:^|\s)-\s*\d|轉帳|匯款|信用卡.*(?:繳|付款)|繳.*信用卡/.test(body)) {
+      unresolved.push(`${original}（請確認金額及是否為消費、信用卡還款或自己帳戶轉帳）`); continue;
+    }
+    let entry = parseLedgerMessage(body);
+    if (entry.intent === "help" && entry.reason === "unknown_keyword" && /[a-z\u4e00-\u9fff]/i.test(body)) entry = parseLedgerMessage(`付 ${body}`);
+    if (entry.intent !== "ledger") { unresolved.push(original); continue; }
+    entry.note = body;
+    entry.sourceLine = lineIndex + 1;
+    if (date) entry.occurredAt = new Date(`${date}T12:00:00+08:00`).toISOString();
+    entries.push(entry);
+  }
+  return { intent: "batch_review", entries, unresolved, parser: "line_rules" };
+}
+
+function batchReviewText(entries, unresolved = []) {
+  const total = (type) => entries.filter((entry) => entry.type === type).reduce((sum, entry) => sum + entry.amount, 0);
+  return [`辨識 ${entries.length} 筆，尚未入帳。`, ...entries.map((entry, index) => `${index + 1}. ${entry.sourceLine ? `〔原文第 ${entry.sourceLine} 行〕` : ""}${new Date(entry.occurredAt).toLocaleDateString("zh-TW", { timeZone: "Asia/Taipei" })} ${ledgerTypeLabel(entry.type)} ${entry.note || entry.category} ${formatMoney(entry.amount)}`),
+    `收入 ${formatMoney(total("income"))}／支出 ${formatMoney(total("expense"))}／投資買入 ${formatMoney(total("investment"))}／投資流入 ${formatMoney(total("investment_income"))}`,
+    "信用卡帳單付款與已記錄的消費可能重複；請勿重複計入。",
+    ...(unresolved.length ? ["以下項目尚待釐清，本批全部不入帳。請修正後重傳：", ...unresolved] : ["核對後輸入「確認記帳」，或輸入「取消」。"])
+  ].join("\n");
 }
 
 function deleteCandidateLine(entry, index = null) {
@@ -1106,12 +1182,72 @@ async function handleLineAudioEvent(event, options = {}) {
   };
 }
 
+function reviewMessages(text, confirm = false) {
+  const chunks = [];
+  for (let offset = 0; offset < text.length; offset += 4000) chunks.push({ type: "text", text: text.slice(offset, offset + 4000) });
+  if (confirm && chunks.length) chunks[chunks.length - 1].quickReply = { items: [
+    { type: "action", action: { type: "message", label: "確認記帳", text: "確認記帳" } },
+    { type: "action", action: { type: "message", label: "取消", text: "取消" } }
+  ] };
+  return chunks;
+}
+
+async function handleStatementEvent(event, options) {
+  const userId = event.source?.userId, store = options.store;
+  const attemptId = event.message?.id;
+  let startedAttempt = false;
+  const ownsAttempt = () => {
+    const current = store.linePendingInput(userId);
+    return current?.type === "image_processing" && current.payload?.attemptId === attemptId;
+  };
+  const assertActive = () => {
+    if (process.env.LINE_IMAGE_PARSER_ENABLED !== "1" || !store.lineImageConsent(userId) || !ownsAttempt()) {
+      throw statementError("圖片處理已取消或停用，結果已捨棄，尚未入帳。");
+    }
+  };
+  let replyText = "圖片記帳尚未啟用，請先輸入「啟用圖片記帳」。", pending = false;
+  try {
+    if (!store || !userId) throw statementError("圖片記帳後端尚未準備好。");
+    if (event.source?.type !== "user") throw statementError("為保護明細隱私，請在與官方帳號的一對一聊天使用圖片記帳。");
+    if (typeof attemptId !== "string" || !attemptId || attemptId.length > 80) throw statementError("圖片訊息編號不完整，請重新傳送。");
+    if (process.env.LINE_IMAGE_PARSER_ENABLED !== "1" || !process.env.OPENAI_API_KEY || !lineChannelAccessToken()) throw statementError("圖片記帳功能尚未開放，請先使用文字記帳。");
+    if (store.lineImageConsent(userId)) {
+      if (store.linePendingInput(userId)) throw statementError("已有處理中或待確認項目，請先核對、確認或取消後再傳圖片。");
+      if (!store.claimLineImageAttempt(userId, event.message.id)) throw statementError("這張圖片已處理過，或今日已達 10 次上限。請先查看先前回覆。");
+      store.startLinePendingInput({ lineUserId: userId, type: "image_processing", label: "圖片辨識中", sourceMessageId: `image:${attemptId}`, payload: { attemptId } });
+      startedAttempt = true;
+      const image = await readStatementImage(event.message.id, { fetchImpl: options.fetchImpl || fetch });
+      assertActive();
+      if (store.lineSourceMessageHandled({ lineUserId: userId, sourceMessageId: `${image.hash}:1` })) throw statementError("這張圖片已經入帳，不會重複記錄。");
+      const parsed = await parseStatementImage(image, { fetchImpl: options.fetchImpl || fetch });
+      assertActive();
+      parsed.unresolved.push(...store.lineBatchDuplicateWarnings(userId, parsed.entries));
+      store.clearLinePendingInput({ lineUserId: userId });
+      replyText = batchReviewText(parsed.entries, parsed.unresolved);
+      if (!parsed.unresolved.length && parsed.entries.length) {
+        store.startLinePendingInput({ lineUserId: userId, type: "batch_confirmation", label: "圖片明細確認", sourceMessageId: event.message.id,
+          payload: { entries: parsed.entries, sourceMessageId: image.hash, parser: "statement_image" } });
+        pending = true;
+      }
+    }
+  } catch (error) {
+    if (startedAttempt && ownsAttempt()) store.clearLinePendingInput({ lineUserId: userId });
+    replyText = error.statementSafe ? error.message : "圖片處理暫時失敗，尚未入帳，請稍後重試。";
+  }
+  const result = await replyLineMessage(event.replyToken, reviewMessages(replyText, pending));
+  return { messageType: "image", parsedIntent: "statement_review", pending, ledgerCount: 0, ...result };
+}
+
 async function handleLineWebhook(rawBody, options = {}) {
   const body = parseLineWebhook(rawBody);
   const events = Array.isArray(body.events) ? body.events : [];
   const replies = [];
   for (const event of events) {
     if (event.type !== "message") continue;
+    if (event.message?.type === "image") {
+      replies.push(await handleStatementEvent(event, options));
+      continue;
+    }
     if (event.message?.type === "audio") {
       replies.push(await handleLineAudioEvent(event, options));
       continue;
@@ -1119,6 +1255,25 @@ async function handleLineWebhook(rawBody, options = {}) {
     if (event.message?.type !== "text") continue;
     const text = String(event.message.text || "");
     const userId = event.source?.userId || "";
+    if (["啟用圖片記帳", "同意並啟用圖片記帳", "停用圖片記帳"].includes(text.trim())) {
+      let reply = "圖片記帳後端尚未準備好。";
+      if (options.store && userId) {
+        if (text.trim() === "停用圖片記帳") {
+          options.store.setLineImageConsent(userId, false);
+          reply = "已停用圖片記帳，待確認內容已取消。";
+        } else if (process.env.LINE_IMAGE_PARSER_ENABLED !== "1") reply = "圖片記帳功能尚未開放。";
+        else if (text.trim() === "啟用圖片記帳") {
+          options.store.startLinePendingInput({ lineUserId: userId, type: "image_consent", label: "圖片記帳同意", sourceMessageId: event.message.id });
+          reply = "圖片會送往 OpenAI 辨識，請先遮住姓名、帳號、卡號與地址。原圖只在後端記憶體暫存；候選明細加密保存 30 分鐘，確認後才入帳並保存 1,095 天。每日最多 10 張，每張 8 MB、40 筆，只支援台幣整數金額。轉帳或信用卡繳款需釐清，避免重複計支出。可輸入「停用圖片記帳」撤銷，或「刪除全部資料」依確認流程刪除。\n同意請輸入「同意並啟用圖片記帳」；不同意請輸入「取消」。";
+        } else if (options.store.linePendingInput(userId)?.type === "image_consent") {
+          options.store.setLineImageConsent(userId, true);
+          options.store.clearLinePendingInput({ lineUserId: userId });
+          reply = "已啟用圖片記帳，請傳送清晰明細圖片（包含年份及日期），辨識後仍需確認才入帳。";
+        } else reply = "請先輸入「啟用圖片記帳」閱讀說明。";
+      }
+      replies.push({ messageType: "text", ledgerCount: 0, ...await replyLineMessage(event.replyToken, [{ type: "text", text: reply }]) });
+      continue;
+    }
     let replyText = connectionReplyText();
     let ledgerResult = null;
     let bindingResult = null;
@@ -1210,8 +1365,18 @@ async function handleLineWebhook(rawBody, options = {}) {
           } else if (parsed.command === "confirm_current") {
             const pending = options.store.linePendingInput(userId);
             const payload = pending?.type === "voice_confirmation" ? pending.payload : null;
-            if (!payload?.entry || !payload.sourceMessageId) {
-              replyText = "目前沒有待確認的語音記帳。請先傳送一段包含日期、用途與金額的語音。";
+            if (pending?.type === "batch_confirmation") {
+              try {
+                if (pending.payload?.parser === "statement_image" && event.source?.type !== "user") throw new Error("請在與官方帳號的一對一聊天確認圖片明細。");
+                const entries = options.store.confirmLineBatch(userId);
+                ledgerResult = { entries, summary: options.store.lineLedgerSummary(userId), parser: pending.payload.parser };
+                replyText = batchSummaryReplyText(entries, ledgerResult.summary);
+              } catch (error) {
+                replyText = error.statusCode === 409 ? "這批明細已有重複紀錄，本次未新增任何帳目。請取消後核對重傳。"
+                  : pending.payload?.parser === "statement_image" ? "這批圖片明細無法確認，可能已停用、逾期、重複或不在一對一聊天，尚未入帳。請取消後重新核對。" : error.message;
+              }
+            } else if (!payload?.entry || !payload.sourceMessageId) {
+              replyText = "目前沒有待確認的記帳。請先傳送明細或語音。";
               commandResult = { command: parsed.command, result: { kind: "none" } };
             } else {
               try {
@@ -1393,40 +1558,18 @@ async function handleLineWebhook(rawBody, options = {}) {
           replyText = error.message || "綁定失敗，請回到網頁重新產生綁定碼。";
         }
       }
-    } else if (parsed.intent === "ledger_batch") {
-      if (!options.store || !userId) {
-        replyText = "LINE 記帳後端尚未準備好，請稍後再試。";
-      } else {
-        const entries = [];
-        let duplicateCount = 0;
-        for (let index = 0; index < parsed.entries.length; index += 1) {
-          const item = parsed.entries[index];
-          try {
-            entries.push(options.store.addLineLedgerEntry({
-              lineUserId: userId,
-              ...item,
-              source: {
-                platform: "line",
-                parser: "ai",
-                messageId: `${event.message.id}:${index + 1}`,
-                messageText: text,
-                replyToken: event.replyToken ? "present" : "missing"
-              }
-            }));
-          } catch (error) {
-            if (error.statusCode === 409) duplicateCount += 1;
-            else throw error;
-          }
+    } else if (["ledger_batch", "batch_review"].includes(parsed.intent)) {
+      if (!options.store || !userId) replyText = "LINE 記帳後端尚未準備好，請稍後再試。";
+      else if (options.store.lineSourceMessageHandled({ lineUserId: userId, sourceMessageId: event.message.id })) replyText = "這則明細已處理過，請查看先前的待確認內容或已入帳紀錄。";
+      else {
+        options.store.clearLinePendingInput({ lineUserId: userId });
+        const unresolved = parsed.unresolved || [];
+        replyText = batchReviewText(parsed.entries, unresolved);
+        if (!unresolved.length && parsed.entries.length) {
+          options.store.startLinePendingInput({ lineUserId: userId, type: "batch_confirmation", label: "多筆明細確認", sourceMessageId: event.message.id,
+            payload: { entries: parsed.entries, sourceMessageId: event.message.id, parser: parsed.parser || "ai" } });
+          commandResult = { pending: true };
         }
-        if (entries.length) {
-          options.store.clearLinePendingInput({ lineUserId: userId });
-          options.store.markLineUndoTarget({ lineUserId: userId, entries });
-        }
-        const summary = options.store.lineLedgerSummary(userId);
-        ledgerResult = { entries, summary, parser: "ai" };
-        replyText = entries.length
-          ? batchSummaryReplyText(entries, summary)
-          : `這 ${duplicateCount} 筆資料已經記錄過，不會重複入帳。\n${compactSummaryLines(summary).join("\n")}`;
       }
     } else if (parsed.intent === "ledger") {
       if (!options.store || !userId) {
@@ -1510,6 +1653,7 @@ async function handleLineWebhook(rawBody, options = {}) {
     } else if (commandResult?.pending) {
       messages = [cancelableTextMessage(replyText)];
     }
+    if (["batch_review", "ledger_batch"].includes(parsed.intent)) messages = reviewMessages(replyText, Boolean(commandResult?.pending));
     const result = await replyLineMessage(event.replyToken, messages);
     replies.push({
       eventType: event.type,
@@ -1536,6 +1680,8 @@ module.exports = {
   lineReadiness,
   parseBindingMessage,
   parseIncomingMessage,
+  parseMultilineLedger,
+  batchReviewText,
   parseLineCommand,
   parseLedgerMessage,
   parseLedgerMessageWithAi,

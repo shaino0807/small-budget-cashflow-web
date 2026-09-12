@@ -7,6 +7,7 @@ services:
     dockerfilePath: ./webapp/Dockerfile
     dockerContext: ./webapp
     healthCheckPath: /api/health
+    autoDeployTrigger: checksPass
     envVars:
       - key: CUSTOMER_DATA_KEY
         generateValue: true
@@ -102,6 +103,10 @@ services:
         value: "12000"
       - key: LINE_VOICE_TRANSCRIPTION_TIMEOUT_MS
         value: "20000"
+      - key: LINE_IMAGE_PARSER_ENABLED
+        value: "0"
+      - key: OPENAI_STATEMENT_MODEL
+        value: gpt-4.1-mini
     disk:
       name: customer-data
       mountPath: /data

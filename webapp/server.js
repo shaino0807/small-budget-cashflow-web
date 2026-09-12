@@ -3,6 +3,7 @@ const { execFile } = require("child_process");
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
+const { isPublicFile } = require("./public-files");
 const { authSessionDays, createStore, lineLedgerRetentionDays } = require("./customer-store");
 const { verifyNotification } = require("./ecpay");
 const { productCatalog, productFor } = require("./payment-catalog");
@@ -134,6 +135,13 @@ function getCustomerStore() {
     throw error;
   }
 }
+
+// Expired drafts must also be removed for users who never send another message.
+setInterval(() => {
+  if (!customerStore) return;
+  try { customerStore.purgeExpired(); }
+  catch { console.error("Expired customer data cleanup failed"); }
+}, 60000).unref();
 
 function publicStoreError(error) {
   if (error === customerStoreError) return "後臺儲存尚未設定";
@@ -803,6 +811,15 @@ const server = http.createServer((req, res) => {
     }
     return;
   }
+  if (urlPath === "/api/financial-settings" && req.method === "PATCH") {
+    readJson(req, 120000).then((body) => {
+      const member = memberSession(req);
+      const settings = getCustomerStore().saveFinancialSettings({ userId: member?.user.id, reportId: body.reportId,
+        accessCode: accessCode(req, url), settings: body.settings });
+      sendJson(res, 200, { ok: true, settings });
+    }).catch((error) => sendJson(res, error.statusCode || 400, { ok: false, error: publicStoreError(error) }));
+    return;
+  }
   if (urlPath === "/api/profile" && req.method === "PATCH") {
     readJson(req, 20000)
       .then((body) => {
@@ -1224,6 +1241,11 @@ const server = http.createServer((req, res) => {
   }
 
   const requested = urlPath === "/" ? "index.html" : urlPath.slice(1);
+  if (!isPublicFile(requested) && !(process.env.SMOKE_TEST === "1" && /^reports\/[a-z0-9-]+\.(html|png)$/.test(requested))) {
+    res.writeHead(404, { "Cache-Control": "no-store" });
+    res.end("Not found");
+    return;
+  }
   const cleanPath = path.normalize(requested).replace(/^(\.\.[/\\])+/, "");
   const filePath = path.join(root, cleanPath);
 
@@ -1241,7 +1263,7 @@ const server = http.createServer((req, res) => {
     }
     res.writeHead(200, {
       "Content-Type": types[path.extname(filePath)] || "application/octet-stream",
-      "Cache-Control": path.extname(filePath) === ".json" ? "no-store" : "public, max-age=300"
+      "Cache-Control": [".json", ".html", ".css", ".js"].includes(path.extname(filePath)) ? "no-cache" : "public, max-age=300"
     });
     res.end(data);
   });
