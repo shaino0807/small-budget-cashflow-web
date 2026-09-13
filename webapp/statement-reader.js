@@ -117,6 +117,7 @@ function statementCategory(description, kind) {
 // The user supplies the missing year/currency explicitly; never borrow today's year.
 function clarifyStatement(clarification, year, currency) {
   if ((year != null && (!Number.isInteger(year) || year < 1900 || year > 2200)) || (currency != null && normalizeStatementCurrency(currency) !== "TWD") || !Array.isArray(clarification?.rows)) throw statementError("請提供明細實際年份與幣別。目前僅支援台幣；若是外幣，請提供實際台幣金額。原待補資料仍保留。");
+  if (year != null && clarification.rows.some(row => row.date && Number(row.date.slice(0, 4)) !== year)) throw statementError("你提供的年份與已保存的日期不一致，這次未修改或入帳。若需更改年份，請先取消後重新提供明細。");
   return validateStatement({ complete: true, warnings: [], rows: clarification.rows.map(row => {
     const date = row.date || (year == null ? null : `${year}-${String(row.dateEvidence).replace("/", "-")}`);
     return { ...row, date, dateEvidence: date || row.dateEvidence, currency: row.currency === "unknown" && currency != null ? normalizeStatementCurrency(currency) : row.currency };

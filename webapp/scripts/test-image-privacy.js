@@ -137,6 +137,9 @@ async function main() {
   assert.equal(store.linePendingInput("year-review").type, "image_clarification");
   assert.equal(store.lineLedgerSummary("year-review", "2026-09").expense, 0);
   assert.equal(store.linePendingInput("year-review").payload.clarification.rows[0].date, "2026-09-08");
+  await text("year-review", "2025年");
+  assert.equal(store.linePendingInput("year-review").payload.clarification.rows[0].date, "2026-09-08");
+  assert.equal(store.lineLedgerSummary("year-review", "2026-09").expense, 0);
   await text("year-review", "都是台幣");
   assert.equal(calls, callsBeforeClarification, "clarification must not call image API again");
   assert.equal(store.linePendingInput("year-review"), null);
