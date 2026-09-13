@@ -24,3 +24,13 @@
 ## 邊界
 
 本次未追加付費辨識呼叫，未上傳使用者真實截圖。實際模型辨識仍須在正式 LINE 重測；模擬與回歸不能代替該項真人驗收。既有 AGENTS.md、docs/agents 未提交變更保留。
+
+## 正式發布驗證（2026-09-13）
+
+- PR #7 已合併；程式版本 `5613885a37e1099f3c9f5b48a0c532e62b05ebb6`。最終 PR head `5ceea986981f094122d5586d78ad3a7c69bc5b5a` 的 CI `34750314835` 通過，Pages 工作流程 `34750406313` 完成且 success。
+- Render 部署 `dep-daj75kss728c73b3334g` 為上述合併版本，狀態 live，於 09:55:19 UTC 完成。
+- 12:04 UTC 再驗：Pages 與 Render 各 18 個公開程式／介面檔案逐位元組符合本機 Git HEAD；各 5 個私密路徑均 404，兩站 API runtime 設定正確。此比對不含動態 runtime-config、ETF 資料及 .nojekyll；runtime-config 另驗 API 來源。
+- 正式 `/api/health` 為 ok；圖片辨識、語音轉錄、登入、客戶資料儲存均已設定，LINE 回覆未停用。
+- 本機證據：`webapp/reports/conversational-public-final.json`、`webapp/reports/conversational-release-health.json`、`webapp/reports/conversational-final-pr-checks.log`。
+- 下一項真人驗收：重新傳圖片，分次回答「全部為 2026 年」「都是台幣」，核對補齊後整批結果；語音說「今天停車花一百八，晚餐花一百八」，應預覽兩筆合計 360，確認一次才入帳。資料仍不清楚或疑似重複時應繼續詢問／阻擋，不能強行入帳。
+- 此發布不代表付款功能已開通：正式健康資訊仍顯示付款未設定、sandbox；與本次記帳修復分開。
