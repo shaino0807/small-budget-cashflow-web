@@ -1144,8 +1144,8 @@ async function handleLineAudioEvent(event, options = {}) {
               replyText = voiceClarificationText(transcript, candidate);
               voiceStatus = "multiple_entries";
             } else if (candidate.entries) {
-              stageVoiceBatch(options.store, userId, event, transcript, candidate, config);
-              replyText = voiceConfirmationText(transcript, candidate.entries);
+              const staged = stageVoiceBatch(options.store, userId, event, transcript, candidate, config);
+              replyText = `${canceledPrefix(staged.canceled)}${voiceConfirmationText(transcript, candidate.entries)}`;
               messages = [voiceConfirmationMessage(replyText)];
               parser = candidate.parser;
               voiceStatus = "awaiting_confirmation";
@@ -1190,8 +1190,8 @@ async function handleLineAudioEvent(event, options = {}) {
           replyText = voiceClarificationText(transcript, candidate);
           voiceStatus = "multiple_entries";
         } else if (candidate.entries) {
-          stageVoiceBatch(options.store, userId, event, transcript, candidate, config);
-          replyText = voiceConfirmationText(transcript, candidate.entries);
+          const staged = stageVoiceBatch(options.store, userId, event, transcript, candidate, config);
+          replyText = `${canceledPrefix(staged.canceled)}${voiceConfirmationText(transcript, candidate.entries)}`;
           messages = [voiceConfirmationMessage(replyText)];
           parser = candidate.parser;
           voiceStatus = "awaiting_confirmation";
