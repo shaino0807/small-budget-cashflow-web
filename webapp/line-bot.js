@@ -1018,8 +1018,8 @@ function parseVoiceLedgerTranscript(transcript) {
   const hasDate = /今天|今日|昨天|昨日|前天|(?:\d{4}[年/-])?\d{1,2}[月/-]\d{1,2}[日號]?/.test(normalized);
   if (!hasDate) missing.push("日期（例如今天、昨天或 9 月 8 日）");
   if (!amountMatches.length || !firstAmount(normalized)) missing.push("金額");
-  const purposeText = withoutDateOrTicker.replace(/\d+(?:\.\d+)?\s*(?:元|塊|台幣|twd)?/gi, "")
-    .replace(/今天|今日|昨天|昨日|前天|花了?|付了?|繳了?|買了?|支出|收入|[\s，,。；;、]/g, "");
+  const purposeText = withoutDateOrTicker.replace(/\d+(?:\.\d+)?\s*(?:元|塊錢?|台幣|twd)?/gi, "")
+    .replace(/今天|今日|昨天|昨日|前天|幫我|我們|我的?|請|記帳|記錄|一下|這筆|這次|總共|一共|花費|花了?|付了?|繳了?|買了?|支出|收入|共|了|錢|號|啊|喔|吧|呢|[\s，,。；;、]/g, "");
   if ((!purposeText && !parsed.ticker) || (parsed.intent !== "ledger" && !/missing_.*amount/.test(parsed.reason || ""))) missing.push("用途（例如停車費或晚餐）");
   if (missing.length) return { intent: "help", reason: "missing_fields", clarification: `還缺少：${missing.join("、")}。請補齊後重新說一次。` };
   if (parsed.intent !== "ledger") return { ...parsed, clarification: "用途或交易類型尚無法確認，請說明是收入、支出或投資，以及實際金額。" };
