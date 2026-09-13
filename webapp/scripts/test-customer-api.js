@@ -5,7 +5,8 @@ const http = require("http");
 const os = require("os");
 const path = require("path");
 
-const port = 5600 + Math.floor(Math.random() * 200);
+// Keep all three local mock ports outside fetch's restricted-port list (6000).
+const port = 15600 + Math.floor(Math.random() * 200);
 const githubPort = port + 300;
 const linePayPort = port + 600;
 const baseUrl = `http://127.0.0.1:${port}`;
@@ -287,7 +288,7 @@ async function main() {
       firstRefresh.body.githubAction?.dispatched
       && secondRefresh.body.githubAction?.reason === "recent_dispatch_available"
       && githubDispatchCount === 1,
-      "GitHub Action dispatch throttling failed"
+      `GitHub Action dispatch throttling failed (mock port=${githubPort}, first=${firstRefresh.status}, second=${secondRefresh.status}, calls=${githubDispatchCount})`
     );
 
     const invalid = await request("/api/reports", {

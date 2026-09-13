@@ -464,9 +464,30 @@ async function testVoiceWebhook() {
     transcriptText = "早餐六十五,午餐一百二";
     process.env.LINE_AI_PARSER_ENABLED = "1";
     const multiple = await handleLineWebhook(lineEventBody({ ...voiceMessage, id: "voice-multiple" }), { store });
-    if (multiple.replies[0]?.voiceStatus !== "multiple_entries" || multiple.replies[0]?.pending || responseApiCalls !== 0) {
-      throw new Error(`Multiple voice entries were not rejected: ${JSON.stringify(multiple)}`);
+    if (multiple.replies[0]?.voiceStatus !== "unrecognized" || multiple.replies[0]?.pending || responseApiCalls !== 0) {
+      throw new Error(`Undated voice batch must ask for the missing date: ${JSON.stringify(multiple)}`);
     }
+
+    transcriptText = "今天停車花一百八，晚餐花一百八";
+    const batchVoice = await handleLineWebhook(lineEventBody({ ...voiceMessage, id: "voice-two-expenses" }), { store });
+    const batchPending = store.linePendingInput("Uvoice");
+    if (!batchVoice.replies[0]?.pending || batchPending?.payload?.entries?.length !== 2 || batchPending.payload.entries.reduce((sum, entry) => sum + entry.amount, 0) !== 360 || store.lineLedgerSummary("Uvoice").expense !== 350) throw new Error("Two voice expenses must wait as one complete draft");
+    const callsBeforeBatchReplay = lineDownloadCalls;
+    await handleLineWebhook(lineEventBody({ ...voiceMessage, id: "voice-two-expenses" }), { store });
+    if (lineDownloadCalls !== callsBeforeBatchReplay) throw new Error("Voice batch replay called transcription twice");
+    process.env.LINE_VOICE_TRANSCRIPTION_ENABLED = "0";
+    await handleLineWebhook(lineEventBody({ id: "voice-batch-disabled-confirm", type: "text", text: "確認語音記帳" }), { store });
+    if (store.lineLedgerSummary("Uvoice").expense !== 350) throw new Error("Disabled voice batch was committed");
+    process.env.LINE_VOICE_TRANSCRIPTION_ENABLED = "1";
+    await handleLineWebhook(lineEventBody({ id: "voice-batch-confirm", type: "text", text: "確認語音記帳" }), { store });
+    if (store.lineLedgerSummary("Uvoice").expense !== 710) throw new Error("Voice batch did not commit both equal-amount, different-purpose expenses");
+    await handleLineWebhook(lineEventBody({ id: "voice-batch-undo", type: "text", text: "按錯" }), { store });
+    if (store.lineLedgerSummary("Uvoice").expense !== 350) throw new Error("Voice batch undo did not remove both expenses");
+    store.startLinePendingInput({ lineUserId: "Uvoice", type: "voice_confirmation", label: "atomic test", sourceMessageId: "atomic-draft", payload: { ...batchPending.payload, sourceMessageId: "atomic-batch", entries: [batchPending.payload.entries[0], { ...batchPending.payload.entries[1], amount: 0 }] } });
+    let atomicRejected = false;
+    try { store.confirmLineVoiceBatch("Uvoice"); } catch { atomicRejected = true; }
+    if (!atomicRejected || store.lineLedgerSummary("Uvoice").expense !== 350) throw new Error("Invalid second voice row did not roll back the first row");
+    store.clearLinePendingInput({ lineUserId: "Uvoice" });
 
     transcriptionStatus = 500;
     const failed = await handleLineWebhook(lineEventBody({ ...voiceMessage, id: "voice-failed" }), { store });

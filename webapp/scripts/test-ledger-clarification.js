@@ -29,7 +29,17 @@ for (const [text, missing, present] of [
   assert.ok(result.clarification.includes(missing), text);
   assert.ok(!result.clarification.includes(present), text);
 }
-assert.equal(parseVoiceLedgerTranscript("今天晚餐180，停車費60").reason, "multiple_entries");
+for (const text of ["今天停車花一百八，晚餐花一百八", "今天停車花180晚餐花180", "今天停車180然後晚餐180"]) {
+  const batch = parseVoiceLedgerTranscript(text);
+  assert.equal(batch.intent, "ledger_batch", text);
+  assert.deepEqual(batch.entries.map(entry => entry.amount), [180, 180]);
+  assert.deepEqual(batch.entries.map(entry => entry.category), ["交通", "伙食"]);
+  assert.equal(batch.entries[0].occurredAt, batch.entries[1].occurredAt, "inherit the explicitly spoken date");
+}
+assert.equal(parseVoiceLedgerTranscript("昨天晚餐180，今天停車費60").entries.length, 2);
+assert.equal(parseVoiceLedgerTranscript("今天晚餐180，停車費60，飲料").reason, "batch_missing_fields");
+assert.equal(parseVoiceLedgerTranscript("晚餐180，停車費60").reason, "batch_missing_fields");
+assert.match(parseVoiceLedgerTranscript(Array(41).fill("今天晚餐180").join("，")).clarification, /超過 40 筆/);
 const investment = parseVoiceLedgerTranscript("今天買0050一萬元");
 assert.equal(investment.type, "investment");
 assert.equal(investment.amount, 10000);

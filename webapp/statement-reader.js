@@ -32,7 +32,7 @@ async function readStatementImage(messageId, { fetchImpl = fetch } = {}) {
 async function parseStatementImage(image, { fetchImpl = fetch } = {}) {
   const fields = {
     date: { type: ["string", "null"] }, dateEvidence: { type: ["string", "null"] }, amount: { type: ["number", "null"] },
-    currency: { type: "string" }, description: { type: "string" },
+    currency: { type: "string", enum: ["TWD", "USD", "JPY", "CNY", "HKD", "EUR", "GBP", "other", "unknown"] }, description: { type: "string" },
     kind: { type: "string", enum: ["expense", "income", "transfer", "card_payment", "unknown"] }
   };
   const dateEvidenceInstruction = "dateEvidence 只抄原圖實際可見日期：完整日期抄 YYYY-MM-DD，只有月日則抄 MM/DD 並將 date 填 null，完全沒有日期才兩者填 null。年在表頭時可合併；不得使用目前年份或常識補年。完整 date 必須與 dateEvidence 對應。缺少年份、幣別仍要保留每列可讀的商家與金額，交由使用者補充。";
@@ -43,7 +43,7 @@ async function parseStatementImage(image, { fetchImpl = fetch } = {}) {
         { role: "user", content: [{ type: "input_text", text: `請抄錄這張明細供使用者核對。${dateEvidenceInstruction}` }, { type: "input_image", image_url: `data:${image.type};base64,${image.buffer.toString("base64")}`, detail: "high" }] }],
       text: { format: { type: "json_schema", name: "statement", strict: true, schema: {
         type: "object", additionalProperties: false, properties: {
-          complete: { type: "boolean" }, warnings: { type: "array", items: { type: "string" } },
+          complete: { type: "boolean" }, warnings: { type: "array", items: { type: "string", enum: ["missing_year", "missing_currency", "cropped_rows", "unreadable_rows", "other"] } },
           rows: { type: "array", maxItems: 40, items: { type: "object", additionalProperties: false, properties: fields, required: Object.keys(fields) } }
         }, required: ["complete", "warnings", "rows"]
       } } }, max_output_tokens: 6000 }), signal: AbortSignal.timeout(25000)
@@ -61,13 +61,14 @@ function validateStatement(payload) {
   if (!payload || !Array.isArray(payload.rows) || !payload.rows.length || payload.rows.length > 40) throw statementError("沒有完整可核對的明細，請提供清晰圖片，每張最多 40 筆。");
   // Never echo model warnings or invalid fields: they may contain account numbers or instructions.
   const unresolved = Array.isArray(payload.warnings) && payload.warnings.every((warning) => typeof warning === "string")
-    ? payload.warnings.map((_, index) => `第 ${index + 1} 項辨識疑慮，請核對原圖或改用文字提供明細。`).slice(0, 10)
+    ? payload.warnings.filter(warning => !["missing_year", "missing_currency"].includes(warning)).map((_, index) => `第 ${index + 1} 項明細完整性疑慮，請核對原圖或補齊明細。`).slice(0, 10)
     : ["辨識回應缺少完整性檢查，請重傳。"];
   if (payload.complete !== true) unresolved.push("圖片明細不完整，請補齊或分頁重傳。");
   const entries = [], reviewLines = [], safeRows = [];
   let canClarify = !unresolved.length;
   payload.rows.forEach((row, index) => {
     if (!row || typeof row !== "object") { unresolved.push(`第 ${index + 1} 筆無法辨識，請重傳。`); canClarify = false; return; }
+    row = { ...row, currency: normalizeStatementCurrency(row.currency) };
     const date = typeof row.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(row.date) ? new Date(`${row.date}T12:00:00+08:00`) : null;
     const evidence = typeof row.dateEvidence === "string" && row.dateEvidence.length <= 32
       ? row.dateEvidence.trim().match(/^(\d{4})[\s年/.-]+(\d{1,2})[\s月/.-]+(\d{1,2})日?$/) : null;
@@ -115,11 +116,28 @@ function statementCategory(description, kind) {
 
 // The user supplies the missing year/currency explicitly; never borrow today's year.
 function clarifyStatement(clarification, year, currency) {
-  if (!Number.isInteger(year) || year < 1900 || year > 2200 || currency !== "TWD" || !Array.isArray(clarification?.rows)) throw statementError("請使用「圖片補充 西元年份 台幣」，例如：圖片補充 2026 台幣。請填明細實際年份與幣別。");
+  if ((year != null && (!Number.isInteger(year) || year < 1900 || year > 2200)) || (currency != null && normalizeStatementCurrency(currency) !== "TWD") || !Array.isArray(clarification?.rows)) throw statementError("請提供明細實際年份與幣別。目前僅支援台幣；若是外幣，請提供實際台幣金額。原待補資料仍保留。");
+  if (year != null && clarification.rows.some(row => row.date && Number(row.date.slice(0, 4)) !== year)) throw statementError("你提供的年份與已保存的日期不一致，這次未修改或入帳。若需更改年份，請先取消後重新提供明細。");
   return validateStatement({ complete: true, warnings: [], rows: clarification.rows.map(row => {
-    const date = row.date || `${year}-${String(row.dateEvidence).replace("/", "-")}`;
-    return { ...row, date, dateEvidence: date, currency: row.currency === "unknown" ? currency : row.currency };
+    const date = row.date || (year == null ? null : `${year}-${String(row.dateEvidence).replace("/", "-")}`);
+    return { ...row, date, dateEvidence: date || row.dateEvidence, currency: row.currency === "unknown" && currency != null ? normalizeStatementCurrency(currency) : row.currency };
   }) });
 }
 
-module.exports = { readStatementImage, parseStatementImage, validateStatement, clarifyStatement, statementError };
+function normalizeStatementCurrency(value) {
+  const normalized = typeof value === "string" ? value.trim().toUpperCase() : "";
+  if (["TWD", "NTD", "NT$", "NT＄", "新台幣", "新臺幣", "台幣", "臺幣"].includes(normalized)) return "TWD";
+  if (["", "UNKNOWN", "UNSPECIFIED", "N/A", "未標示", "不明", "未知"].includes(normalized)) return "unknown";
+  return normalized;
+}
+
+function parseStatementAnswer(text) {
+  const compact = String(text).replace(/圖片補充|全部|都是|都|為|是|年份|幣別|西元|年|的|使用|以|用|和|及|跟|皆|統一|[\s，,。:：]/g, "").toUpperCase();
+  const years = compact.match(/(?:19|20|21)\d{2}|2200/g) || [];
+  const currencies = compact.match(/新台幣|新臺幣|台幣|臺幣|TWD|NTD|NT\$|美元|USD|日圓|日幣|JPY/g) || [];
+  const rest = compact.replace(/(?:19|20|21)\d{2}|2200|新台幣|新臺幣|台幣|臺幣|TWD|NTD|NT\$|美元|USD|日圓|日幣|JPY/g, "");
+  if (rest || years.length > 1 || currencies.length > 1 || (!years.length && !currencies.length)) return null;
+  return { year: years.length ? Number(years[0]) : null, currency: currencies[0] || null };
+}
+
+module.exports = { readStatementImage, parseStatementImage, validateStatement, clarifyStatement, parseStatementAnswer, statementError };
