@@ -11,8 +11,8 @@ process.env.OPENAI_API_KEY = "synthetic-only";
 process.env.LINE_CHANNEL_ACCESS_TOKEN = "synthetic-only";
 global.fetch = async () => { throw new Error("External network forbidden"); };
 const { createStore } = require("../customer-store");
-const { handleLineWebhook } = require("../line-bot");
-const { validateStatement, readStatementImage, parseStatementImage } = require("../statement-reader");
+const { handleLineWebhook, statementReviewText } = require("../line-bot");
+const { validateStatement, clarifyStatement, readStatementImage, parseStatementImage } = require("../statement-reader");
 const store = createStore();
 const db = new DatabaseSync(path.join(process.env.CUSTOMER_DATA_DIR, "customers.sqlite"));
 const png = Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]), Buffer.from("synthetic-image-private-marker")]);
@@ -80,6 +80,72 @@ async function main() {
   await text("confirmed", "確認記帳");
   assert.equal(store.lineLedgerSummary("confirmed", "2026-09").expense, 230);
   assert.equal(store.lineBatchDuplicateWarnings("new-user", validateStatement({ ...payload, rows: [row, row] }).entries).length, 1);
+
+  // Merchant rows remain visible when the screenshot has month/day but no year.
+  // No personal card details or real image bytes are used in these fixtures.
+  const merchantRows = [
+    ["09/08", "台灣聯通停車場", 180], ["09/08", "黑市鍋物", 990],
+    ["09/06", "台哥大帳單－網路／語音", 1449], ["09/06", "台哥大帳單代收富邦產險", 198],
+    ["09/06", "UBER *TRIP HELPUBER.COM", 650], ["09/06", "國外交易手續費", 10],
+    ["09/06", "LOTTEGIMHAEGONGHANGM…", 1536], ["09/06", "國外交易手續費", 23]
+  ].map(([dateEvidence, description, amount]) => ({ date: null, dateEvidence, description, amount, currency: "unknown", kind: "expense" }));
+  const partial = validateStatement({ complete: true, warnings: [], rows: merchantRows });
+  assert.equal(partial.entries.length, 0);
+  assert.equal(partial.reviewLines.length, 8);
+  assert.ok(partial.clarification);
+  assert.match(statementReviewText(partial), /已擷取 8 筆/);
+  assert.match(statementReviewText(partial), /台灣聯通停車場｜交通｜金額 180/);
+  assert.match(statementReviewText(partial), /缺少年份/);
+  assert.match(statementReviewText(partial), /缺少幣別/);
+  assert.ok(!statementReviewText(partial).includes("辨識 0 筆"));
+  const completed = clarifyStatement(partial.clarification, 2026, "TWD");
+  assert.equal(completed.unresolved.length, 0);
+  assert.equal(completed.entries.reduce((sum, entry) => sum + entry.amount, 0), 5036);
+  assert.deepEqual(completed.entries.map(entry => entry.category), ["交通", "伙食", "生活帳單", "保險", "交通", "手續費", "其他支出", "手續費"]);
+  assert.equal(clarifyStatement({ rows: [{ ...merchantRows[0], dateEvidence: "02/29" }] }, 2025, "TWD").entries.length, 0);
+  for (const patch of [{ amount: null }, { kind: "card_payment" }, { description: "卡號：1234 5678 9012 3456" }, { currency: "USD" }]) {
+    const rejected = validateStatement({ complete: true, warnings: [], rows: [{ ...merchantRows[0], ...patch }] });
+    assert.equal(rejected.clarification, null);
+    assert.ok(!statementReviewText(rejected).includes("1234 5678"));
+  }
+  payload.rows = merchantRows;
+  store.setLineImageConsent("year-review", true);
+  await image("year-review");
+  assert.equal(store.linePendingInput("year-review").type, "image_clarification");
+  const callsBeforeClarification = calls;
+  await text("year-review", "確認記帳");
+  assert.equal(store.lineLedgerSummary("year-review", "2026-09").expense, 0);
+  await text("year-review", "圖片補充 2026 台幣", "group");
+  assert.equal(store.linePendingInput("year-review").type, "image_clarification");
+  process.env.LINE_IMAGE_PARSER_ENABLED = "0";
+  await text("year-review", "圖片補充 2026 台幣");
+  assert.equal(store.linePendingInput("year-review").type, "image_clarification");
+  process.env.LINE_IMAGE_PARSER_ENABLED = "1";
+  await text("year-review", "圖片補充 2026 USD");
+  assert.equal(store.linePendingInput("year-review").type, "image_clarification");
+  await text("year-review", "圖片補充 2026 台幣");
+  assert.equal(calls, callsBeforeClarification, "clarification must not call image API again");
+  assert.equal(store.linePendingInput("year-review").type, "batch_confirmation");
+  assert.equal(store.lineLedgerSummary("year-review", "2026-09").expense, 0);
+  await text("year-review", "確認記帳");
+  assert.equal(store.lineLedgerSummary("year-review", "2026-09").expense, 5036);
+  await image("year-review");
+  assert.equal(calls, callsBeforeClarification + 1, "duplicate image must stop before OpenAI");
+  for (const command of ["取消", "停用圖片記帳"]) {
+    const user = `partial-${command}`;
+    store.setLineImageConsent(user, true);
+    await image(user);
+    await text(user, command);
+    await text(user, "圖片補充 2026 台幣");
+    assert.equal(store.linePendingInput(user), null);
+    assert.equal(store.lineLedgerSummary(user, "2026-09").expense, 0);
+  }
+  store.setLineImageConsent("year-expiry", true);
+  await image("year-expiry");
+  db.prepare("UPDATE line_pending_inputs SET expires_at = '2000-01-01T00:00:00Z'").run();
+  await text("year-expiry", "圖片補充 2026 台幣");
+  assert.equal(store.linePendingInput("year-expiry"), null);
+  payload.rows = [row];
 
   // Cancel or disable while the external response is in flight; late responses cannot resurrect a draft.
   for (const command of ["取消", "停用圖片記帳"]) {
