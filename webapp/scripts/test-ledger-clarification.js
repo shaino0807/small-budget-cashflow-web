@@ -41,6 +41,13 @@ assert.equal(parseVoiceLedgerTranscript("今天晚餐180，停車費60，飲料"
 assert.equal(parseVoiceLedgerTranscript("晚餐180，停車費60").reason, "batch_missing_fields");
 assert.match(parseVoiceLedgerTranscript(Array(41).fill("今天晚餐180").join("，")).clarification, /超過 40 筆/);
 const investment = parseVoiceLedgerTranscript("今天買0050一萬元");
+assert.equal(parseVoiceLedgerTranscript("二零二六年二月三十號晚餐180").reason, "invalid_date");
+for (const text of ["二零二二年九月十三號停車費一百八，二零二六年九月十三號晚餐一百八", "2022 年 9 月 13 號停車費 180，2026 年 9 月 13 號晚餐 180"]) {
+  const batch = parseVoiceLedgerTranscript(text);
+  assert.equal(batch.intent, "ledger_batch");
+  assert.deepEqual(batch.entries.map(entry => entry.occurredAt.slice(0, 10)), ["2022-09-13", "2026-09-13"]);
+  assert.deepEqual(batch.entries.map(entry => entry.amount), [180, 180]);
+}
 assert.equal(investment.type, "investment");
 assert.equal(investment.amount, 10000);
 assert.equal(investment.ticker, "0050");

@@ -240,6 +240,12 @@ async function main() {
     await send(ws, "Page.navigate", { url: targetUrl });
     await waitForPageReady(ws);
     await wait(4500);
+    // An asynchronous ETF refresh can still be displaying its temporary mobile notice.
+    // Wait for the real base status; keep the exact branding assertion below.
+    const landingStatusDeadline = Date.now() + 12000;
+    while (Date.now() < landingStatusDeadline && await evalValue(ws, `Boolean(document.querySelector("#headerStatus")?.classList.contains("is-notification"))`)) {
+      await wait(200);
+    }
 
     const landing = await evalValue(ws, `(() => {
       const text = document.body.innerText || "";

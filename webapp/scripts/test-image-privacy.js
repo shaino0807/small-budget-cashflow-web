@@ -94,10 +94,10 @@ async function main() {
   assert.equal(partial.reviewLines.length, 8);
   assert.ok(partial.clarification);
   assert.match(statementReviewText(partial), /已擷取 8 筆/);
-  assert.match(statementReviewText(partial), /台灣聯通停車場｜交通｜金額 180/);
+  assert.match(statementReviewText(partial), /台灣聯通停車場｜交通｜NT\$180/);
   assert.match(statementReviewText(partial), /哪一年/);
-  assert.match(statementReviewText(partial), /什麼幣別/);
-  assert.match(statementReviewText(partial), /補齊年份與幣別即代表確認/);
+  assert.ok(!statementReviewText(partial).includes("什麼幣別"));
+  assert.match(statementReviewText(partial), /補齊日期即代表確認/);
   assert.deepEqual(parseStatementAnswer("全部為 2026 年"), { year: 2026, currency: null });
   assert.deepEqual(parseStatementAnswer("都是台幣"), { year: null, currency: "台幣" });
   assert.equal(parseStatementAnswer("今天晚餐2026元"), null);
@@ -133,14 +133,23 @@ async function main() {
   process.env.LINE_IMAGE_PARSER_ENABLED = "1";
   await text("year-review", "圖片補充 2026 USD");
   assert.equal(store.linePendingInput("year-review").type, "image_clarification");
-  await text("year-review", "全部為 2026 年");
-  assert.equal(store.linePendingInput("year-review").type, "image_clarification");
-  assert.equal(store.lineLedgerSummary("year-review", "2026-09").expense, 0);
-  assert.equal(store.linePendingInput("year-review").payload.clarification.rows[0].date, "2026-09-08");
-  await text("year-review", "2025年");
-  assert.equal(store.linePendingInput("year-review").payload.clarification.rows[0].date, "2026-09-08");
-  assert.equal(store.lineLedgerSummary("year-review", "2026-09").expense, 0);
-  await text("year-review", "都是台幣");
+  const completionEvent = JSON.parse(event("year-review", "text", "全部為 2026 年"));
+  completionEvent.events[0].replyToken = "synthetic-reply";
+  let sentMessages;
+  const completionDeniedFetch = global.fetch;
+  process.env.LINE_REPLY_DISABLED = "0";
+  global.fetch = async (url, options) => {
+    assert.equal(url, "https://api.line.me/v2/bot/message/reply");
+    sentMessages = JSON.parse(options.body).messages;
+    return Response.json({});
+  };
+  try { await handleLineWebhook(JSON.stringify(completionEvent), { store }); }
+  finally { global.fetch = completionDeniedFetch; process.env.LINE_REPLY_DISABLED = "1"; }
+  assert.ok(sentMessages.some(message => message.type === "flex"));
+  assert.match(JSON.stringify(sentMessages), /2026-09/);
+  assert.match(JSON.stringify(sentMessages), /5,036/);
+  assert.ok(sentMessages.length <= 5);
+  assert.throws(() => clarifyStatement({ rows: [{ ...row, date: "2026-09-08", dateEvidence: "2026-09-08" }] }, 2025, null), /年份/);
   assert.equal(calls, callsBeforeClarification, "clarification must not call image API again");
   assert.equal(store.linePendingInput("year-review"), null);
   assert.equal(store.lineLedgerSummary("year-review", "2026-09").expense, 5036);
