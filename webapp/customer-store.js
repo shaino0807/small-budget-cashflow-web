@@ -1831,6 +1831,21 @@ function createStore() {
     });
   }
 
+  function confirmLineVoiceBatch(lineUserId) {
+    return immediateTransaction(() => {
+      const pending = linePendingInput(lineUserId), payload = pending?.payload;
+      if (pending?.type !== "voice_confirmation" || !Array.isArray(payload?.entries) || !payload.entries.length || payload.entries.length > 40) throw new Error("沒有完整待確認的語音明細。");
+      const preference = lineVoicePreference(lineUserId);
+      const pilot = payload.pilotMode === true && process.env.LINE_VOICE_PILOT_MODE === "1";
+      if (process.env.LINE_VOICE_TRANSCRIPTION_ENABLED !== "1" || (!pilot && (!preference.enabled || preference.consentVersion !== payload.consentVersion || payload.consentVersion !== (process.env.LINE_VOICE_CONSENT_VERSION || "v1")))) throw new Error("語音功能或同意已停用，尚未入帳。");
+      const entries = payload.entries.map((entry, index) => addLineLedgerEntry({ lineUserId, ...entry,
+        source: { platform: "line", parser: "voice_rules", messageId: `${payload.sourceMessageId}:${index + 1}`, messageText: entry.note || "" } }));
+      clearLinePendingInput({ lineUserId });
+      markLineUndoTarget({ lineUserId, entries });
+      return entries;
+    });
+  }
+
   function lineBatchDuplicateWarnings(lineUserId, entries) {
     const hash = accessHash(`line:${lineUserId}`);
     const seen = new Set();
@@ -2158,6 +2173,7 @@ function createStore() {
     lineImageConsent,
     claimLineImageAttempt,
     confirmLineBatch,
+    confirmLineVoiceBatch,
     lineBatchDuplicateWarnings,
     addLineLedgerEntryForUser,
     analytics,

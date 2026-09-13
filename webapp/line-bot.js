@@ -1,5 +1,5 @@
 const crypto = require("crypto");
-const { readStatementImage, parseStatementImage, clarifyStatement, statementError } = require("./statement-reader");
+const { readStatementImage, parseStatementImage, clarifyStatement, parseStatementAnswer, statementError } = require("./statement-reader");
 
 const lineReplyEndpoint = "https://api.line.me/v2/bot/message/reply";
 const lineContentEndpoint = "https://api-data.line.me/v2/bot/message";
@@ -170,7 +170,8 @@ async function transcribeLineAudio(audio, options = {}) {
   });
   if (!response.ok) throw voiceError("transcription_failed", `OpenAI 語音轉錄失敗（HTTP ${response.status}）`);
   const payload = await response.json();
-  const transcript = String(payload?.text || "").replace(/\s+/g, " ").trim().slice(0, 500);
+  const transcript = String(payload?.text || "").replace(/\s+/g, " ").trim();
+  if (transcript.length > 500) throw voiceError("transcript_too_long", "語音轉錄超過 500 字");
   if (!transcript) throw voiceError("empty_transcript", "沒有辨識到可用的語音內容");
   return transcript;
 }
@@ -182,7 +183,8 @@ function voiceFailureReply(error) {
     line_audio_expired: "這段語音已無法下載，請重新錄一段 60 秒內的語音。",
     audio_too_large: "這段語音檔案太大，請縮短為 60 秒內並重新傳送。",
     empty_audio: "這段語音沒有可辨識的內容，請重新錄製。",
-    empty_transcript: "我沒有聽清楚，請用「日期、用途、金額」重新說一次，例如：昨天晚餐三百五十元。"
+    empty_transcript: "我沒有聽清楚，請用「日期、用途、金額」重新說一次，例如：昨天晚餐三百五十元。",
+    transcript_too_long: "這段語音超過 500 字，請分段傳送；沒有截斷或寫入任何帳目。"
   }[error?.voiceCode] || "語音辨識暫時失敗，這次沒有寫入帳本；請稍後重試或先用文字記帳。";
 }
 
@@ -1000,6 +1002,28 @@ function voiceConsentMessage(config) {
 }
 
 function parseVoiceLedgerTranscript(transcript) {
+  const normalized = normalizeVoiceTranscript(transcript).replace(/(\d),(?=\d{3}(?:\D|$))/g, "$1")
+    .replace(/(?<![\d/年月-])(\d+(?:\.\d+)?(?:元|塊錢?)?)(?=(?:今天|昨天|前天)?(?:早餐|午餐|晚餐|宵夜|停車|加油|房租|飲料|咖啡))/g, "$1，");
+  const amountCount = (normalized.replace(/(?:\d{4}[年/-])?\d{1,2}[月/-]\d{1,2}[日號]?/g, " ").replace(/\b(?:00\d{2,4}|0\d{4,5})\b/g, " ").match(/\d+(?:\.\d+)?/g) || []).length;
+  if (amountCount <= 1) return parseSingleVoiceLedgerTranscript(normalized);
+  const segments = normalized.split(/[,，、;；。]|(?:以及|還有|然後|接著|另外|再來)/).map(value => value.trim()).filter(Boolean);
+  if (segments.length > 40) return { intent: "help", reason: "multiple_entries", clarification: "這段超過 40 筆，請分段傳送；沒有截斷或入帳。" };
+  if (segments.length < 2) return { intent: "help", reason: "multiple_entries", clarification: "有多個金額，但還無法分清各筆用途。請在每筆說出用途與金額，例如：今天停車180，晚餐180。" };
+  let dateContext = "";
+  const entries = [], issues = [];
+  for (const [index, segment] of segments.entries()) {
+    const explicitDate = segment.match(/今天|今日|昨天|昨日|前天|(?:\d{4}[年/-])?\d{1,2}[月/-]\d{1,2}[日號]?/);
+    if (explicitDate) dateContext = explicitDate[0];
+    if (/^(今天|今日|昨天|昨日|前天)$/.test(segment)) continue;
+    const parsed = parseSingleVoiceLedgerTranscript(explicitDate ? segment : `${dateContext} ${segment}`);
+    if (parsed.intent === "ledger" && !/轉帳|匯款|繳.{0,5}卡費|信用卡.{0,5}(繳|付款)/.test(segment)) entries.push(parsed);
+    else issues.push(`第 ${index + 1} 段：${parsed.clarification || "請確認用途、金額及是否為轉帳或繳卡費。"}`);
+  }
+  if (issues.length) return { intent: "help", reason: "batch_missing_fields", clarification: [...entries.map(entry => `已辨識：${entry.note} ${formatMoney(entry.amount)}`), ...issues, "本批全部尚未入帳，請補齊後重新提供完整明細。"].join("\n") };
+  return { intent: "ledger_batch", entries, parser: "rules" };
+}
+
+function parseSingleVoiceLedgerTranscript(transcript) {
   const normalized = normalizeVoiceTranscript(transcript);
   const withoutDateOrTicker = normalized
     .replace(/(?:\d{4}[年/-])?\d{1,2}[月/-]\d{1,2}日?/g, " ")
@@ -1031,7 +1055,7 @@ function voiceLedgerCandidate(parsed) {
   if (parsed?.intent === "ledger_batch" && parsed.entries?.length === 1) {
     return { entry: parsed.entries[0], parser: parsed.parser || "ai" };
   }
-  if (parsed?.intent === "ledger_batch" && parsed.entries?.length > 1) return { reason: "multiple_entries" };
+  if (parsed?.intent === "ledger_batch" && parsed.entries?.length > 1) return { entries: parsed.entries, parser: parsed.parser || "rules" };
   return { reason: parsed?.reason || "unrecognized", clarification: parsed?.clarification };
 }
 
@@ -1040,6 +1064,7 @@ function voiceClarificationText(transcript, candidate) {
 }
 
 function voiceConfirmationText(transcript, entry) {
+  if (Array.isArray(entry)) return `我聽到：「${transcript}」\n\n${batchReviewText(entry)}\n按「確認記帳」會一次寫入全部 ${entry.length} 筆；按「取消」全部取消。`;
   const date = taipeiDateParts(new Date(entry.occurredAt));
   const dateText = `${date.year}-${String(date.month).padStart(2, "0")}-${String(date.day).padStart(2, "0")}`;
   const details = [
@@ -1054,6 +1079,14 @@ function voiceConfirmationText(transcript, entry) {
   details.push(`備註：${entry.note || entry.category || "語音記帳"}`);
   details.push("", "請按「確認記帳」後才會寫入；若辨識錯誤請按「取消」並重新說一次。");
   return details.join("\n");
+}
+
+function stageVoiceBatch(store, userId, event, transcript, candidate, config) {
+  const current = lineVoiceConfig(), preference = store.lineVoicePreference(userId);
+  if (!current.enabled || (config.pilotMode ? store.linePendingInput(userId)?.type !== "voice_pilot" : !preference.enabled || preference.consentVersion !== current.consentVersion)) throw voiceError("voice_disabled", "語音同意已撤銷或處理已取消");
+  return store.startLinePendingInput({ lineUserId: userId, type: "voice_confirmation", label: "多筆語音待確認", sourceMessageId: event.message.id,
+    payload: { transcript, entries: candidate.entries, sourceMessageId: String(event.message.id), parser: candidate.parser,
+      pilotMode: config.pilotMode, consentVersion: config.consentVersion } });
 }
 
 async function handleLineAudioEvent(event, options = {}) {
@@ -1082,7 +1115,7 @@ async function handleLineAudioEvent(event, options = {}) {
     if (currentPending?.type === "voice_confirmation" && currentPending.payload?.sourceMessageId === event.message.id) {
       transcript = currentPending.payload.transcript || "";
       parser = currentPending.payload.parser || "rules";
-      replyText = voiceConfirmationText(transcript, currentPending.payload.entry);
+      replyText = voiceConfirmationText(transcript, currentPending.payload.entries || currentPending.payload.entry);
       messages = [voiceConfirmationMessage(replyText)];
       voiceStatus = "awaiting_confirmation";
       pending = true;
@@ -1108,8 +1141,15 @@ async function handleLineAudioEvent(event, options = {}) {
             transcript = await transcribeLineAudio(audio, options);
             const candidate = voiceLedgerCandidate(parseVoiceLedgerTranscript(transcript));
             if (candidate.reason === "multiple_entries") {
-              replyText = `我聽到：「${transcript}」\n\n目前一次只支援一筆記帳，請分開錄製；這次沒有寫入帳本。`;
+              replyText = voiceClarificationText(transcript, candidate);
               voiceStatus = "multiple_entries";
+            } else if (candidate.entries) {
+              stageVoiceBatch(options.store, userId, event, transcript, candidate, config);
+              replyText = voiceConfirmationText(transcript, candidate.entries);
+              messages = [voiceConfirmationMessage(replyText)];
+              parser = candidate.parser;
+              voiceStatus = "awaiting_confirmation";
+              pending = true;
             } else if (!candidate.entry) {
               replyText = voiceClarificationText(transcript, candidate);
               voiceStatus = "unrecognized";
@@ -1147,8 +1187,15 @@ async function handleLineAudioEvent(event, options = {}) {
         transcript = await transcribeLineAudio(audio, options);
         const candidate = voiceLedgerCandidate(parseVoiceLedgerTranscript(transcript));
         if (candidate.reason === "multiple_entries") {
-          replyText = `我聽到：「${transcript}」\n\n目前一次只支援一筆記帳，請分開錄製；這次沒有寫入帳本。`;
+          replyText = voiceClarificationText(transcript, candidate);
           voiceStatus = "multiple_entries";
+        } else if (candidate.entries) {
+          stageVoiceBatch(options.store, userId, event, transcript, candidate, config);
+          replyText = voiceConfirmationText(transcript, candidate.entries);
+          messages = [voiceConfirmationMessage(replyText)];
+          parser = candidate.parser;
+          voiceStatus = "awaiting_confirmation";
+          pending = true;
         } else if (!candidate.entry) {
           replyText = voiceClarificationText(transcript, candidate);
           voiceStatus = "unrecognized";
@@ -1213,6 +1260,15 @@ function reviewMessages(text, confirm = false) {
 
 function statementReviewText(parsed) {
   if (!parsed.unresolved.length) return batchReviewText(parsed.entries);
+  if (parsed.clarification) {
+    const needsYear = parsed.clarification.rows.some(row => !row.date);
+    const needsCurrency = parsed.clarification.rows.some(row => row.currency === "unknown");
+    return [`已擷取 ${parsed.reviewLines.length} 筆，尚未入帳。`, ...parsed.reviewLines.map(line => line.split("\n待補：")[0]),
+      "請先核對上列用途與金額。信用卡消費與繳卡費請勿重複計入。",
+      needsYear ? "這批明細是哪一年？可直接回覆「全部為 2026 年」（請填實際年份）。" : "年份已補齊。",
+      needsCurrency ? "金額是什麼幣別？可直接回覆「台幣」。目前只支援台幣，不會自動換匯。" : "幣別已確認為台幣。",
+      "可分次回答。補齊年份與幣別即代表確認上列明細，檢查無重複後會整批入帳；若有錯誤請先輸入「取消」。待補資料保留 30 分鐘。"].join("\n");
+  }
   return [`已擷取 ${parsed.reviewLines.length} 筆明細，尚未入帳。`, ...parsed.reviewLines,
     "信用卡商家消費與繳卡費是不同項目；已記過的消費不要重複計入。",
     "資料尚待補充，本批全部不入帳。", ...parsed.unresolved,
@@ -1231,7 +1287,7 @@ function stageStatementReview(store, userId, parsed, sourceMessageId, commandId)
     return true;
   }
   if (parsed.clarification) store.startLinePendingInput({ lineUserId: userId, type: "image_clarification", label: "圖片年份／幣別待補", sourceMessageId: commandId,
-    payload: { clarification: parsed.clarification, sourceMessageId } });
+    payload: { clarification: parsed.clarification, sourceMessageId, autoCommitAfterClarification: true } });
   return false;
 }
 
@@ -1292,19 +1348,27 @@ async function handleLineWebhook(rawBody, options = {}) {
     if (event.message?.type !== "text") continue;
     const text = String(event.message.text || "");
     const userId = event.source?.userId || "";
-    if (/^圖片補充/.test(text.trim())) {
-      let reply, confirm = false;
+    const imagePending = options.store && userId ? options.store.linePendingInput(userId) : null;
+    if (/^圖片補充/.test(text.trim()) || (imagePending?.type === "image_clarification" && !parseLineCommand(text) && !["啟用圖片記帳", "同意並啟用圖片記帳", "停用圖片記帳"].includes(text.trim()))) {
+      let reply, confirm = false, ledgerCount = 0;
       try {
         if (!options.store || !userId || event.source?.type !== "user") throw statementError("請在與官方帳號的一對一聊天補充圖片資料。");
         if (process.env.LINE_IMAGE_PARSER_ENABLED !== "1" || !options.store.lineImageConsent(userId)) throw statementError("圖片記帳已停用，沒有變更待確認資料。");
         const pending = options.store.linePendingInput(userId);
         if (pending?.type !== "image_clarification") throw statementError("目前沒有待補充的圖片，可能已取消或超過 30 分鐘；請重新傳送。");
-        const match = text.trim().match(/^圖片補充\s+(\d{4})\s*(?:年)?\s+(台幣|新台幣|TWD)\s*$/i);
-        const parsed = clarifyStatement(pending.payload.clarification, match ? Number(match[1]) : null, match ? "TWD" : null);
+        const answer = parseStatementAnswer(text);
+        if (!answer) throw statementError("目前正補充這批圖片。請直接回覆年份，例如「全部為 2026 年」，或幣別，例如「台幣」；也可輸入「取消」。原明細仍保留，尚未入帳。");
+        const parsed = clarifyStatement(pending.payload.clarification, answer.year, answer.currency);
         confirm = stageStatementReview(options.store, userId, parsed, pending.payload.sourceMessageId, event.message.id);
         reply = statementReviewText(parsed);
+        if (confirm && pending.payload.autoCommitAfterClarification === true) {
+          const entries = options.store.confirmLineBatch(userId);
+          ledgerCount = entries.length;
+          confirm = false;
+          reply = `補充完成，已整批入帳 ${entries.length} 筆。\n${batchReviewText(entries).split("\n").slice(1, -2).join("\n")}\n如有錯誤可輸入「按錯」。`;
+        }
       } catch (error) { reply = error.statementSafe ? error.message : "圖片資料補充失敗，尚未入帳，請重新核對。"; }
-      replies.push({ messageType: "text", ledgerCount: 0, pending: confirm, ...await replyLineMessage(event.replyToken, reviewMessages(reply, confirm)) });
+      replies.push({ messageType: "text", ledgerCount, pending: confirm, ...await replyLineMessage(event.replyToken, reviewMessages(reply, confirm)) });
       continue;
     }
     if (["啟用圖片記帳", "同意並啟用圖片記帳", "停用圖片記帳"].includes(text.trim())) {
@@ -1417,7 +1481,12 @@ async function handleLineWebhook(rawBody, options = {}) {
           } else if (parsed.command === "confirm_current") {
             const pending = options.store.linePendingInput(userId);
             const payload = pending?.type === "voice_confirmation" ? pending.payload : null;
-            if (pending?.type === "batch_confirmation") {
+            if (pending?.type === "voice_confirmation" && payload?.entries) {
+              if (event.source?.type !== "user") throw new Error("請在一對一聊天確認語音明細。");
+              const entries = options.store.confirmLineVoiceBatch(userId);
+              ledgerResult = { entries, summary: options.store.lineLedgerSummary(userId), parser: "voice_rules" };
+              replyText = batchSummaryReplyText(entries, ledgerResult.summary);
+            } else if (pending?.type === "batch_confirmation") {
               try {
                 if (pending.payload?.parser === "statement_image" && event.source?.type !== "user") throw new Error("請在與官方帳號的一對一聊天確認圖片明細。");
                 const entries = options.store.confirmLineBatch(userId);
