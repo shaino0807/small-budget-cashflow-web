@@ -69,6 +69,8 @@ function validateStatement(payload) {
   payload.rows.forEach((row, index) => {
     if (!row || typeof row !== "object") { unresolved.push(`第 ${index + 1} 筆無法辨識，請重傳。`); canClarify = false; return; }
     row = { ...row, currency: normalizeStatementCurrency(row.currency) };
+    // This TWD-only product treats an unmarked amount as TWD; explicit foreign currencies remain blocked.
+    if (row.currency === "unknown") row.currency = "TWD";
     const date = typeof row.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(row.date) ? new Date(`${row.date}T12:00:00+08:00`) : null;
     const evidence = typeof row.dateEvidence === "string" && row.dateEvidence.length <= 32
       ? row.dateEvidence.trim().match(/^(\d{4})[\s年/.-]+(\d{1,2})[\s月/.-]+(\d{1,2})日?$/) : null;

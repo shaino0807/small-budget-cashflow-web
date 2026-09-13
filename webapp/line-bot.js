@@ -259,6 +259,8 @@ function normalizeVoiceTranscript(text) {
   const currencyPattern = new RegExp(`([${numerals}]+)(?=\\s*(?:元|塊錢?|台幣|twd))`, "gi");
   const amountContextPattern = new RegExp(`((?:花了?|買了?|付了?|繳了?|支出|收入|月薪|薪水|獎金|配息|收到|賣出|賣|投資|早餐|午餐|晚餐|宵夜|飲料|咖啡|房租|租金|交通|加油|停車費?|保險|保費|水費|電費|瓦斯|網路|電話費|手機費)\\s*)([${numerals}]+)`, "gi");
   return String(text || "")
+    .replace(new RegExp(`([${numerals}]+)(?=\\s*[年月日號])`, "g"), (_, value) => convert(value))
+    .replace(/(\d)\s*([年月日號])\s*/g, "$1$2")
     // Preserve the spoken boundary between a numeric ticker and a Chinese amount.
     // Example: 「買0050一萬元」 must become 「買0050 10000元」, not 「買005010000元」.
     .replace(currencyPattern, (_, value) => ` ${convert(value)}`)
@@ -1025,6 +1027,13 @@ function parseVoiceLedgerTranscript(transcript) {
 
 function parseSingleVoiceLedgerTranscript(transcript) {
   const normalized = normalizeVoiceTranscript(transcript);
+  const spokenDate = normalized.match(/(?:(\d{4})[年/-])?(\d{1,2})[月/-](\d{1,2})[日號]?/);
+  if (spokenDate) {
+    const actual = taipeiDateParts(new Date(parseOccurredAt(normalized)));
+    if ((spokenDate[1] && actual.year !== Number(spokenDate[1])) || actual.month !== Number(spokenDate[2]) || actual.day !== Number(spokenDate[3])) {
+      return { intent: "help", reason: "invalid_date", clarification: "日期不存在，請核對年月日後重新提供。" };
+    }
+  }
   const withoutDateOrTicker = normalized
     .replace(/(?:\d{4}[年/-])?\d{1,2}[月/-]\d{1,2}日?/g, " ")
     .replace(/\b(?:00\d{2,4}|0\d{4,5})\b/g, " ");
@@ -1047,6 +1056,7 @@ function parseSingleVoiceLedgerTranscript(transcript) {
   if ((!purposeText && !parsed.ticker) || (parsed.intent !== "ledger" && !/missing_.*amount/.test(parsed.reason || ""))) missing.push("用途（例如停車費或晚餐）");
   if (missing.length) return { intent: "help", reason: "missing_fields", clarification: `還缺少：${missing.join("、")}。請補齊後重新說一次。` };
   if (parsed.intent !== "ledger") return { ...parsed, clarification: "用途或交易類型尚無法確認，請說明是收入、支出或投資，以及實際金額。" };
+  parsed.note = compactNote(normalized.replace(/(?:\d{4}[年/-])?\d{1,2}[月/-]\d{1,2}[日號]?/g, ""));
   return parsed;
 }
 
@@ -1266,8 +1276,8 @@ function statementReviewText(parsed) {
     return [`已擷取 ${parsed.reviewLines.length} 筆，尚未入帳。`, ...parsed.reviewLines.map(line => line.split("\n待補：")[0]),
       "請先核對上列用途與金額。信用卡消費與繳卡費請勿重複計入。",
       needsYear ? "這批明細是哪一年？可直接回覆「全部為 2026 年」（請填實際年份）。" : "年份已補齊。",
-      needsCurrency ? "金額是什麼幣別？可直接回覆「台幣」。目前只支援台幣，不會自動換匯。" : "幣別已確認為台幣。",
-      "可分次回答。補齊年份與幣別即代表確認上列明細，檢查無重複後會整批入帳；若有錯誤請先輸入「取消」。待補資料保留 30 分鐘。"].join("\n");
+      needsCurrency ? "金額是什麼幣別？可直接回覆「台幣」。目前只支援台幣，不會自動換匯。" : "金額以台幣計，不會自動換匯。",
+      "補齊日期即代表確認上列明細，檢查無重複後會整批入帳；若有錯誤請先輸入「取消」。待補資料保留 30 分鐘。"].join("\n");
   }
   return [`已擷取 ${parsed.reviewLines.length} 筆明細，尚未入帳。`, ...parsed.reviewLines,
     "信用卡商家消費與繳卡費是不同項目；已記過的消費不要重複計入。",
@@ -1350,7 +1360,7 @@ async function handleLineWebhook(rawBody, options = {}) {
     const userId = event.source?.userId || "";
     const imagePending = options.store && userId ? options.store.linePendingInput(userId) : null;
     if (/^圖片補充/.test(text.trim()) || (imagePending?.type === "image_clarification" && !parseLineCommand(text) && !["啟用圖片記帳", "同意並啟用圖片記帳", "停用圖片記帳"].includes(text.trim()))) {
-      let reply, confirm = false, ledgerCount = 0;
+      let reply, confirm = false, ledgerCount = 0, recordedEntries = [];
       try {
         if (!options.store || !userId || event.source?.type !== "user") throw statementError("請在與官方帳號的一對一聊天補充圖片資料。");
         if (process.env.LINE_IMAGE_PARSER_ENABLED !== "1" || !options.store.lineImageConsent(userId)) throw statementError("圖片記帳已停用，沒有變更待確認資料。");
@@ -1364,11 +1374,23 @@ async function handleLineWebhook(rawBody, options = {}) {
         if (confirm && pending.payload.autoCommitAfterClarification === true) {
           const entries = options.store.confirmLineBatch(userId);
           ledgerCount = entries.length;
+          recordedEntries = entries;
           confirm = false;
           reply = `補充完成，已整批入帳 ${entries.length} 筆。\n${batchReviewText(entries).split("\n").slice(1, -2).join("\n")}\n如有錯誤可輸入「按錯」。`;
         }
       } catch (error) { reply = error.statementSafe ? error.message : "圖片資料補充失敗，尚未入帳，請重新核對。"; }
-      replies.push({ messageType: "text", ledgerCount, pending: confirm, ...await replyLineMessage(event.replyToken, reviewMessages(reply, confirm)) });
+      const messages = reviewMessages(reply, confirm);
+      if (recordedEntries.length) {
+        const months = [...new Set(recordedEntries.map(entry => {
+          const date = taipeiDateParts(new Date(entry.occurredAt));
+          return `${date.year}-${String(date.month).padStart(2, "0")}`;
+        }))];
+        // Keep the complete receipt and append summaries within LINE's five-message limit.
+        for (const month of months.slice(0, Math.max(0, 5 - messages.length))) {
+          messages.push(summaryFlexMessage(`已入帳 ${recordedEntries.length} 筆圖片明細`, "補充完成，已整批保存", options.store.lineLedgerSummary(userId, month)));
+        }
+      }
+      replies.push({ messageType: "text", ledgerCount, pending: confirm, ...await replyLineMessage(event.replyToken, messages) });
       continue;
     }
     if (["啟用圖片記帳", "同意並啟用圖片記帳", "停用圖片記帳"].includes(text.trim())) {
