@@ -19,7 +19,7 @@ function signature(body) {
   return crypto.createHmac("sha256", lineSecret).update(body).digest("base64");
 }
 
-function request(pathname, { method = "POST", body, headers = {} } = {}) {
+function request(pathname, { method = "POST", body, headers = {}, timeoutMs = 10000 } = {}) {
   return new Promise((resolve, reject) => {
     const payload = Buffer.from(body || "", "utf8");
     const req = http.request(`${baseUrl}${pathname}`, {
@@ -38,20 +38,26 @@ function request(pathname, { method = "POST", body, headers = {} } = {}) {
       });
     });
     req.on("error", reject);
+    req.setTimeout(timeoutMs, () => req.destroy(new Error("Local API request timed out")));
     req.end(payload);
   });
 }
 
-async function waitForServer() {
-  for (let index = 0; index < 40; index++) {
+async function waitForServer(server) {
+  const deadline = Date.now() + 30000;
+  let lastError = "no response";
+  while (Date.now() < deadline) {
+    if (server.exitCode !== null || server.signalCode) throw new Error(`API server exited before readiness (code=${server.exitCode}, signal=${server.signalCode})`);
     try {
-      const response = await fetch(`${baseUrl}/api/health`);
-      if (response.ok) return response.json();
-    } catch {
-      await wait(150);
-    }
+      // Use Node HTTP consistently with the API tests. fetch rejects some valid
+      // local ports (e.g. 6000), which the randomized test port can select.
+      const response = await request("/api/health", { method: "GET", timeoutMs: 1500 });
+      if (response.status === 200) return response.body;
+      lastError = `HTTP ${response.status}`;
+    } catch (error) { lastError = error.code || error.message; }
+    await wait(150);
   }
-  throw new Error("API server did not start");
+  throw new Error(`API server did not become ready within 30 seconds (${lastError})`);
 }
 
 function lineEventBody(message, id = `event-${message.id}`, userId = "Uvoice") {
@@ -670,7 +676,7 @@ async function main() {
     stdio: "ignore"
   });
   try {
-    const health = await waitForServer();
+    const health = await waitForServer(server);
     if (
       !health.line?.configured
       || !health.line.replyDisabled

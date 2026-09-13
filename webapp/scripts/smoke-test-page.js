@@ -53,15 +53,15 @@ function fetchJson(url) {
           reject(error);
         }
       });
-    }).on("error", reject);
+    }).on("error", reject).setTimeout(1500, function () { this.destroy(new Error("Local DevTools request timed out")); });
   });
 }
 
-async function waitForHttp(url, timeoutMs = 10000) {
+async function waitForHttp(url, timeoutMs = 30000) {
   const started = Date.now();
   while (Date.now() - started < timeoutMs) {
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, { signal: AbortSignal.timeout(1500) });
       if (response.ok) return true;
     } catch {
       // retry
@@ -157,15 +157,18 @@ async function main() {
 
     let version;
     const versionUrl = `http://127.0.0.1:${debuggingPort}/json/version`;
-    for (let i = 0; i < 40; i++) {
+    const versionDeadline = Date.now() + 30000;
+    let lastVersionError = "no response";
+    while (Date.now() < versionDeadline) {
+      if (chromeProcess.exitCode !== null || chromeProcess.signalCode) throw new Error(`Chrome exited before DevTools readiness (code=${chromeProcess.exitCode}, signal=${chromeProcess.signalCode})`);
       try {
         version = await fetchJson(versionUrl);
-        break;
-      } catch {
-        await wait(250);
-      }
+        if (version?.webSocketDebuggerUrl) break;
+        lastVersionError = "missing debugger URL";
+      } catch (error) { lastVersionError = error.code || error.message; }
+      await wait(250);
     }
-    if (!version?.webSocketDebuggerUrl) throw new Error("Chrome DevTools endpoint did not start");
+    if (!version?.webSocketDebuggerUrl) throw new Error(`Chrome DevTools endpoint did not start within 30 seconds (${lastVersionError})`);
     const targets = await fetchJson(`http://127.0.0.1:${debuggingPort}/json/list`);
     const pageTarget = targets.find((target) => target.type === "page" && target.webSocketDebuggerUrl);
     if (!pageTarget) throw new Error("Chrome page target did not start");
