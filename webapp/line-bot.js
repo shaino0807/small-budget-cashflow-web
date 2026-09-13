@@ -1,5 +1,5 @@
 const crypto = require("crypto");
-const { readStatementImage, parseStatementImage, statementError } = require("./statement-reader");
+const { readStatementImage, parseStatementImage, clarifyStatement, statementError } = require("./statement-reader");
 
 const lineReplyEndpoint = "https://api.line.me/v2/bot/message/reply";
 const lineContentEndpoint = "https://api-data.line.me/v2/bot/message";
@@ -255,7 +255,7 @@ function normalizeVoiceTranscript(text) {
   };
   const numerals = "零〇一二兩两三四五六七八九十百千萬万億亿";
   const currencyPattern = new RegExp(`([${numerals}]+)(?=\\s*(?:元|塊錢?|台幣|twd))`, "gi");
-  const amountContextPattern = new RegExp(`((?:花了?|買了?|付了?|繳了?|支出|收入|月薪|薪水|獎金|配息|收到|賣出|賣|投資|早餐|午餐|晚餐|宵夜|飲料|咖啡|房租|租金|交通|加油|停車|保險|保費|水費|電費|瓦斯|網路|電話費|手機費)\\s*)([${numerals}]+)`, "gi");
+  const amountContextPattern = new RegExp(`((?:花了?|買了?|付了?|繳了?|支出|收入|月薪|薪水|獎金|配息|收到|賣出|賣|投資|早餐|午餐|晚餐|宵夜|飲料|咖啡|房租|租金|交通|加油|停車費?|保險|保費|水費|電費|瓦斯|網路|電話費|手機費)\\s*)([${numerals}]+)`, "gi");
   return String(text || "")
     // Preserve the spoken boundary between a numeric ticker and a Chinese amount.
     // Example: 「買0050一萬元」 must become 「買0050 10000元」, not 「買005010000元」.
@@ -1008,7 +1008,22 @@ function parseVoiceLedgerTranscript(transcript) {
   const segments = normalized.split(/[,，、;；。]|(?:以及|還有)/).map((value) => value.trim()).filter(Boolean);
   const ledgerSegments = segments.map((value) => parseLedgerMessage(value)).filter((value) => value.intent === "ledger");
   if (amountMatches.length > 1 || ledgerSegments.length > 1) return { intent: "help", reason: "multiple_entries" };
-  return parseLedgerMessage(normalized);
+  const parsed = parseLedgerMessage(normalized);
+  const purposes = [...new Set(normalized.match(/早餐|午餐|晚餐|宵夜|飲料|咖啡|停車費?|加油|房租|租金|保費|水費|電費|電話費|手機費/g) || [])];
+  // One amount must not silently swallow a second purpose, even without punctuation.
+  if (amountMatches.length === 1 && (purposes.length > 1 || (segments.length > 1 && ledgerSegments.length === 1 && segments.some(segment => parseLedgerMessage(segment).reason === "missing_expense_amount")))) {
+    return { intent: "help", reason: "ambiguous_amount_scope", clarification: `有辨識到金額 ${formatMoney(firstAmount(normalized))}，但提到${purposes.length ? `「${purposes.join("、")}」` : "多個用途"}。請確認這是其中一筆還是合計；若為多筆，請分開說明每筆金額。` };
+  }
+  const missing = [];
+  const hasDate = /今天|今日|昨天|昨日|前天|(?:\d{4}[年/-])?\d{1,2}[月/-]\d{1,2}[日號]?/.test(normalized);
+  if (!hasDate) missing.push("日期（例如今天、昨天或 9 月 8 日）");
+  if (!amountMatches.length || !firstAmount(normalized)) missing.push("金額");
+  const purposeText = withoutDateOrTicker.replace(/\d+(?:\.\d+)?\s*(?:元|塊|台幣|twd)?/gi, "")
+    .replace(/今天|今日|昨天|昨日|前天|花了?|付了?|繳了?|買了?|支出|收入|[\s，,。；;、]/g, "");
+  if ((!purposeText && !parsed.ticker) || (parsed.intent !== "ledger" && !/missing_.*amount/.test(parsed.reason || ""))) missing.push("用途（例如停車費或晚餐）");
+  if (missing.length) return { intent: "help", reason: "missing_fields", clarification: `還缺少：${missing.join("、")}。請補齊後重新說一次。` };
+  if (parsed.intent !== "ledger") return { ...parsed, clarification: "用途或交易類型尚無法確認，請說明是收入、支出或投資，以及實際金額。" };
+  return parsed;
 }
 
 function voiceLedgerCandidate(parsed) {
@@ -1017,7 +1032,11 @@ function voiceLedgerCandidate(parsed) {
     return { entry: parsed.entries[0], parser: parsed.parser || "ai" };
   }
   if (parsed?.intent === "ledger_batch" && parsed.entries?.length > 1) return { reason: "multiple_entries" };
-  return { reason: parsed?.reason || "unrecognized" };
+  return { reason: parsed?.reason || "unrecognized", clarification: parsed?.clarification };
+}
+
+function voiceClarificationText(transcript, candidate) {
+  return `我聽到：「${transcript}」\n\n${candidate.clarification || "請補充日期、用途與金額。"}\n這次沒有寫入帳本。`;
 }
 
 function voiceConfirmationText(transcript, entry) {
@@ -1092,7 +1111,7 @@ async function handleLineAudioEvent(event, options = {}) {
               replyText = `我聽到：「${transcript}」\n\n目前一次只支援一筆記帳，請分開錄製；這次沒有寫入帳本。`;
               voiceStatus = "multiple_entries";
             } else if (!candidate.entry) {
-              replyText = `我聽到：「${transcript}」\n\n還缺少可確認的用途或金額，請用「日期、用途、金額」重新說一次；這次沒有寫入帳本。`;
+              replyText = voiceClarificationText(transcript, candidate);
               voiceStatus = "unrecognized";
             } else {
               parser = candidate.parser;
@@ -1131,7 +1150,7 @@ async function handleLineAudioEvent(event, options = {}) {
           replyText = `我聽到：「${transcript}」\n\n目前一次只支援一筆記帳，請分開錄製；這次沒有寫入帳本。`;
           voiceStatus = "multiple_entries";
         } else if (!candidate.entry) {
-          replyText = `我聽到：「${transcript}」\n\n還缺少可確認的用途或金額，請用「日期、用途、金額」重新說一次；這次沒有寫入帳本。`;
+          replyText = voiceClarificationText(transcript, candidate);
           voiceStatus = "unrecognized";
         } else {
           parser = candidate.parser;
@@ -1192,6 +1211,30 @@ function reviewMessages(text, confirm = false) {
   return chunks;
 }
 
+function statementReviewText(parsed) {
+  if (!parsed.unresolved.length) return batchReviewText(parsed.entries);
+  return [`已擷取 ${parsed.reviewLines.length} 筆明細，尚未入帳。`, ...parsed.reviewLines,
+    "信用卡商家消費與繳卡費是不同項目；已記過的消費不要重複計入。",
+    "資料尚待補充，本批全部不入帳。", ...parsed.unresolved,
+    parsed.clarification ? "若這批明細只有年份／幣別待補，請回覆「圖片補充 西元年份 台幣」，例如：圖片補充 2026 台幣。請使用實際年份與幣別；30 分鐘內可補充，之後仍須核對並確認入帳。" : "請依各筆缺少的欄位補齊後重新提供明細。",
+    "可輸入「取消」結束。"].join("\n");
+}
+
+function stageStatementReview(store, userId, parsed, sourceMessageId, commandId) {
+  const duplicates = store.lineBatchDuplicateWarnings(userId, parsed.entries);
+  parsed.unresolved.push(...duplicates);
+  if (duplicates.length) parsed.clarification = null;
+  store.clearLinePendingInput({ lineUserId: userId });
+  if (!parsed.unresolved.length && parsed.entries.length) {
+    store.startLinePendingInput({ lineUserId: userId, type: "batch_confirmation", label: "圖片明細確認", sourceMessageId: commandId,
+      payload: { entries: parsed.entries, sourceMessageId, parser: "statement_image" } });
+    return true;
+  }
+  if (parsed.clarification) store.startLinePendingInput({ lineUserId: userId, type: "image_clarification", label: "圖片年份／幣別待補", sourceMessageId: commandId,
+    payload: { clarification: parsed.clarification, sourceMessageId } });
+  return false;
+}
+
 async function handleStatementEvent(event, options) {
   const userId = event.source?.userId, store = options.store;
   const attemptId = event.message?.id;
@@ -1221,14 +1264,8 @@ async function handleStatementEvent(event, options) {
       if (store.lineSourceMessageHandled({ lineUserId: userId, sourceMessageId: `${image.hash}:1` })) throw statementError("這張圖片已經入帳，不會重複記錄。");
       const parsed = await parseStatementImage(image, { fetchImpl: options.fetchImpl || fetch });
       assertActive();
-      parsed.unresolved.push(...store.lineBatchDuplicateWarnings(userId, parsed.entries));
-      store.clearLinePendingInput({ lineUserId: userId });
-      replyText = batchReviewText(parsed.entries, parsed.unresolved);
-      if (!parsed.unresolved.length && parsed.entries.length) {
-        store.startLinePendingInput({ lineUserId: userId, type: "batch_confirmation", label: "圖片明細確認", sourceMessageId: event.message.id,
-          payload: { entries: parsed.entries, sourceMessageId: image.hash, parser: "statement_image" } });
-        pending = true;
-      }
+      pending = stageStatementReview(store, userId, parsed, image.hash, event.message.id);
+      replyText = statementReviewText(parsed);
     }
   } catch (error) {
     if (startedAttempt && ownsAttempt()) store.clearLinePendingInput({ lineUserId: userId });
@@ -1255,6 +1292,21 @@ async function handleLineWebhook(rawBody, options = {}) {
     if (event.message?.type !== "text") continue;
     const text = String(event.message.text || "");
     const userId = event.source?.userId || "";
+    if (/^圖片補充/.test(text.trim())) {
+      let reply, confirm = false;
+      try {
+        if (!options.store || !userId || event.source?.type !== "user") throw statementError("請在與官方帳號的一對一聊天補充圖片資料。");
+        if (process.env.LINE_IMAGE_PARSER_ENABLED !== "1" || !options.store.lineImageConsent(userId)) throw statementError("圖片記帳已停用，沒有變更待確認資料。");
+        const pending = options.store.linePendingInput(userId);
+        if (pending?.type !== "image_clarification") throw statementError("目前沒有待補充的圖片，可能已取消或超過 30 分鐘；請重新傳送。");
+        const match = text.trim().match(/^圖片補充\s+(\d{4})\s*(?:年)?\s+(台幣|新台幣|TWD)\s*$/i);
+        const parsed = clarifyStatement(pending.payload.clarification, match ? Number(match[1]) : null, match ? "TWD" : null);
+        confirm = stageStatementReview(options.store, userId, parsed, pending.payload.sourceMessageId, event.message.id);
+        reply = statementReviewText(parsed);
+      } catch (error) { reply = error.statementSafe ? error.message : "圖片資料補充失敗，尚未入帳，請重新核對。"; }
+      replies.push({ messageType: "text", ledgerCount: 0, pending: confirm, ...await replyLineMessage(event.replyToken, reviewMessages(reply, confirm)) });
+      continue;
+    }
     if (["啟用圖片記帳", "同意並啟用圖片記帳", "停用圖片記帳"].includes(text.trim())) {
       let reply = "圖片記帳後端尚未準備好。";
       if (options.store && userId) {
@@ -1375,6 +1427,8 @@ async function handleLineWebhook(rawBody, options = {}) {
                 replyText = error.statusCode === 409 ? "這批明細已有重複紀錄，本次未新增任何帳目。請取消後核對重傳。"
                   : pending.payload?.parser === "statement_image" ? "這批圖片明細無法確認，可能已停用、逾期、重複或不在一對一聊天，尚未入帳。請取消後重新核對。" : error.message;
               }
+            } else if (pending?.type === "image_clarification") {
+              replyText = "圖片尚缺年份／幣別，請先回覆「圖片補充 西元年份 台幣」，補齊後核對預覽再確認；目前未入帳。";
             } else if (!payload?.entry || !payload.sourceMessageId) {
               replyText = "目前沒有待確認的記帳。請先傳送明細或語音。";
               commandResult = { command: parsed.command, result: { kind: "none" } };
@@ -1682,8 +1736,10 @@ module.exports = {
   parseIncomingMessage,
   parseMultilineLedger,
   batchReviewText,
+  statementReviewText,
   parseLineCommand,
   parseLedgerMessage,
+  parseVoiceLedgerTranscript,
   parseLedgerMessageWithAi,
   summaryFlexMessage,
   verifyLineSignature

@@ -2,7 +2,7 @@ const { spawnSync } = require("node:child_process");
 const path = require("node:path");
 
 const scripts = [
-  "test-source-date-preservation.js", "test-cashflow-visual.js", "test-ledger-improvements.js", "test-image-privacy.js", "test-public-boundary.js", "test-line-webhook.js", "test-line-auth.js",
+  "test-source-date-preservation.js", "test-cashflow-visual.js", "test-ledger-improvements.js", "test-ledger-clarification.js", "test-image-privacy.js", "test-public-boundary.js", "test-line-webhook.js", "test-line-auth.js",
   "test-line-migration.js", "test-voice-privacy.js", "test-customer-api.js", "test-linepay-client.js"
 ].map((name) => [name]);
 if (process.argv.includes("--browser")) {
