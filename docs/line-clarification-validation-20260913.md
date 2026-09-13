@@ -33,3 +33,12 @@
 - 舊 API 等待約 6 秒、Chrome 等待約 10 秒，且沒有最後錯誤原因。改為有界的 30 秒啟動等待、每次請求逾時及程序提前退出檢查，保留所有功能／畫面斷言。
 - 發現另一個可重現的測試風險：隨機 API port 範圍包含 6000，Node fetch 會直接回報 bad port。健康檢查改用與其他 API 測試相同的 Node HTTP，避免有效本機連線被 fetch 埠限制攔截。原 CI 沒記錄所選埠，不能斷言該次失敗就是 6000。
 - 「我今天花一百八塊錢」「請幫我記帳今天花180元」也納入缺用途案例，避免把口語助詞當用途。
+
+## 正式發布核對（2026-09-13）
+
+- 啟動等待修正後的完整本機回歸通過，日誌 `webapp/reports/clarification-startup-regressions.log`；PR #6 CI run 34729652584 通過。主線 run 34729741240 的 12 項非瀏覽器、手機／桌面回歸及 Pages 發布全部成功；後續 run 34739568635 亦成功。
+- 原修正版 `16716515d088fa5e52db7f22d0a5a3540c4438be` 的 Render 部署已於 01:11 UTC 完成，後來由正常資料更新部署取代，並非上線失敗。
+- 本次恢復工作時，Render live 為 `dep-daj30qou01pc738p4t8g`，提交 `7e7427f7bb8261b5d80b204fbdf15e12f87488c8`。遠端主線為 `caa83af`；兩筆後續提交與修正版只差 ETF 資料，沒有程式差異。
+- 06:37 UTC（台北 14:37）正式健康檢查：`ok=true`、圖片辨識與語音轉錄均啟用、`replyDisabled=false`、登入及資料庫配置正常。Render 仍為 checksPass，自動部署保留既有 /data 磁碟。證據：`webapp/reports/clarification-release-health.json`。
+- 重驗兩個正式網址：各 18 個公开檔案與 Git 程式／素材一致，各 5 個私密路徑回傳 404，API 目的地正確。證據：`webapp/reports/clarification-public-final.json`。
+- 本次未新增付費辨識或上傳真實帳單。正式 LINE 新提示下的辨識結果仍須由使用者重傳核對；不以模擬資料、部署完成或健康狀態冒充真人驗收。
