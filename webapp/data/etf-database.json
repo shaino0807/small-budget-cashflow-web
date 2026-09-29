@@ -1,8 +1,8 @@
 {
   "metadata": {
     "name": "小資現金流地圖 ETF 官方資料庫",
-    "snapshotDate": "2026-09-28",
-    "officialPerformanceDate": "2026-09-24",
+    "snapshotDate": "2026-09-29",
+    "officialPerformanceDate": "2026-09-29",
     "buildMode": "official_twse_etfortune_master_with_quality_flags",
     "sources": [
       {
@@ -110,13 +110,13 @@
       "00878",
       "006208"
     ],
-    "refreshExecutedAt": "2026-09-28T05:43:13.267Z",
+    "refreshExecutedAt": "2026-09-29T06:01:27.209Z",
     "sourceFreshness": {
-      "referenceTradingDate": "2026-09-24",
-      "checkedAt": "2026-09-28T05:43:13.267Z",
+      "referenceTradingDate": "2026-09-29",
+      "checkedAt": "2026-09-29T06:01:27.209Z",
       "sources": {
         "etfMaster": {
-          "observedAt": "2026-09-28T05:43:13.267Z",
+          "observedAt": "2026-09-29T06:01:27.209Z",
           "sourceDataDate": null,
           "status": "observed_without_source_date",
           "evidence": "TWSE ETF e添富商品篩選器回應沒有提供資料日期，不得以執行日冒充交易日"
@@ -124,7 +124,7 @@
         "stockMaster": {
           "observedAt": "2026-09-28T05:43:13.104Z",
           "sourceDataDate": "2026-09-24",
-          "status": "current",
+          "status": "stale",
           "evidence": "所有具官方日期欄位的股票行情列最大日期"
         },
         "twseStockDaily": {
@@ -136,26 +136,26 @@
         "tpexStockDaily": {
           "observedAt": "2026-09-28T05:43:13.104Z",
           "sourceDataDate": "2026-09-24",
-          "status": "current",
-          "lastAttemptStatus": "loaded",
-          "evidence": "目前官方 TPEx 行情資料列的 Date 最大值"
+          "status": "preserved_previous_snapshot",
+          "lastAttemptStatus": "failed",
+          "evidence": "本次更新未取得完整日期資料；保留前次官方行情，日期取保留資料列的 TPEx Date 最大值"
         },
         "priceSeries": {
-          "observedAt": "2026-09-28T05:42:50.613Z",
-          "sourceDataDate": "2026-09-24",
+          "observedAt": "2026-09-29T06:00:25.241Z",
+          "sourceDataDate": "2026-09-29",
           "status": "current",
           "evidence": "TWSE STOCK_DAY 回傳資料列 date 最大值"
         },
         "issuerHoldings": {
-          "observedAt": "2026-09-28T05:43:13.267Z",
+          "observedAt": "2026-09-29T06:01:27.209Z",
           "sourceDataDate": "2026-09-24",
-          "status": "current",
+          "status": "stale",
           "evidence": "投信官方成分股 asOfDate 最大值"
         },
         "issuerNav": {
-          "observedAt": "2026-09-28T05:43:13.267Z",
+          "observedAt": "2026-09-29T06:01:27.209Z",
           "sourceDataDate": "2026-09-24",
-          "status": "current",
+          "status": "stale",
           "evidence": "投信官方 NAV date 最大值"
         }
       }
@@ -182,13 +182,13 @@
       ],
       "aumBillionTwd": 292,
       "beneficiaries": 132509,
-      "ytdAverageValueMillionTwd": 834.59,
-      "ytdAverageVolume": 61166878,
-      "close": 15.66,
+      "ytdAverageValueMillionTwd": 831.156,
+      "ytdAverageVolume": 60883576,
+      "close": 15.51,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.641Z",
+        "observedAt": "2026-09-29T06:00:24.251Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00400A",
@@ -235,13 +235,13 @@
       ],
       "aumBillionTwd": 38,
       "beneficiaries": 17893,
-      "ytdAverageValueMillionTwd": 130.107,
-      "ytdAverageVolume": 10312396,
-      "close": 14.28,
+      "ytdAverageValueMillionTwd": 129.907,
+      "ytdAverageVolume": 10288368,
+      "close": 14.21,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.641Z",
+        "observedAt": "2026-09-29T06:00:24.251Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00401A",
@@ -293,13 +293,13 @@
       ],
       "aumBillionTwd": 65,
       "beneficiaries": 42171,
-      "ytdAverageValueMillionTwd": 131.178,
-      "ytdAverageVolume": 13411244,
-      "close": 10.03,
+      "ytdAverageValueMillionTwd": 129.717,
+      "ytdAverageVolume": 13261384,
+      "close": 9.94,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.641Z",
+        "observedAt": "2026-09-29T06:00:24.251Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00402A",
@@ -350,13 +350,13 @@
       ],
       "aumBillionTwd": 1488,
       "beneficiaries": 844857,
-      "ytdAverageValueMillionTwd": 4963.683,
-      "ytdAverageVolume": 483253671,
-      "close": 10.88,
+      "ytdAverageValueMillionTwd": 4925.105,
+      "ytdAverageVolume": 479444344,
+      "close": 10.7,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.641Z",
+        "observedAt": "2026-09-29T06:00:24.251Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00403A",
@@ -405,13 +405,13 @@
       "themes": [],
       "aumBillionTwd": 43,
       "beneficiaries": 28966,
-      "ytdAverageValueMillionTwd": 138.22,
-      "ytdAverageVolume": 14138341,
-      "close": 9.86,
+      "ytdAverageValueMillionTwd": 137.593,
+      "ytdAverageVolume": 14073765,
+      "close": 9.79,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.641Z",
+        "observedAt": "2026-09-29T06:00:24.251Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00404A",
@@ -455,13 +455,13 @@
       ],
       "aumBillionTwd": 264,
       "beneficiaries": 135920,
-      "ytdAverageValueMillionTwd": 971.638,
-      "ytdAverageVolume": 111873016,
-      "close": 9.39,
+      "ytdAverageValueMillionTwd": 963.763,
+      "ytdAverageVolume": 110932821,
+      "close": 9.25,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.641Z",
+        "observedAt": "2026-09-29T06:00:24.251Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00405A",
@@ -512,13 +512,13 @@
       ],
       "aumBillionTwd": 498,
       "beneficiaries": 182915,
-      "ytdAverageValueMillionTwd": 1125.639,
-      "ytdAverageVolume": 118584193,
-      "close": 10,
+      "ytdAverageValueMillionTwd": 1198.157,
+      "ytdAverageVolume": 125839577,
+      "close": 9.85,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.641Z",
+        "observedAt": "2026-09-29T06:00:24.251Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00406A",
@@ -570,12 +570,12 @@
       ],
       "aumBillionTwd": 241,
       "beneficiaries": 119571,
-      "ytdAverageValueMillionTwd": 893.243,
-      "ytdAverageVolume": 93691056,
-      "close": 10.16,
+      "ytdAverageValueMillionTwd": 884.209,
+      "ytdAverageVolume": 92720771,
+      "close": 10.02,
       "performance": {
         "date": null,
-        "observedAt": "2026-09-28T05:42:48.641Z",
+        "observedAt": "2026-09-29T06:00:24.251Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date",
         "source": "twse-etfortune-products"
       },
@@ -629,12 +629,12 @@
       ],
       "aumBillionTwd": 15,
       "beneficiaries": 8067,
-      "ytdAverageValueMillionTwd": 45.307,
-      "ytdAverageVolume": 4491892,
-      "close": 10.55,
+      "ytdAverageValueMillionTwd": 44.594,
+      "ytdAverageVolume": 4420724,
+      "close": 10.44,
       "performance": {
         "date": null,
-        "observedAt": "2026-09-28T05:42:48.641Z",
+        "observedAt": "2026-09-29T06:00:24.251Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date",
         "source": "twse-etfortune-products"
       },
@@ -679,12 +679,12 @@
       ],
       "aumBillionTwd": 173,
       "beneficiaries": 46395,
-      "ytdAverageValueMillionTwd": 398.375,
-      "ytdAverageVolume": 40270006,
-      "close": 10.15,
+      "ytdAverageValueMillionTwd": 386.131,
+      "ytdAverageVolume": 39022950,
+      "close": 9.96,
       "performance": {
         "date": null,
-        "observedAt": "2026-09-28T05:42:48.641Z",
+        "observedAt": "2026-09-29T06:00:24.251Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date",
         "source": "twse-etfortune-products"
       },
@@ -732,12 +732,12 @@
       ],
       "aumBillionTwd": 19,
       "beneficiaries": 9590,
-      "ytdAverageValueMillionTwd": 135.251,
-      "ytdAverageVolume": 12217762,
-      "close": 12.4,
+      "ytdAverageValueMillionTwd": 132.54,
+      "ytdAverageVolume": 11966543,
+      "close": 12.37,
       "performance": {
         "date": null,
-        "observedAt": "2026-09-28T05:42:48.641Z",
+        "observedAt": "2026-09-29T06:00:24.251Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date",
         "source": "twse-etfortune-products"
       },
@@ -781,13 +781,13 @@
       ],
       "aumBillionTwd": 24801,
       "beneficiaries": 3539949,
-      "ytdAverageValueMillionTwd": 11966.26,
-      "ytdAverageVolume": 131652474,
-      "close": 112.4,
+      "ytdAverageValueMillionTwd": 11962.131,
+      "ytdAverageVolume": 131479203,
+      "close": 111.3,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.641Z",
+        "observedAt": "2026-09-29T06:00:24.251Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/0050",
@@ -838,13 +838,13 @@
       ],
       "aumBillionTwd": 37,
       "beneficiaries": 12653,
-      "ytdAverageValueMillionTwd": 12.169,
-      "ytdAverageVolume": 97571,
-      "close": 148.15,
+      "ytdAverageValueMillionTwd": 12.134,
+      "ytdAverageVolume": 97249,
+      "close": 146.9,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.641Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/0051",
@@ -891,13 +891,13 @@
       ],
       "aumBillionTwd": 1664,
       "beneficiaries": 451795,
-      "ytdAverageValueMillionTwd": 2052.898,
-      "ytdAverageVolume": 40209536,
-      "close": 65.4,
+      "ytdAverageValueMillionTwd": 2046.034,
+      "ytdAverageVolume": 40055695,
+      "close": 64.95,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.641Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/0052",
@@ -944,13 +944,13 @@
       ],
       "aumBillionTwd": 27,
       "beneficiaries": 7159,
-      "ytdAverageValueMillionTwd": 10.56,
-      "ytdAverageVolume": 47984,
-      "close": 253.3,
+      "ytdAverageValueMillionTwd": 10.734,
+      "ytdAverageVolume": 48644,
+      "close": 250.8,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.641Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/0053",
@@ -997,13 +997,13 @@
       ],
       "aumBillionTwd": 44,
       "beneficiaries": 17218,
-      "ytdAverageValueMillionTwd": 19.308,
-      "ytdAverageVolume": 476021,
-      "close": 49.54,
+      "ytdAverageValueMillionTwd": 19.44,
+      "ytdAverageVolume": 478189,
+      "close": 49.21,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.641Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/0055",
@@ -1054,7 +1054,7 @@
         "fiveYears": 124.67,
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/0056",
@@ -1074,9 +1074,9 @@
       "managerType": "被動式ETF",
       "listingDate": "2007-12-26",
       "beneficiaries": 1661306,
-      "ytdAverageValueMillionTwd": 2670.822,
-      "ytdAverageVolume": 60234480,
-      "close": 56.65,
+      "ytdAverageValueMillionTwd": 2667.283,
+      "ytdAverageVolume": 60099042,
+      "close": 56.55,
       "displayClassification": {
         "primary": "高股息",
         "assetClass": "股票型",
@@ -1121,13 +1121,13 @@
       ],
       "aumBillionTwd": 5,
       "beneficiaries": 3498,
-      "ytdAverageValueMillionTwd": 9.005,
-      "ytdAverageVolume": 34134,
-      "close": 333.5,
+      "ytdAverageValueMillionTwd": 9.016,
+      "ytdAverageVolume": 34128,
+      "close": 331.75,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/0057",
@@ -1178,13 +1178,13 @@
       ],
       "aumBillionTwd": 23,
       "beneficiaries": 5979,
-      "ytdAverageValueMillionTwd": 7.271,
-      "ytdAverageVolume": 299224,
-      "close": 24.1,
+      "ytdAverageValueMillionTwd": 7.268,
+      "ytdAverageVolume": 299195,
+      "close": 23.34,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/0061",
@@ -1235,13 +1235,13 @@
       ],
       "aumBillionTwd": 21,
       "beneficiaries": 3587,
-      "ytdAverageValueMillionTwd": 3.362,
-      "ytdAverageVolume": 19162,
-      "close": 203.2,
+      "ytdAverageValueMillionTwd": 3.347,
+      "ytdAverageVolume": 19071,
+      "close": 202.05,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/006203",
@@ -1292,13 +1292,13 @@
       ],
       "aumBillionTwd": 4,
       "beneficiaries": 1145,
-      "ytdAverageValueMillionTwd": 4.181,
-      "ytdAverageVolume": 19961,
-      "close": 238.45,
+      "ytdAverageValueMillionTwd": 4.201,
+      "ytdAverageVolume": 20028,
+      "close": 237.2,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/006204",
@@ -1347,13 +1347,13 @@
       "themes": [],
       "aumBillionTwd": 37,
       "beneficiaries": 8804,
-      "ytdAverageValueMillionTwd": 23.331,
-      "ytdAverageVolume": 571759,
-      "close": 39.82,
+      "ytdAverageValueMillionTwd": 23.288,
+      "ytdAverageVolume": 570800,
+      "close": 39.2,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/006205",
@@ -1396,13 +1396,13 @@
       ],
       "aumBillionTwd": 11,
       "beneficiaries": 3078,
-      "ytdAverageValueMillionTwd": 3.596,
-      "ytdAverageVolume": 95916,
-      "close": 37.21,
+      "ytdAverageValueMillionTwd": 3.64,
+      "ytdAverageVolume": 97134,
+      "close": 36.63,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/006206",
@@ -1453,13 +1453,13 @@
       ],
       "aumBillionTwd": 7,
       "beneficiaries": 1603,
-      "ytdAverageValueMillionTwd": 9.234,
-      "ytdAverageVolume": 283986,
-      "close": 31.7,
+      "ytdAverageValueMillionTwd": 9.289,
+      "ytdAverageVolume": 285835,
+      "close": 31.04,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/006207",
@@ -1514,7 +1514,7 @@
         "fiveYears": 239.5,
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/006208",
@@ -1534,9 +1534,9 @@
       "managerType": "被動式ETF",
       "listingDate": "2012-07-17",
       "beneficiaries": 712360,
-      "ytdAverageValueMillionTwd": 998.368,
-      "ytdAverageVolume": 4893302,
-      "close": 256.85,
+      "ytdAverageValueMillionTwd": 996.547,
+      "ytdAverageVolume": 4880652,
+      "close": 255.2,
       "displayClassification": {
         "primary": "市值型",
         "assetClass": "股票型",
@@ -1580,12 +1580,12 @@
       "aumBillionTwd": 37,
       "beneficiaries": 12,
       "ytdAverageValueMillionTwd": 0.013,
-      "ytdAverageVolume": 1483,
+      "ytdAverageVolume": 1475,
       "close": 0,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00625K",
@@ -1628,13 +1628,13 @@
       ],
       "aumBillionTwd": 2656,
       "beneficiaries": 284072,
-      "ytdAverageValueMillionTwd": 6741.683,
-      "ytdAverageVolume": 176741374,
-      "close": 38.87,
+      "ytdAverageValueMillionTwd": 6727.884,
+      "ytdAverageVolume": 176373526,
+      "close": 38.28,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00631L",
@@ -1685,13 +1685,13 @@
       ],
       "aumBillionTwd": 258,
       "beneficiaries": 66893,
-      "ytdAverageValueMillionTwd": 1581.706,
-      "ytdAverageVolume": 137405206,
-      "close": 9.49,
+      "ytdAverageValueMillionTwd": 1577.351,
+      "ytdAverageVolume": 137107004,
+      "close": 9.57,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00632R",
@@ -1743,13 +1743,13 @@
       ],
       "aumBillionTwd": 57,
       "beneficiaries": 3618,
-      "ytdAverageValueMillionTwd": 174.849,
-      "ytdAverageVolume": 3547976,
-      "close": 46.44,
+      "ytdAverageValueMillionTwd": 174.982,
+      "ytdAverageVolume": 3553317,
+      "close": 43.92,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00633L",
@@ -1797,13 +1797,13 @@
       ],
       "aumBillionTwd": 1,
       "beneficiaries": 761,
-      "ytdAverageValueMillionTwd": 1.582,
-      "ytdAverageVolume": 504149,
-      "close": 3.18,
+      "ytdAverageValueMillionTwd": 1.579,
+      "ytdAverageVolume": 503355,
+      "close": 3.27,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00634R",
@@ -1848,13 +1848,13 @@
       "themes": [],
       "aumBillionTwd": 137,
       "beneficiaries": 57406,
-      "ytdAverageValueMillionTwd": 327.698,
-      "ytdAverageVolume": 6600757,
-      "close": 44.26,
+      "ytdAverageValueMillionTwd": 327.647,
+      "ytdAverageVolume": 6605641,
+      "close": 42.64,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00635U",
@@ -1899,13 +1899,13 @@
       "themes": [],
       "aumBillionTwd": 26,
       "beneficiaries": 8170,
-      "ytdAverageValueMillionTwd": 24.951,
-      "ytdAverageVolume": 907938,
-      "close": 27.1,
+      "ytdAverageValueMillionTwd": 24.927,
+      "ytdAverageVolume": 907251,
+      "close": 26.47,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00636",
@@ -1952,11 +1952,11 @@
       "beneficiaries": 8,
       "ytdAverageValueMillionTwd": 0.002,
       "ytdAverageVolume": 222,
-      "close": 8.63,
+      "close": 8.2,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00636K",
@@ -2003,13 +2003,13 @@
       ],
       "aumBillionTwd": 146,
       "beneficiaries": 11726,
-      "ytdAverageValueMillionTwd": 634.785,
-      "ytdAverageVolume": 31155109,
-      "close": 19.19,
+      "ytdAverageValueMillionTwd": 634.541,
+      "ytdAverageVolume": 31162153,
+      "close": 18.17,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00637L",
@@ -2061,12 +2061,12 @@
       "aumBillionTwd": 2,
       "beneficiaries": 496,
       "ytdAverageValueMillionTwd": 2.293,
-      "ytdAverageVolume": 339852,
-      "close": 6.8,
+      "ytdAverageVolume": 339814,
+      "close": 6.96,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00638R",
@@ -2119,13 +2119,13 @@
       ],
       "aumBillionTwd": 15,
       "beneficiaries": 5675,
-      "ytdAverageValueMillionTwd": 16.784,
-      "ytdAverageVolume": 997030,
-      "close": 15.78,
+      "ytdAverageValueMillionTwd": 16.791,
+      "ytdAverageVolume": 998080,
+      "close": 15.2,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00639",
@@ -2172,13 +2172,13 @@
       ],
       "aumBillionTwd": 7,
       "beneficiaries": 1258,
-      "ytdAverageValueMillionTwd": 36.534,
-      "ytdAverageVolume": 392952,
-      "close": 107.5,
+      "ytdAverageValueMillionTwd": 36.377,
+      "ytdAverageVolume": 391203,
+      "close": 105.95,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00640L",
@@ -2229,13 +2229,13 @@
       ],
       "aumBillionTwd": 3,
       "beneficiaries": 1275,
-      "ytdAverageValueMillionTwd": 7.475,
-      "ytdAverageVolume": 1863381,
-      "close": 3.67,
+      "ytdAverageValueMillionTwd": 7.446,
+      "ytdAverageVolume": 1856468,
+      "close": 3.71,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00641R",
@@ -2284,13 +2284,13 @@
       "themes": [],
       "aumBillionTwd": 17,
       "beneficiaries": 6903,
-      "ytdAverageValueMillionTwd": 337.612,
-      "ytdAverageVolume": 13479793,
-      "close": 31.46,
+      "ytdAverageValueMillionTwd": 336.013,
+      "ytdAverageVolume": 13413381,
+      "close": 32.42,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00642U",
@@ -2335,13 +2335,13 @@
       "themes": [],
       "aumBillionTwd": 15,
       "beneficiaries": 3163,
-      "ytdAverageValueMillionTwd": 55.271,
-      "ytdAverageVolume": 2930028,
-      "close": 17.77,
+      "ytdAverageValueMillionTwd": 55.323,
+      "ytdAverageVolume": 2934587,
+      "close": 17.2,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00643",
@@ -2382,13 +2382,13 @@
       "themes": [],
       "aumBillionTwd": 15,
       "beneficiaries": 5,
-      "ytdAverageValueMillionTwd": 0.012,
-      "ytdAverageVolume": 3039,
-      "close": 0,
+      "ytdAverageValueMillionTwd": 0.013,
+      "ytdAverageVolume": 3190,
+      "close": 3.74,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00643K",
@@ -2431,13 +2431,13 @@
       ],
       "aumBillionTwd": 26,
       "beneficiaries": 9714,
-      "ytdAverageValueMillionTwd": 15.05,
-      "ytdAverageVolume": 281388,
-      "close": 57.85,
+      "ytdAverageValueMillionTwd": 15.151,
+      "ytdAverageVolume": 283051,
+      "close": 57.3,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00645",
@@ -2488,13 +2488,13 @@
       ],
       "aumBillionTwd": 495,
       "beneficiaries": 114509,
-      "ytdAverageValueMillionTwd": 247.9,
-      "ytdAverageVolume": 3445815,
-      "close": 77.15,
+      "ytdAverageValueMillionTwd": 248.116,
+      "ytdAverageVolume": 3447386,
+      "close": 76.9,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00646",
@@ -2545,13 +2545,13 @@
       ],
       "aumBillionTwd": 9,
       "beneficiaries": 1499,
-      "ytdAverageValueMillionTwd": 11.318,
-      "ytdAverageVolume": 92685,
-      "close": 138.1,
+      "ytdAverageValueMillionTwd": 11.273,
+      "ytdAverageVolume": 92301,
+      "close": 137.2,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00647L",
@@ -2602,13 +2602,13 @@
       ],
       "aumBillionTwd": 6,
       "beneficiaries": 2325,
-      "ytdAverageValueMillionTwd": 5.644,
-      "ytdAverageVolume": 1338908,
-      "close": 3.91,
+      "ytdAverageValueMillionTwd": 5.615,
+      "ytdAverageVolume": 1332048,
+      "close": 3.94,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00648R",
@@ -2659,13 +2659,13 @@
       ],
       "aumBillionTwd": 16,
       "beneficiaries": 2200,
-      "ytdAverageValueMillionTwd": 91.74,
-      "ytdAverageVolume": 5303612,
-      "close": 16.2,
+      "ytdAverageValueMillionTwd": 91.351,
+      "ytdAverageVolume": 5281726,
+      "close": 15.92,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00650L",
@@ -2716,13 +2716,13 @@
       ],
       "aumBillionTwd": 2,
       "beneficiaries": 366,
-      "ytdAverageValueMillionTwd": 2.145,
-      "ytdAverageVolume": 407997,
-      "close": 5.31,
+      "ytdAverageValueMillionTwd": 2.141,
+      "ytdAverageVolume": 407047,
+      "close": 5.36,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00651R",
@@ -2773,13 +2773,13 @@
       ],
       "aumBillionTwd": 20,
       "beneficiaries": 9305,
-      "ytdAverageValueMillionTwd": 14.449,
-      "ytdAverageVolume": 425735,
-      "close": 31.89,
+      "ytdAverageValueMillionTwd": 14.424,
+      "ytdAverageVolume": 425155,
+      "close": 31.34,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00652",
@@ -2830,13 +2830,13 @@
       ],
       "aumBillionTwd": 5,
       "beneficiaries": 1262,
-      "ytdAverageValueMillionTwd": 16.05,
-      "ytdAverageVolume": 333519,
-      "close": 42.88,
+      "ytdAverageValueMillionTwd": 16.196,
+      "ytdAverageVolume": 337438,
+      "close": 40.82,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00653L",
@@ -2887,13 +2887,13 @@
       ],
       "aumBillionTwd": 1,
       "beneficiaries": 360,
-      "ytdAverageValueMillionTwd": 0.597,
-      "ytdAverageVolume": 87997,
-      "close": 7.01,
+      "ytdAverageValueMillionTwd": 0.598,
+      "ytdAverageVolume": 88131,
+      "close": 7.14,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00654R",
@@ -2944,13 +2944,13 @@
       ],
       "aumBillionTwd": 18,
       "beneficiaries": 2189,
-      "ytdAverageValueMillionTwd": 61.434,
-      "ytdAverageVolume": 1787923,
-      "close": 32.32,
+      "ytdAverageValueMillionTwd": 61.473,
+      "ytdAverageVolume": 1790387,
+      "close": 30.54,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00655L",
@@ -3001,13 +3001,13 @@
       ],
       "aumBillionTwd": 1,
       "beneficiaries": 314,
-      "ytdAverageValueMillionTwd": 2.238,
-      "ytdAverageVolume": 376104,
-      "close": 5.98,
+      "ytdAverageValueMillionTwd": 2.227,
+      "ytdAverageVolume": 374316,
+      "close": 6.15,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00656R",
@@ -3056,13 +3056,13 @@
       "themes": [],
       "aumBillionTwd": 5,
       "beneficiaries": 1634,
-      "ytdAverageValueMillionTwd": 10.936,
-      "ytdAverageVolume": 156240,
-      "close": 77.8,
+      "ytdAverageValueMillionTwd": 11.071,
+      "ytdAverageVolume": 157903,
+      "close": 76.8,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00657",
@@ -3109,11 +3109,11 @@
       "beneficiaries": 4,
       "ytdAverageValueMillionTwd": 0.004,
       "ytdAverageVolume": 194,
-      "close": 24.31,
+      "close": 24.11,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00657K",
@@ -3160,13 +3160,13 @@
       ],
       "aumBillionTwd": 3,
       "beneficiaries": 1016,
-      "ytdAverageValueMillionTwd": 1.133,
-      "ytdAverageVolume": 25870,
-      "close": 45.78,
+      "ytdAverageValueMillionTwd": 1.128,
+      "ytdAverageVolume": 25753,
+      "close": 46.2,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00660",
@@ -3213,13 +3213,13 @@
       ],
       "aumBillionTwd": 21,
       "beneficiaries": 7196,
-      "ytdAverageValueMillionTwd": 15.34,
-      "ytdAverageVolume": 201518,
-      "close": 84.9,
+      "ytdAverageValueMillionTwd": 15.453,
+      "ytdAverageVolume": 202744,
+      "close": 84.3,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00661",
@@ -3270,13 +3270,13 @@
       ],
       "aumBillionTwd": 1146,
       "beneficiaries": 110799,
-      "ytdAverageValueMillionTwd": 517.665,
-      "ytdAverageVolume": 4605769,
-      "close": 124.25,
+      "ytdAverageValueMillionTwd": 517.411,
+      "ytdAverageVolume": 4601413,
+      "close": 123.25,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00662",
@@ -3327,13 +3327,13 @@
       ],
       "aumBillionTwd": 145,
       "beneficiaries": 13066,
-      "ytdAverageValueMillionTwd": 956.343,
-      "ytdAverageVolume": 11539377,
-      "close": 112.55,
+      "ytdAverageValueMillionTwd": 953.408,
+      "ytdAverageVolume": 11496593,
+      "close": 110.45,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00663L",
@@ -3384,13 +3384,13 @@
       ],
       "aumBillionTwd": 14,
       "beneficiaries": 10078,
-      "ytdAverageValueMillionTwd": 53.32,
-      "ytdAverageVolume": 27877619,
-      "close": 1.53,
+      "ytdAverageValueMillionTwd": 53.106,
+      "ytdAverageVolume": 27776342,
+      "close": 1.54,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00664R",
@@ -3442,13 +3442,13 @@
       ],
       "aumBillionTwd": 37,
       "beneficiaries": 5000,
-      "ytdAverageValueMillionTwd": 208.051,
-      "ytdAverageVolume": 21154809,
-      "close": 8.95,
+      "ytdAverageValueMillionTwd": 207.392,
+      "ytdAverageVolume": 21093637,
+      "close": 8.79,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00665L",
@@ -3500,13 +3500,13 @@
       ],
       "aumBillionTwd": 1,
       "beneficiaries": 120,
-      "ytdAverageValueMillionTwd": 1.38,
-      "ytdAverageVolume": 151672,
-      "close": 9.25,
+      "ytdAverageValueMillionTwd": 1.374,
+      "ytdAverageVolume": 150936,
+      "close": 9.38,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00666R",
@@ -3555,13 +3555,13 @@
       "themes": [],
       "aumBillionTwd": 5,
       "beneficiaries": 2039,
-      "ytdAverageValueMillionTwd": 7.908,
-      "ytdAverageVolume": 135909,
+      "ytdAverageValueMillionTwd": 7.871,
+      "ytdAverageVolume": 135272,
       "close": 59.9,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00668",
@@ -3608,11 +3608,11 @@
       "beneficiaries": 4,
       "ytdAverageValueMillionTwd": 0.004,
       "ytdAverageVolume": 196,
-      "close": 19.01,
+      "close": 18.84,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00668K",
@@ -3659,13 +3659,13 @@
       ],
       "aumBillionTwd": 11,
       "beneficiaries": 3049,
-      "ytdAverageValueMillionTwd": 7.237,
-      "ytdAverageVolume": 1298129,
-      "close": 5.39,
+      "ytdAverageValueMillionTwd": 7.2,
+      "ytdAverageVolume": 1291463,
+      "close": 5.38,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00669R",
@@ -3716,13 +3716,13 @@
       ],
       "aumBillionTwd": 162,
       "beneficiaries": 12226,
-      "ytdAverageValueMillionTwd": 223.749,
-      "ytdAverageVolume": 1289603,
-      "close": 211,
+      "ytdAverageValueMillionTwd": 222.986,
+      "ytdAverageVolume": 1284745,
+      "close": 207,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00670L",
@@ -3773,13 +3773,13 @@
       ],
       "aumBillionTwd": 12,
       "beneficiaries": 3497,
-      "ytdAverageValueMillionTwd": 16.964,
-      "ytdAverageVolume": 6336193,
-      "close": 2.36,
+      "ytdAverageValueMillionTwd": 17.02,
+      "ytdAverageVolume": 6364801,
+      "close": 2.38,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00671R",
@@ -3828,13 +3828,13 @@
       "themes": [],
       "aumBillionTwd": 132,
       "beneficiaries": 16483,
-      "ytdAverageValueMillionTwd": 354.399,
-      "ytdAverageVolume": 24653386,
-      "close": 10.69,
+      "ytdAverageValueMillionTwd": 354.118,
+      "ytdAverageVolume": 24678468,
+      "close": 10.39,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00673R",
@@ -3883,13 +3883,13 @@
       "themes": [],
       "aumBillionTwd": 4,
       "beneficiaries": 1265,
-      "ytdAverageValueMillionTwd": 11.829,
-      "ytdAverageVolume": 1597316,
-      "close": 28.54,
+      "ytdAverageValueMillionTwd": 11.789,
+      "ytdAverageVolume": 1589096,
+      "close": 29.6,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00674R",
@@ -3940,13 +3940,13 @@
       ],
       "aumBillionTwd": 349,
       "beneficiaries": 18154,
-      "ytdAverageValueMillionTwd": 705.657,
-      "ytdAverageVolume": 2976057,
-      "close": 340.5,
+      "ytdAverageValueMillionTwd": 702.805,
+      "ytdAverageVolume": 2962671,
+      "close": 334,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00675L",
@@ -3997,13 +3997,13 @@
       ],
       "aumBillionTwd": 11,
       "beneficiaries": 4370,
-      "ytdAverageValueMillionTwd": 50.465,
-      "ytdAverageVolume": 7896337,
-      "close": 5.23,
+      "ytdAverageValueMillionTwd": 50.264,
+      "ytdAverageVolume": 7867592,
+      "close": 5.29,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00676R",
@@ -4054,13 +4054,13 @@
       ],
       "aumBillionTwd": 4,
       "beneficiaries": 1870,
-      "ytdAverageValueMillionTwd": 14.368,
-      "ytdAverageVolume": 373664,
-      "close": 42.87,
+      "ytdAverageValueMillionTwd": 14.354,
+      "ytdAverageVolume": 373101,
+      "close": 43.43,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00678",
@@ -4107,13 +4107,13 @@
       ],
       "aumBillionTwd": 87,
       "beneficiaries": 18920,
-      "ytdAverageValueMillionTwd": 141.116,
-      "ytdAverageVolume": 20121121,
-      "close": 6.12,
+      "ytdAverageValueMillionTwd": 141.496,
+      "ytdAverageVolume": 20208394,
+      "close": 5.84,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00680L",
@@ -4164,13 +4164,13 @@
       ],
       "aumBillionTwd": 2,
       "beneficiaries": 94,
-      "ytdAverageValueMillionTwd": 2.101,
-      "ytdAverageVolume": 99203,
-      "close": 22.31,
+      "ytdAverageValueMillionTwd": 2.172,
+      "ytdAverageVolume": 102280,
+      "close": 22.86,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00681R",
@@ -4219,13 +4219,13 @@
       "themes": [],
       "aumBillionTwd": 2,
       "beneficiaries": 256,
-      "ytdAverageValueMillionTwd": 0.252,
-      "ytdAverageVolume": 12345,
-      "close": 20.85,
+      "ytdAverageValueMillionTwd": 0.253,
+      "ytdAverageVolume": 12399,
+      "close": 20.79,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00682U",
@@ -4270,13 +4270,13 @@
       "themes": [],
       "aumBillionTwd": 3,
       "beneficiaries": 311,
-      "ytdAverageValueMillionTwd": 3.084,
-      "ytdAverageVolume": 145527,
-      "close": 22.09,
+      "ytdAverageValueMillionTwd": 3.086,
+      "ytdAverageVolume": 145568,
+      "close": 22.16,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00683L",
@@ -4325,13 +4325,13 @@
       "themes": [],
       "aumBillionTwd": 1,
       "beneficiaries": 168,
-      "ytdAverageValueMillionTwd": 0.647,
-      "ytdAverageVolume": 42104,
-      "close": 14.89,
+      "ytdAverageValueMillionTwd": 0.644,
+      "ytdAverageVolume": 41964,
+      "close": 14.81,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00684R",
@@ -4380,13 +4380,13 @@
       "themes": [],
       "aumBillionTwd": 700,
       "beneficiaries": 172578,
-      "ytdAverageValueMillionTwd": 1597.219,
-      "ytdAverageVolume": 103207268,
-      "close": 12.87,
+      "ytdAverageValueMillionTwd": 1600.321,
+      "ytdAverageVolume": 103579398,
+      "close": 12.64,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00685L",
@@ -4435,13 +4435,13 @@
       "themes": [],
       "aumBillionTwd": 3,
       "beneficiaries": 2054,
-      "ytdAverageValueMillionTwd": 10.033,
-      "ytdAverageVolume": 8753073,
-      "close": 0.93,
+      "ytdAverageValueMillionTwd": 10,
+      "ytdAverageVolume": 8728922,
+      "close": 0.95,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00686R",
@@ -4492,13 +4492,13 @@
       ],
       "aumBillionTwd": 37,
       "beneficiaries": 8989,
-      "ytdAverageValueMillionTwd": 55.16,
-      "ytdAverageVolume": 7856786,
-      "close": 6.09,
+      "ytdAverageValueMillionTwd": 55.488,
+      "ytdAverageVolume": 7922056,
+      "close": 5.8,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00688L",
@@ -4549,13 +4549,13 @@
       ],
       "aumBillionTwd": 2,
       "beneficiaries": 46,
-      "ytdAverageValueMillionTwd": 2.854,
-      "ytdAverageVolume": 128703,
-      "close": 23.34,
+      "ytdAverageValueMillionTwd": 2.852,
+      "ytdAverageVolume": 128560,
+      "close": 23.86,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00689R",
@@ -4606,13 +4606,13 @@
       ],
       "aumBillionTwd": 70,
       "beneficiaries": 16440,
-      "ytdAverageValueMillionTwd": 39.396,
-      "ytdAverageVolume": 592901,
-      "close": 83.65,
+      "ytdAverageValueMillionTwd": 39.407,
+      "ytdAverageVolume": 592410,
+      "close": 81.7,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.252Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00690",
@@ -4660,13 +4660,13 @@
       ],
       "aumBillionTwd": 592,
       "beneficiaries": 90775,
-      "ytdAverageValueMillionTwd": 119.14,
-      "ytdAverageVolume": 1529682,
-      "close": 96.7,
+      "ytdAverageValueMillionTwd": 118.844,
+      "ytdAverageVolume": 1524975,
+      "close": 95.9,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00692",
@@ -4715,13 +4715,13 @@
       "themes": [],
       "aumBillionTwd": 15,
       "beneficiaries": 2819,
-      "ytdAverageValueMillionTwd": 29.364,
-      "ytdAverageVolume": 1340256,
-      "close": 24.08,
+      "ytdAverageValueMillionTwd": 29.478,
+      "ytdAverageVolume": 1344663,
+      "close": 23.42,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00693U",
@@ -4769,13 +4769,13 @@
       ],
       "aumBillionTwd": 5,
       "beneficiaries": 2594,
-      "ytdAverageValueMillionTwd": 7.793,
-      "ytdAverageVolume": 444442,
-      "close": 16.96,
+      "ytdAverageValueMillionTwd": 7.761,
+      "ytdAverageVolume": 442691,
+      "close": 16.85,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00700",
@@ -4828,13 +4828,13 @@
       ],
       "aumBillionTwd": 70,
       "beneficiaries": 37672,
-      "ytdAverageValueMillionTwd": 38.646,
-      "ytdAverageVolume": 1175414,
-      "close": 41.6,
+      "ytdAverageValueMillionTwd": 38.503,
+      "ytdAverageVolume": 1170590,
+      "close": 41.42,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00701",
@@ -4888,12 +4888,12 @@
       "aumBillionTwd": 2,
       "beneficiaries": 1173,
       "ytdAverageValueMillionTwd": 2.427,
-      "ytdAverageVolume": 100314,
-      "close": 23.56,
+      "ytdAverageVolume": 100346,
+      "close": 23.43,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00702",
@@ -4944,13 +4944,13 @@
       ],
       "aumBillionTwd": 2,
       "beneficiaries": 1019,
-      "ytdAverageValueMillionTwd": 1.842,
-      "ytdAverageVolume": 89125,
-      "close": 18.94,
+      "ytdAverageValueMillionTwd": 1.834,
+      "ytdAverageVolume": 88756,
+      "close": 18.73,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00703",
@@ -4999,13 +4999,13 @@
       "themes": [],
       "aumBillionTwd": 23,
       "beneficiaries": 6004,
-      "ytdAverageValueMillionTwd": 36.856,
-      "ytdAverageVolume": 1872862,
-      "close": 19.16,
+      "ytdAverageValueMillionTwd": 36.765,
+      "ytdAverageVolume": 1868338,
+      "close": 19.28,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00706L",
@@ -5054,13 +5054,13 @@
       "themes": [],
       "aumBillionTwd": 2,
       "beneficiaries": 23,
-      "ytdAverageValueMillionTwd": 0.201,
-      "ytdAverageVolume": 6361,
-      "close": 31.9,
+      "ytdAverageValueMillionTwd": 0.199,
+      "ytdAverageVolume": 6326,
+      "close": 0,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00707R",
@@ -5109,13 +5109,13 @@
       "themes": [],
       "aumBillionTwd": 120,
       "beneficiaries": 18040,
-      "ytdAverageValueMillionTwd": 517.157,
-      "ytdAverageVolume": 5386608,
-      "close": 76.55,
+      "ytdAverageValueMillionTwd": 518.897,
+      "ytdAverageVolume": 5421940,
+      "close": 70.9,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00708L",
@@ -5166,13 +5166,13 @@
       ],
       "aumBillionTwd": 6,
       "beneficiaries": 2244,
-      "ytdAverageValueMillionTwd": 3.969,
-      "ytdAverageVolume": 102595,
-      "close": 39.42,
+      "ytdAverageValueMillionTwd": 3.951,
+      "ytdAverageVolume": 102133,
+      "close": 39.56,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00709",
@@ -5217,13 +5217,13 @@
       "themes": [],
       "aumBillionTwd": 33,
       "beneficiaries": 3714,
-      "ytdAverageValueMillionTwd": 6.658,
-      "ytdAverageVolume": 350071,
-      "close": 18.73,
+      "ytdAverageValueMillionTwd": 6.642,
+      "ytdAverageVolume": 349260,
+      "close": 18.66,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00710B",
@@ -5272,13 +5272,13 @@
       "themes": [],
       "aumBillionTwd": 132,
       "beneficiaries": 793,
-      "ytdAverageValueMillionTwd": 14.026,
-      "ytdAverageVolume": 885611,
-      "close": 15.18,
+      "ytdAverageValueMillionTwd": 13.959,
+      "ytdAverageVolume": 881434,
+      "close": 14.78,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00711B",
@@ -5325,13 +5325,13 @@
       ],
       "aumBillionTwd": 475,
       "beneficiaries": 148244,
-      "ytdAverageValueMillionTwd": 306.686,
-      "ytdAverageVolume": 34900453,
-      "close": 7.82,
+      "ytdAverageValueMillionTwd": 310.875,
+      "ytdAverageVolume": 35484294,
+      "close": 7.56,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00712",
@@ -5379,13 +5379,13 @@
       ],
       "aumBillionTwd": 1072,
       "beneficiaries": 270466,
-      "ytdAverageValueMillionTwd": 554.882,
-      "ytdAverageVolume": 10028243,
-      "close": 63.2,
+      "ytdAverageValueMillionTwd": 554.982,
+      "ytdAverageVolume": 10022868,
+      "close": 62.9,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00713",
@@ -5434,13 +5434,13 @@
       "themes": [],
       "aumBillionTwd": 4,
       "beneficiaries": 2369,
-      "ytdAverageValueMillionTwd": 4.629,
-      "ytdAverageVolume": 216060,
-      "close": 20.78,
+      "ytdAverageValueMillionTwd": 4.615,
+      "ytdAverageVolume": 215428,
+      "close": 20.62,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00714",
@@ -5485,13 +5485,13 @@
       "themes": [],
       "aumBillionTwd": 36,
       "beneficiaries": 3562,
-      "ytdAverageValueMillionTwd": 916.863,
-      "ytdAverageVolume": 21167757,
-      "close": 64.7,
+      "ytdAverageValueMillionTwd": 913.347,
+      "ytdAverageVolume": 21073452,
+      "close": 67.9,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00715L",
@@ -5542,13 +5542,13 @@
       ],
       "aumBillionTwd": 17,
       "beneficiaries": 7497,
-      "ytdAverageValueMillionTwd": 3.098,
-      "ytdAverageVolume": 206432,
-      "close": 14.54,
+      "ytdAverageValueMillionTwd": 3.085,
+      "ytdAverageVolume": 205608,
+      "close": 14.49,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00717",
@@ -5599,13 +5599,13 @@
       ],
       "aumBillionTwd": 28,
       "beneficiaries": 9903,
-      "ytdAverageValueMillionTwd": 13.808,
-      "ytdAverageVolume": 248305,
-      "close": 70.35,
+      "ytdAverageValueMillionTwd": 13.761,
+      "ytdAverageVolume": 247337,
+      "close": 69.9,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00728",
@@ -5656,13 +5656,13 @@
       ],
       "aumBillionTwd": 20,
       "beneficiaries": 12951,
-      "ytdAverageValueMillionTwd": 7.601,
-      "ytdAverageVolume": 297750,
-      "close": 29.25,
+      "ytdAverageValueMillionTwd": 7.574,
+      "ytdAverageVolume": 296628,
+      "close": 29.35,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00730",
@@ -5714,13 +5714,13 @@
       ],
       "aumBillionTwd": 20,
       "beneficiaries": 8160,
-      "ytdAverageValueMillionTwd": 59.369,
-      "ytdAverageVolume": 735974,
-      "close": 98.05,
+      "ytdAverageValueMillionTwd": 59.365,
+      "ytdAverageVolume": 735192,
+      "close": 97.75,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00731",
@@ -5772,13 +5772,13 @@
       ],
       "aumBillionTwd": 44,
       "beneficiaries": 20498,
-      "ytdAverageValueMillionTwd": 82.256,
-      "ytdAverageVolume": 1355369,
-      "close": 70.15,
+      "ytdAverageValueMillionTwd": 81.873,
+      "ytdAverageVolume": 1348887,
+      "close": 70.2,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00733",
@@ -5825,13 +5825,13 @@
       ],
       "aumBillionTwd": 126,
       "beneficiaries": 30602,
-      "ytdAverageValueMillionTwd": 276.935,
-      "ytdAverageVolume": 3002789,
-      "close": 109,
+      "ytdAverageValueMillionTwd": 275.934,
+      "ytdAverageVolume": 2991086,
+      "close": 107.25,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00735",
@@ -5874,13 +5874,13 @@
       ],
       "aumBillionTwd": 2,
       "beneficiaries": 490,
-      "ytdAverageValueMillionTwd": 3.857,
-      "ytdAverageVolume": 127783,
-      "close": 31.8,
+      "ytdAverageValueMillionTwd": 3.854,
+      "ytdAverageVolume": 127650,
+      "close": 31.61,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00736",
@@ -5931,13 +5931,13 @@
       ],
       "aumBillionTwd": 9,
       "beneficiaries": 5442,
-      "ytdAverageValueMillionTwd": 8.616,
-      "ytdAverageVolume": 232476,
-      "close": 41.19,
+      "ytdAverageValueMillionTwd": 8.604,
+      "ytdAverageVolume": 232055,
+      "close": 40.75,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00737",
@@ -5982,13 +5982,13 @@
       "themes": [],
       "aumBillionTwd": 125,
       "beneficiaries": 32169,
-      "ytdAverageValueMillionTwd": 774.493,
-      "ytdAverageVolume": 11639829,
-      "close": 51,
+      "ytdAverageValueMillionTwd": 772.035,
+      "ytdAverageVolume": 11613623,
+      "close": 48.07,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00738U",
@@ -6036,13 +6036,13 @@
       ],
       "aumBillionTwd": 7,
       "beneficiaries": 1955,
-      "ytdAverageValueMillionTwd": 2.567,
-      "ytdAverageVolume": 91567,
-      "close": 27.28,
+      "ytdAverageValueMillionTwd": 2.599,
+      "ytdAverageVolume": 92838,
+      "close": 26.46,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00739",
@@ -6093,13 +6093,13 @@
       ],
       "aumBillionTwd": 58,
       "beneficiaries": 17114,
-      "ytdAverageValueMillionTwd": 63.472,
-      "ytdAverageVolume": 2631378,
-      "close": 22.51,
+      "ytdAverageValueMillionTwd": 63.24,
+      "ytdAverageVolume": 2622209,
+      "close": 22.33,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00752",
@@ -6150,13 +6150,13 @@
       ],
       "aumBillionTwd": 63,
       "beneficiaries": 11693,
-      "ytdAverageValueMillionTwd": 177.808,
-      "ytdAverageVolume": 16674354,
-      "close": 8.87,
+      "ytdAverageValueMillionTwd": 177.731,
+      "ytdAverageVolume": 16687369,
+      "close": 8.61,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00753L",
@@ -6209,13 +6209,13 @@
       ],
       "aumBillionTwd": 382,
       "beneficiaries": 67593,
-      "ytdAverageValueMillionTwd": 288.8,
-      "ytdAverageVolume": 2387199,
-      "close": 143.4,
+      "ytdAverageValueMillionTwd": 287.623,
+      "ytdAverageVolume": 2376929,
+      "close": 141.9,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00757",
@@ -6267,13 +6267,13 @@
       ],
       "aumBillionTwd": 57,
       "beneficiaries": 22280,
-      "ytdAverageValueMillionTwd": 35.016,
-      "ytdAverageVolume": 361953,
-      "close": 121.8,
+      "ytdAverageValueMillionTwd": 34.946,
+      "ytdAverageVolume": 360981,
+      "close": 119.5,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00762",
@@ -6322,13 +6322,13 @@
       "themes": [],
       "aumBillionTwd": 14,
       "beneficiaries": 3723,
-      "ytdAverageValueMillionTwd": 51.119,
-      "ytdAverageVolume": 1553547,
-      "close": 35.31,
+      "ytdAverageValueMillionTwd": 50.915,
+      "ytdAverageVolume": 1547226,
+      "close": 34.56,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00763U",
@@ -6375,13 +6375,13 @@
       ],
       "aumBillionTwd": 61,
       "beneficiaries": 22138,
-      "ytdAverageValueMillionTwd": 39.403,
-      "ytdAverageVolume": 661972,
-      "close": 65.25,
+      "ytdAverageValueMillionTwd": 39.315,
+      "ytdAverageVolume": 660302,
+      "close": 64.75,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00770",
@@ -6428,13 +6428,13 @@
       ],
       "aumBillionTwd": 2,
       "beneficiaries": 2065,
-      "ytdAverageValueMillionTwd": 0.599,
-      "ytdAverageVolume": 37490,
-      "close": 15.06,
+      "ytdAverageValueMillionTwd": 0.597,
+      "ytdAverageVolume": 37353,
+      "close": 15.07,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00771",
@@ -6485,13 +6485,13 @@
       ],
       "aumBillionTwd": 71,
       "beneficiaries": 183,
-      "ytdAverageValueMillionTwd": 2.728,
-      "ytdAverageVolume": 84889,
-      "close": 30.4,
+      "ytdAverageValueMillionTwd": 2.726,
+      "ytdAverageVolume": 84867,
+      "close": 29.83,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00775B",
@@ -6539,13 +6539,13 @@
       ],
       "aumBillionTwd": 2,
       "beneficiaries": 796,
-      "ytdAverageValueMillionTwd": 5.586,
-      "ytdAverageVolume": 193280,
-      "close": 27.74,
+      "ytdAverageValueMillionTwd": 5.565,
+      "ytdAverageVolume": 192575,
+      "close": 26.85,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00783",
@@ -6593,13 +6593,13 @@
       ],
       "aumBillionTwd": 774,
       "beneficiaries": 180272,
-      "ytdAverageValueMillionTwd": 939.437,
-      "ytdAverageVolume": 13127097,
-      "close": 88,
+      "ytdAverageValueMillionTwd": 936.721,
+      "ytdAverageVolume": 13082829,
+      "close": 86.85,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00830",
@@ -6650,13 +6650,13 @@
       ],
       "aumBillionTwd": 401,
       "beneficiaries": 80113,
-      "ytdAverageValueMillionTwd": 80.697,
-      "ytdAverageVolume": 1074721,
-      "close": 96.35,
+      "ytdAverageValueMillionTwd": 80.484,
+      "ytdAverageVolume": 1071203,
+      "close": 95.5,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00850",
@@ -6703,13 +6703,13 @@
       ],
       "aumBillionTwd": 4,
       "beneficiaries": 2104,
-      "ytdAverageValueMillionTwd": 1.619,
-      "ytdAverageVolume": 25373,
-      "close": 73.1,
+      "ytdAverageValueMillionTwd": 1.627,
+      "ytdAverageVolume": 25477,
+      "close": 72.25,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.642Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00851",
@@ -6756,13 +6756,13 @@
       ],
       "aumBillionTwd": 2,
       "beneficiaries": 619,
-      "ytdAverageValueMillionTwd": 11.367,
-      "ytdAverageVolume": 364859,
-      "close": 32.99,
+      "ytdAverageValueMillionTwd": 11.315,
+      "ytdAverageVolume": 363172,
+      "close": 32.83,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.643Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00852L",
@@ -6814,13 +6814,13 @@
       ],
       "aumBillionTwd": 61,
       "beneficiaries": 18327,
-      "ytdAverageValueMillionTwd": 15.89,
-      "ytdAverageVolume": 202468,
-      "close": 88.15,
+      "ytdAverageValueMillionTwd": 15.869,
+      "ytdAverageVolume": 202108,
+      "close": 87.6,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.643Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00861",
@@ -6871,13 +6871,13 @@
       ],
       "aumBillionTwd": 160,
       "beneficiaries": 10437,
-      "ytdAverageValueMillionTwd": 147.567,
-      "ytdAverageVolume": 3056233,
-      "close": 48.94,
+      "ytdAverageValueMillionTwd": 147.393,
+      "ytdAverageVolume": 3052466,
+      "close": 48.92,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.643Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00865B",
@@ -6928,13 +6928,13 @@
       ],
       "aumBillionTwd": 9,
       "beneficiaries": 7018,
-      "ytdAverageValueMillionTwd": 10.445,
-      "ytdAverageVolume": 229275,
-      "close": 58.55,
+      "ytdAverageValueMillionTwd": 10.488,
+      "ytdAverageVolume": 229771,
+      "close": 56.9,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.643Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00875",
@@ -6982,13 +6982,13 @@
       ],
       "aumBillionTwd": 84,
       "beneficiaries": 22275,
-      "ytdAverageValueMillionTwd": 28.054,
-      "ytdAverageVolume": 353667,
-      "close": 89.8,
+      "ytdAverageValueMillionTwd": 27.943,
+      "ytdAverageVolume": 352199,
+      "close": 89.55,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.643Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00876",
@@ -7044,7 +7044,7 @@
         "fiveYears": 147.1,
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.643Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00878",
@@ -7064,9 +7064,9 @@
       "managerType": "被動式ETF",
       "listingDate": "2020-07-20",
       "beneficiaries": 1671493,
-      "ytdAverageValueMillionTwd": 1827.214,
-      "ytdAverageVolume": 67124966,
-      "close": 34.88,
+      "ytdAverageValueMillionTwd": 1822.792,
+      "ytdAverageVolume": 66915385,
+      "close": 34.83,
       "displayClassification": {
         "primary": "高股息",
         "assetClass": "股票型",
@@ -7111,13 +7111,13 @@
       ],
       "aumBillionTwd": 1567,
       "beneficiaries": 403479,
-      "ytdAverageValueMillionTwd": 1002.799,
-      "ytdAverageVolume": 22665874,
-      "close": 52.5,
+      "ytdAverageValueMillionTwd": 1000.663,
+      "ytdAverageVolume": 22605942,
+      "close": 51.9,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.643Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00881",
@@ -7164,13 +7164,13 @@
       ],
       "aumBillionTwd": 291,
       "beneficiaries": 83089,
-      "ytdAverageValueMillionTwd": 146.88,
-      "ytdAverageVolume": 9451085,
-      "close": 14.78,
+      "ytdAverageValueMillionTwd": 146.352,
+      "ytdAverageVolume": 9417984,
+      "close": 14.85,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.643Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00882",
@@ -7222,13 +7222,13 @@
       ],
       "aumBillionTwd": 107,
       "beneficiaries": 48127,
-      "ytdAverageValueMillionTwd": 86.421,
-      "ytdAverageVolume": 4704956,
-      "close": 18.04,
+      "ytdAverageValueMillionTwd": 86.061,
+      "ytdAverageVolume": 4685487,
+      "close": 17.99,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.643Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00885",
@@ -7280,13 +7280,13 @@
       ],
       "aumBillionTwd": 703,
       "beneficiaries": 187915,
-      "ytdAverageValueMillionTwd": 755.533,
-      "ytdAverageVolume": 24019900,
-      "close": 37.77,
+      "ytdAverageValueMillionTwd": 754.77,
+      "ytdAverageVolume": 23978136,
+      "close": 37.3,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.643Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00891",
@@ -7333,13 +7333,13 @@
       ],
       "aumBillionTwd": 139,
       "beneficiaries": 45612,
-      "ytdAverageValueMillionTwd": 129.898,
-      "ytdAverageVolume": 3307541,
-      "close": 43.33,
+      "ytdAverageValueMillionTwd": 130.764,
+      "ytdAverageVolume": 3326091,
+      "close": 42.99,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.643Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00892",
@@ -7386,13 +7386,13 @@
       ],
       "aumBillionTwd": 163,
       "beneficiaries": 56297,
-      "ytdAverageValueMillionTwd": 52.475,
-      "ytdAverageVolume": 1339911,
-      "close": 45.96,
+      "ytdAverageValueMillionTwd": 52.242,
+      "ytdAverageVolume": 1333733,
+      "close": 45.38,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.643Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00893",
@@ -7441,13 +7441,13 @@
       ],
       "aumBillionTwd": 75,
       "beneficiaries": 26061,
-      "ytdAverageValueMillionTwd": 87.82,
-      "ytdAverageVolume": 2136433,
-      "close": 50.25,
+      "ytdAverageValueMillionTwd": 87.745,
+      "ytdAverageVolume": 2132894,
+      "close": 49.49,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.643Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00894",
@@ -7498,13 +7498,13 @@
       ],
       "aumBillionTwd": 74,
       "beneficiaries": 28725,
-      "ytdAverageValueMillionTwd": 32.938,
-      "ytdAverageVolume": 722003,
-      "close": 52.05,
+      "ytdAverageValueMillionTwd": 32.815,
+      "ytdAverageVolume": 719142,
+      "close": 51.5,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.643Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00895",
@@ -7547,13 +7547,13 @@
       ],
       "aumBillionTwd": 142,
       "beneficiaries": 62149,
-      "ytdAverageValueMillionTwd": 138.886,
-      "ytdAverageVolume": 5365701,
-      "close": 27.6,
+      "ytdAverageValueMillionTwd": 138.497,
+      "ytdAverageVolume": 5349803,
+      "close": 27.5,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.643Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00896",
@@ -7600,13 +7600,13 @@
       ],
       "aumBillionTwd": 18,
       "beneficiaries": 9893,
-      "ytdAverageValueMillionTwd": 10.459,
-      "ytdAverageVolume": 972387,
-      "close": 13.51,
+      "ytdAverageValueMillionTwd": 10.476,
+      "ytdAverageVolume": 972362,
+      "close": 13.81,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.643Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00897",
@@ -7653,13 +7653,13 @@
       ],
       "aumBillionTwd": 12,
       "beneficiaries": 8385,
-      "ytdAverageValueMillionTwd": 8.246,
-      "ytdAverageVolume": 891158,
-      "close": 11.49,
+      "ytdAverageValueMillionTwd": 8.237,
+      "ytdAverageVolume": 889375,
+      "close": 11.75,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.643Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00898",
@@ -7706,13 +7706,13 @@
       ],
       "aumBillionTwd": 4,
       "beneficiaries": 3597,
-      "ytdAverageValueMillionTwd": 4.01,
-      "ytdAverageVolume": 165594,
-      "close": 22.77,
+      "ytdAverageValueMillionTwd": 3.992,
+      "ytdAverageVolume": 164887,
+      "close": 22.03,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.643Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00899",
@@ -7759,13 +7759,13 @@
       ],
       "aumBillionTwd": 296,
       "beneficiaries": 128065,
-      "ytdAverageValueMillionTwd": 177.775,
-      "ytdAverageVolume": 11065121,
-      "close": 19.53,
+      "ytdAverageValueMillionTwd": 177.249,
+      "ytdAverageVolume": 11027276,
+      "close": 19.37,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.643Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00900",
@@ -7818,13 +7818,13 @@
       ],
       "aumBillionTwd": 30,
       "beneficiaries": 11567,
-      "ytdAverageValueMillionTwd": 22.493,
-      "ytdAverageVolume": 608457,
-      "close": 48.48,
+      "ytdAverageValueMillionTwd": 22.378,
+      "ytdAverageVolume": 605276,
+      "close": 47.74,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.643Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00901",
@@ -7875,13 +7875,13 @@
       ],
       "aumBillionTwd": 28,
       "beneficiaries": 17946,
-      "ytdAverageValueMillionTwd": 32.8,
-      "ytdAverageVolume": 2227632,
-      "close": 12.45,
+      "ytdAverageValueMillionTwd": 32.655,
+      "ytdAverageVolume": 2218282,
+      "close": 12.25,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.643Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00902",
@@ -7928,13 +7928,13 @@
       ],
       "aumBillionTwd": 10,
       "beneficiaries": 7006,
-      "ytdAverageValueMillionTwd": 7.23,
-      "ytdAverageVolume": 377041,
-      "close": 22.07,
+      "ytdAverageValueMillionTwd": 7.198,
+      "ytdAverageVolume": 375337,
+      "close": 21.77,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.643Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00903",
@@ -7977,13 +7977,13 @@
       ],
       "aumBillionTwd": 68,
       "beneficiaries": 23909,
-      "ytdAverageValueMillionTwd": 116.373,
-      "ytdAverageVolume": 3606762,
-      "close": 43.36,
+      "ytdAverageValueMillionTwd": 115.894,
+      "ytdAverageVolume": 3590574,
+      "close": 42.97,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.643Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00904",
@@ -8030,13 +8030,13 @@
       ],
       "aumBillionTwd": 100,
       "beneficiaries": 44351,
-      "ytdAverageValueMillionTwd": 46.678,
-      "ytdAverageVolume": 1994356,
-      "close": 27.6,
+      "ytdAverageValueMillionTwd": 46.575,
+      "ytdAverageVolume": 1988951,
+      "close": 27.4,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.643Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00905",
@@ -8085,13 +8085,13 @@
       ],
       "aumBillionTwd": 27,
       "beneficiaries": 20043,
-      "ytdAverageValueMillionTwd": 21.393,
-      "ytdAverageVolume": 1349225,
-      "close": 17.75,
+      "ytdAverageValueMillionTwd": 21.35,
+      "ytdAverageVolume": 1345995,
+      "close": 17.66,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.643Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00907",
@@ -8142,13 +8142,13 @@
       ],
       "aumBillionTwd": 5,
       "beneficiaries": 2708,
-      "ytdAverageValueMillionTwd": 2.898,
-      "ytdAverageVolume": 200384,
-      "close": 14.63,
+      "ytdAverageValueMillionTwd": 2.888,
+      "ytdAverageVolume": 199700,
+      "close": 14.53,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00908",
@@ -8199,13 +8199,13 @@
       ],
       "aumBillionTwd": 51,
       "beneficiaries": 25024,
-      "ytdAverageValueMillionTwd": 136.388,
-      "ytdAverageVolume": 3169073,
-      "close": 51.2,
+      "ytdAverageValueMillionTwd": 136.765,
+      "ytdAverageVolume": 3174743,
+      "close": 48.5,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00909",
@@ -8253,13 +8253,13 @@
       ],
       "aumBillionTwd": 65,
       "beneficiaries": 37894,
-      "ytdAverageValueMillionTwd": 181.272,
-      "ytdAverageVolume": 2833580,
-      "close": 58.15,
+      "ytdAverageValueMillionTwd": 180.382,
+      "ytdAverageVolume": 2819873,
+      "close": 57.7,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00910",
@@ -8302,13 +8302,13 @@
       ],
       "aumBillionTwd": 17,
       "beneficiaries": 12659,
-      "ytdAverageValueMillionTwd": 28.323,
-      "ytdAverageVolume": 565281,
-      "close": 56.25,
+      "ytdAverageValueMillionTwd": 28.209,
+      "ytdAverageVolume": 562905,
+      "close": 55.8,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00911",
@@ -8352,13 +8352,13 @@
       ],
       "aumBillionTwd": 21,
       "beneficiaries": 8287,
-      "ytdAverageValueMillionTwd": 24.693,
-      "ytdAverageVolume": 869761,
-      "close": 36.45,
+      "ytdAverageValueMillionTwd": 24.615,
+      "ytdAverageVolume": 866556,
+      "close": 35.99,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00912",
@@ -8409,13 +8409,13 @@
       ],
       "aumBillionTwd": 30,
       "beneficiaries": 12072,
-      "ytdAverageValueMillionTwd": 66.683,
-      "ytdAverageVolume": 1476666,
-      "close": 52.3,
+      "ytdAverageValueMillionTwd": 66.901,
+      "ytdAverageVolume": 1479830,
+      "close": 51.75,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00913",
@@ -8464,13 +8464,13 @@
       ],
       "aumBillionTwd": 167,
       "beneficiaries": 70880,
-      "ytdAverageValueMillionTwd": 164.794,
-      "ytdAverageVolume": 6192094,
-      "close": 33,
+      "ytdAverageValueMillionTwd": 164.135,
+      "ytdAverageVolume": 6165401,
+      "close": 32.91,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00915",
@@ -8521,13 +8521,13 @@
       ],
       "aumBillionTwd": 27,
       "beneficiaries": 19075,
-      "ytdAverageValueMillionTwd": 40.168,
-      "ytdAverageVolume": 1454050,
-      "close": 26.99,
+      "ytdAverageValueMillionTwd": 39.99,
+      "ytdAverageVolume": 1447642,
+      "close": 26.88,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00916",
@@ -8578,13 +8578,13 @@
       ],
       "aumBillionTwd": 15,
       "beneficiaries": 12932,
-      "ytdAverageValueMillionTwd": 31.574,
-      "ytdAverageVolume": 1357333,
-      "close": 22.83,
+      "ytdAverageValueMillionTwd": 31.532,
+      "ytdAverageVolume": 1355700,
+      "close": 22.5,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00917",
@@ -8633,13 +8633,13 @@
       ],
       "aumBillionTwd": 1591,
       "beneficiaries": 374480,
-      "ytdAverageValueMillionTwd": 1221.834,
-      "ytdAverageVolume": 41677841,
-      "close": 33.98,
+      "ytdAverageValueMillionTwd": 1222.382,
+      "ytdAverageVolume": 41662099,
+      "close": 33.9,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00918",
@@ -8690,13 +8690,13 @@
       ],
       "aumBillionTwd": 6075,
       "beneficiaries": 1466235,
-      "ytdAverageValueMillionTwd": 3187.408,
-      "ytdAverageVolume": 119940205,
-      "close": 31.83,
+      "ytdAverageValueMillionTwd": 3179.213,
+      "ytdAverageVolume": 119570349,
+      "close": 31.88,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00919",
@@ -8748,13 +8748,13 @@
       ],
       "aumBillionTwd": 5,
       "beneficiaries": 6253,
-      "ytdAverageValueMillionTwd": 12.501,
-      "ytdAverageVolume": 541378,
-      "close": 24.88,
+      "ytdAverageValueMillionTwd": 12.44,
+      "ytdAverageVolume": 538694,
+      "close": 24.33,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00920",
@@ -8801,13 +8801,13 @@
       ],
       "aumBillionTwd": 14,
       "beneficiaries": 10181,
-      "ytdAverageValueMillionTwd": 11.072,
-      "ytdAverageVolume": 535074,
-      "close": 23.45,
+      "ytdAverageValueMillionTwd": 11.027,
+      "ytdAverageVolume": 532806,
+      "close": 23.38,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00921",
@@ -8854,13 +8854,13 @@
       ],
       "aumBillionTwd": 936,
       "beneficiaries": 186910,
-      "ytdAverageValueMillionTwd": 543.974,
-      "ytdAverageVolume": 16317647,
-      "close": 43.87,
+      "ytdAverageValueMillionTwd": 542.861,
+      "ytdAverageVolume": 16270744,
+      "close": 43.39,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00922",
@@ -8911,13 +8911,13 @@
       ],
       "aumBillionTwd": 398,
       "beneficiaries": 122613,
-      "ytdAverageValueMillionTwd": 266.164,
-      "ytdAverageVolume": 7568476,
-      "close": 41.78,
+      "ytdAverageValueMillionTwd": 265.214,
+      "ytdAverageVolume": 7539155,
+      "close": 41.33,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00923",
@@ -8965,13 +8965,13 @@
       ],
       "aumBillionTwd": 146,
       "beneficiaries": 54987,
-      "ytdAverageValueMillionTwd": 82.21,
-      "ytdAverageVolume": 2714269,
-      "close": 33.61,
+      "ytdAverageValueMillionTwd": 82.014,
+      "ytdAverageVolume": 2706949,
+      "close": 33.59,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00924",
@@ -9022,13 +9022,13 @@
       ],
       "aumBillionTwd": 27,
       "beneficiaries": 9191,
-      "ytdAverageValueMillionTwd": 24.642,
-      "ytdAverageVolume": 1004513,
-      "close": 26.54,
+      "ytdAverageValueMillionTwd": 24.585,
+      "ytdAverageVolume": 1001935,
+      "close": 26.59,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00926",
@@ -9073,13 +9073,13 @@
       "themes": [],
       "aumBillionTwd": 531,
       "beneficiaries": 140300,
-      "ytdAverageValueMillionTwd": 763.508,
-      "ytdAverageVolume": 22806398,
-      "close": 39.77,
+      "ytdAverageValueMillionTwd": 763.169,
+      "ytdAverageVolume": 22778379,
+      "close": 39.39,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00927",
@@ -9131,13 +9131,13 @@
       ],
       "aumBillionTwd": 1553,
       "beneficiaries": 459684,
-      "ytdAverageValueMillionTwd": 1122.611,
-      "ytdAverageVolume": 46689275,
-      "close": 29.18,
+      "ytdAverageValueMillionTwd": 1118.897,
+      "ytdAverageVolume": 46516084,
+      "close": 29.16,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00929",
@@ -9190,13 +9190,13 @@
       ],
       "aumBillionTwd": 38,
       "beneficiaries": 22995,
-      "ytdAverageValueMillionTwd": 40.754,
-      "ytdAverageVolume": 1946388,
-      "close": 23.88,
+      "ytdAverageValueMillionTwd": 40.751,
+      "ytdAverageVolume": 1944983,
+      "close": 23.69,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00930",
@@ -9249,13 +9249,13 @@
       ],
       "aumBillionTwd": 19,
       "beneficiaries": 13029,
-      "ytdAverageValueMillionTwd": 19.609,
-      "ytdAverageVolume": 1217248,
-      "close": 17.48,
+      "ytdAverageValueMillionTwd": 19.515,
+      "ytdAverageVolume": 1211358,
+      "close": 17.44,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00932",
@@ -9306,13 +9306,13 @@
       ],
       "aumBillionTwd": 128,
       "beneficiaries": 49821,
-      "ytdAverageValueMillionTwd": 93.904,
-      "ytdAverageVolume": 3757833,
-      "close": 29.84,
+      "ytdAverageValueMillionTwd": 93.692,
+      "ytdAverageVolume": 3747331,
+      "close": 29.79,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00934",
@@ -9364,13 +9364,13 @@
       ],
       "aumBillionTwd": 538,
       "beneficiaries": 123252,
-      "ytdAverageValueMillionTwd": 692.855,
-      "ytdAverageVolume": 13526939,
-      "close": 61.65,
+      "ytdAverageValueMillionTwd": 693.316,
+      "ytdAverageVolume": 13522906,
+      "close": 60.4,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00935",
@@ -9423,13 +9423,13 @@
       ],
       "aumBillionTwd": 42,
       "beneficiaries": 22124,
-      "ytdAverageValueMillionTwd": 65.618,
-      "ytdAverageVolume": 3526980,
-      "close": 21.41,
+      "ytdAverageValueMillionTwd": 65.383,
+      "ytdAverageVolume": 3513421,
+      "close": 21.32,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00936",
@@ -9480,13 +9480,13 @@
       ],
       "aumBillionTwd": 28,
       "beneficiaries": 6456,
-      "ytdAverageValueMillionTwd": 32.81,
-      "ytdAverageVolume": 1478434,
-      "close": 26.9,
+      "ytdAverageValueMillionTwd": 32.725,
+      "ytdAverageVolume": 1473822,
+      "close": 26.84,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00938",
@@ -9534,13 +9534,13 @@
       ],
       "aumBillionTwd": 281,
       "beneficiaries": 102752,
-      "ytdAverageValueMillionTwd": 150.991,
-      "ytdAverageVolume": 8662533,
-      "close": 24.13,
+      "ytdAverageValueMillionTwd": 150.69,
+      "ytdAverageVolume": 8636564,
+      "close": 24.02,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.253Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00939",
@@ -9592,13 +9592,13 @@
       ],
       "aumBillionTwd": 670,
       "beneficiaries": 311799,
-      "ytdAverageValueMillionTwd": 490.043,
-      "ytdAverageVolume": 46682746,
-      "close": 13.1,
+      "ytdAverageValueMillionTwd": 488.281,
+      "ytdAverageVolume": 46496418,
+      "close": 13.08,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00940",
@@ -9649,13 +9649,13 @@
       ],
       "aumBillionTwd": 114,
       "beneficiaries": 46825,
-      "ytdAverageValueMillionTwd": 60.906,
-      "ytdAverageVolume": 2549639,
-      "close": 25.16,
+      "ytdAverageValueMillionTwd": 60.634,
+      "ytdAverageVolume": 2538094,
+      "close": 25.19,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00941",
@@ -9704,13 +9704,13 @@
       ],
       "aumBillionTwd": 9,
       "beneficiaries": 4217,
-      "ytdAverageValueMillionTwd": 6.139,
-      "ytdAverageVolume": 340692,
-      "close": 20.96,
+      "ytdAverageValueMillionTwd": 6.111,
+      "ytdAverageVolume": 339118,
+      "close": 21.01,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00943",
@@ -9762,13 +9762,13 @@
       ],
       "aumBillionTwd": 12,
       "beneficiaries": 7817,
-      "ytdAverageValueMillionTwd": 14.993,
-      "ytdAverageVolume": 844215,
-      "close": 22,
+      "ytdAverageValueMillionTwd": 14.926,
+      "ytdAverageVolume": 840247,
+      "close": 21.83,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00944",
@@ -9817,13 +9817,13 @@
       "themes": [],
       "aumBillionTwd": 120,
       "beneficiaries": 18703,
-      "ytdAverageValueMillionTwd": 89.062,
-      "ytdAverageVolume": 6140333,
-      "close": 14.29,
+      "ytdAverageValueMillionTwd": 89.138,
+      "ytdAverageVolume": 6146359,
+      "close": 14.21,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00945B",
@@ -9871,13 +9871,13 @@
       ],
       "aumBillionTwd": 67,
       "beneficiaries": 35649,
-      "ytdAverageValueMillionTwd": 73.067,
-      "ytdAverageVolume": 6115912,
-      "close": 15.3,
+      "ytdAverageValueMillionTwd": 72.809,
+      "ytdAverageVolume": 6091466,
+      "close": 15.38,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00946",
@@ -9928,13 +9928,13 @@
       ],
       "aumBillionTwd": 115,
       "beneficiaries": 36525,
-      "ytdAverageValueMillionTwd": 289.134,
-      "ytdAverageVolume": 9232595,
-      "close": 40.66,
+      "ytdAverageValueMillionTwd": 290.145,
+      "ytdAverageVolume": 9246513,
+      "close": 40,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00947",
@@ -9981,13 +9981,13 @@
       ],
       "aumBillionTwd": 36,
       "beneficiaries": 17265,
-      "ytdAverageValueMillionTwd": 23.459,
-      "ytdAverageVolume": 1171172,
-      "close": 21.85,
+      "ytdAverageValueMillionTwd": 23.4,
+      "ytdAverageVolume": 1167953,
+      "close": 21.74,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00949",
@@ -10038,13 +10038,13 @@
       ],
       "aumBillionTwd": 42,
       "beneficiaries": 15691,
-      "ytdAverageValueMillionTwd": 60.936,
-      "ytdAverageVolume": 3800178,
-      "close": 17.36,
+      "ytdAverageValueMillionTwd": 61.116,
+      "ytdAverageVolume": 3808540,
+      "close": 17.64,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00951",
@@ -10092,13 +10092,13 @@
       ],
       "aumBillionTwd": 45,
       "beneficiaries": 22729,
-      "ytdAverageValueMillionTwd": 50.14,
-      "ytdAverageVolume": 3136590,
-      "close": 18.25,
+      "ytdAverageValueMillionTwd": 49.993,
+      "ytdAverageVolume": 3126324,
+      "close": 18.29,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00952",
@@ -10143,13 +10143,13 @@
       "themes": [],
       "aumBillionTwd": 447,
       "beneficiaries": 52223,
-      "ytdAverageValueMillionTwd": 340.074,
-      "ytdAverageVolume": 35192421,
-      "close": 9.54,
+      "ytdAverageValueMillionTwd": 341.033,
+      "ytdAverageVolume": 35296480,
+      "close": 9.51,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00953B",
@@ -10192,13 +10192,13 @@
       ],
       "aumBillionTwd": 23,
       "beneficiaries": 10984,
-      "ytdAverageValueMillionTwd": 55.236,
-      "ytdAverageVolume": 3154387,
-      "close": 18.56,
+      "ytdAverageValueMillionTwd": 55.066,
+      "ytdAverageVolume": 3144133,
+      "close": 18.84,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00954",
@@ -10245,13 +10245,13 @@
       ],
       "aumBillionTwd": 4,
       "beneficiaries": 3251,
-      "ytdAverageValueMillionTwd": 6.133,
-      "ytdAverageVolume": 491774,
-      "close": 13.56,
+      "ytdAverageValueMillionTwd": 6.115,
+      "ytdAverageVolume": 490200,
+      "close": 13.42,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00956",
@@ -10302,13 +10302,13 @@
       ],
       "aumBillionTwd": 13,
       "beneficiaries": 12237,
-      "ytdAverageValueMillionTwd": 21.506,
-      "ytdAverageVolume": 1219080,
-      "close": 22.02,
+      "ytdAverageValueMillionTwd": 21.433,
+      "ytdAverageVolume": 1214415,
+      "close": 22.03,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00960",
@@ -10360,13 +10360,13 @@
       ],
       "aumBillionTwd": 151,
       "beneficiaries": 61109,
-      "ytdAverageValueMillionTwd": 141.527,
-      "ytdAverageVolume": 11279931,
-      "close": 13.2,
+      "ytdAverageValueMillionTwd": 142.083,
+      "ytdAverageVolume": 11318635,
+      "close": 13.21,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00961",
@@ -10418,13 +10418,13 @@
       ],
       "aumBillionTwd": 16,
       "beneficiaries": 10800,
-      "ytdAverageValueMillionTwd": 17.994,
-      "ytdAverageVolume": 1251861,
-      "close": 15.03,
+      "ytdAverageValueMillionTwd": 18.152,
+      "ytdAverageVolume": 1262091,
+      "close": 15.02,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00962",
@@ -10475,13 +10475,13 @@
       ],
       "aumBillionTwd": 15,
       "beneficiaries": 5273,
-      "ytdAverageValueMillionTwd": 16.295,
-      "ytdAverageVolume": 1286419,
-      "close": 12.63,
+      "ytdAverageValueMillionTwd": 16.314,
+      "ytdAverageVolume": 1288037,
+      "close": 12.55,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00963",
@@ -10532,13 +10532,13 @@
       ],
       "aumBillionTwd": 11,
       "beneficiaries": 4620,
-      "ytdAverageValueMillionTwd": 34.386,
-      "ytdAverageVolume": 2474732,
+      "ytdAverageValueMillionTwd": 34.352,
+      "ytdAverageVolume": 2471683,
       "close": 14.73,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00964",
@@ -10590,13 +10590,13 @@
       ],
       "aumBillionTwd": 110,
       "beneficiaries": 33177,
-      "ytdAverageValueMillionTwd": 114.329,
-      "ytdAverageVolume": 4490753,
-      "close": 25.45,
+      "ytdAverageValueMillionTwd": 113.762,
+      "ytdAverageVolume": 4468520,
+      "close": 25.09,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00965",
@@ -10648,13 +10648,13 @@
       ],
       "aumBillionTwd": 10,
       "beneficiaries": 6621,
-      "ytdAverageValueMillionTwd": 10.509,
-      "ytdAverageVolume": 651817,
-      "close": 17.76,
+      "ytdAverageValueMillionTwd": 10.463,
+      "ytdAverageVolume": 648891,
+      "close": 17.78,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00971",
@@ -10706,13 +10706,13 @@
       ],
       "aumBillionTwd": 3,
       "beneficiaries": 1628,
-      "ytdAverageValueMillionTwd": 4.286,
-      "ytdAverageVolume": 217035,
-      "close": 21.7,
+      "ytdAverageValueMillionTwd": 4.275,
+      "ytdAverageVolume": 216414,
+      "close": 21.51,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00972",
@@ -10764,13 +10764,13 @@
       ],
       "aumBillionTwd": 42,
       "beneficiaries": 19702,
-      "ytdAverageValueMillionTwd": 24.372,
-      "ytdAverageVolume": 2049649,
-      "close": 13.45,
+      "ytdAverageValueMillionTwd": 24.325,
+      "ytdAverageVolume": 2044869,
+      "close": 13.34,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009800",
@@ -10821,13 +10821,13 @@
       ],
       "aumBillionTwd": 11,
       "beneficiaries": 8639,
-      "ytdAverageValueMillionTwd": 15.767,
-      "ytdAverageVolume": 1387750,
-      "close": 11.64,
+      "ytdAverageValueMillionTwd": 15.709,
+      "ytdAverageVolume": 1382646,
+      "close": 11.59,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009801",
@@ -10875,13 +10875,13 @@
       ],
       "aumBillionTwd": 109,
       "beneficiaries": 41308,
-      "ytdAverageValueMillionTwd": 121.335,
-      "ytdAverageVolume": 7016609,
-      "close": 20.07,
+      "ytdAverageValueMillionTwd": 121.033,
+      "ytdAverageVolume": 6996175,
+      "close": 19.96,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009802",
@@ -10933,13 +10933,13 @@
       ],
       "aumBillionTwd": 63,
       "beneficiaries": 30359,
-      "ytdAverageValueMillionTwd": 60.942,
-      "ytdAverageVolume": 3102506,
-      "close": 21.66,
+      "ytdAverageValueMillionTwd": 61.028,
+      "ytdAverageVolume": 3104983,
+      "close": 21.5,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009803",
@@ -10990,13 +10990,13 @@
       ],
       "aumBillionTwd": 35,
       "beneficiaries": 17808,
-      "ytdAverageValueMillionTwd": 33.296,
-      "ytdAverageVolume": 1614198,
-      "close": 24.12,
+      "ytdAverageValueMillionTwd": 33.241,
+      "ytdAverageVolume": 1610661,
+      "close": 23.85,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009804",
@@ -11047,13 +11047,13 @@
       ],
       "aumBillionTwd": 91,
       "beneficiaries": 54796,
-      "ytdAverageValueMillionTwd": 183.922,
-      "ytdAverageVolume": 12089012,
-      "close": 14.95,
+      "ytdAverageValueMillionTwd": 183.143,
+      "ytdAverageVolume": 12038275,
+      "close": 14.76,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009805",
@@ -11101,13 +11101,13 @@
       ],
       "aumBillionTwd": 13,
       "beneficiaries": 4249,
-      "ytdAverageValueMillionTwd": 19.12,
-      "ytdAverageVolume": 744605,
-      "close": 32.16,
+      "ytdAverageValueMillionTwd": 19.044,
+      "ytdAverageVolume": 741390,
+      "close": 31.85,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009808",
@@ -11159,13 +11159,13 @@
       ],
       "aumBillionTwd": 6,
       "beneficiaries": 2528,
-      "ytdAverageValueMillionTwd": 13.637,
-      "ytdAverageVolume": 942595,
-      "close": 18.56,
+      "ytdAverageValueMillionTwd": 13.579,
+      "ytdAverageVolume": 938346,
+      "close": 18.45,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009809",
@@ -11216,13 +11216,13 @@
       ],
       "aumBillionTwd": 202,
       "beneficiaries": 70259,
-      "ytdAverageValueMillionTwd": 295.391,
-      "ytdAverageVolume": 14148389,
-      "close": 25.56,
+      "ytdAverageValueMillionTwd": 294.898,
+      "ytdAverageVolume": 14115012,
+      "close": 25.4,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00980A",
@@ -11273,13 +11273,13 @@
       ],
       "aumBillionTwd": 4,
       "beneficiaries": 1926,
-      "ytdAverageValueMillionTwd": 5.113,
-      "ytdAverageVolume": 259810,
-      "close": 21.34,
+      "ytdAverageValueMillionTwd": 5.122,
+      "ytdAverageVolume": 260141,
+      "close": 21.37,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009810",
@@ -11330,13 +11330,13 @@
       ],
       "aumBillionTwd": 32,
       "beneficiaries": 22675,
-      "ytdAverageValueMillionTwd": 36.532,
-      "ytdAverageVolume": 3019417,
-      "close": 13.5,
+      "ytdAverageValueMillionTwd": 36.395,
+      "ytdAverageVolume": 3007543,
+      "close": 13.47,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009811",
@@ -11387,13 +11387,13 @@
       ],
       "aumBillionTwd": 12,
       "beneficiaries": 5895,
-      "ytdAverageValueMillionTwd": 13.531,
-      "ytdAverageVolume": 1142434,
-      "close": 12.92,
+      "ytdAverageValueMillionTwd": 13.548,
+      "ytdAverageVolume": 1143220,
+      "close": 12.91,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009812",
@@ -11444,13 +11444,13 @@
       ],
       "aumBillionTwd": 37,
       "beneficiaries": 22953,
-      "ytdAverageValueMillionTwd": 57.23,
-      "ytdAverageVolume": 5407421,
-      "close": 11.49,
+      "ytdAverageValueMillionTwd": 56.956,
+      "ytdAverageVolume": 5381139,
+      "close": 11.46,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009813",
@@ -11499,13 +11499,13 @@
       "themes": [],
       "aumBillionTwd": 1991,
       "beneficiaries": 918275,
-      "ytdAverageValueMillionTwd": 2673.894,
-      "ytdAverageVolume": 204990105,
-      "close": 16.57,
+      "ytdAverageValueMillionTwd": 2669.598,
+      "ytdAverageVolume": 204455982,
+      "close": 16.4,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009816",
@@ -11552,13 +11552,13 @@
       ],
       "aumBillionTwd": 19,
       "beneficiaries": 10074,
-      "ytdAverageValueMillionTwd": 45.515,
-      "ytdAverageVolume": 4735402,
-      "close": 8.9,
+      "ytdAverageValueMillionTwd": 45.252,
+      "ytdAverageVolume": 4708301,
+      "close": 8.79,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009817",
@@ -11610,13 +11610,13 @@
       ],
       "aumBillionTwd": 10,
       "beneficiaries": 4807,
-      "ytdAverageValueMillionTwd": 14.533,
-      "ytdAverageVolume": 854325,
-      "close": 21.04,
+      "ytdAverageValueMillionTwd": 14.446,
+      "ytdAverageVolume": 848915,
+      "close": 20.99,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009818",
@@ -11667,13 +11667,13 @@
       ],
       "aumBillionTwd": 59,
       "beneficiaries": 51277,
-      "ytdAverageValueMillionTwd": 185.944,
-      "ytdAverageVolume": 17901418,
-      "close": 9.72,
+      "ytdAverageValueMillionTwd": 184.471,
+      "ytdAverageVolume": 17761634,
+      "close": 9.53,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009819",
@@ -11720,13 +11720,13 @@
       ],
       "aumBillionTwd": 2903,
       "beneficiaries": 945851,
-      "ytdAverageValueMillionTwd": 6640.356,
-      "ytdAverageVolume": 249710602,
-      "close": 30.85,
+      "ytdAverageValueMillionTwd": 6622.628,
+      "ytdAverageVolume": 248952348,
+      "close": 30.31,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00981A",
@@ -11775,13 +11775,13 @@
       "themes": [],
       "aumBillionTwd": 30,
       "beneficiaries": 8240,
-      "ytdAverageValueMillionTwd": 44.296,
-      "ytdAverageVolume": 3813168,
-      "close": 11.82,
+      "ytdAverageValueMillionTwd": 44.23,
+      "ytdAverageVolume": 3807363,
+      "close": 11.7,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00981T",
@@ -11830,13 +11830,13 @@
       ],
       "aumBillionTwd": 108,
       "beneficiaries": 34869,
-      "ytdAverageValueMillionTwd": 198.46,
-      "ytdAverageVolume": 19723982,
-      "close": 10.41,
+      "ytdAverageValueMillionTwd": 197.212,
+      "ytdAverageVolume": 19598367,
+      "close": 10.32,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009820",
@@ -11881,13 +11881,13 @@
       "themes": [],
       "aumBillionTwd": 74,
       "beneficiaries": 55043,
-      "ytdAverageValueMillionTwd": 290.811,
-      "ytdAverageVolume": 19490288,
-      "close": 14.03,
+      "ytdAverageValueMillionTwd": 289.509,
+      "ytdAverageVolume": 19424721,
+      "close": 13.33,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/009821",
@@ -11934,12 +11934,12 @@
       ],
       "aumBillionTwd": 51,
       "beneficiaries": 44254,
-      "ytdAverageValueMillionTwd": 143.485,
-      "ytdAverageVolume": 14273731,
-      "close": 10.55,
+      "ytdAverageValueMillionTwd": 142.242,
+      "ytdAverageVolume": 14146144,
+      "close": 10.49,
       "performance": {
         "date": null,
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date",
         "source": "twse-etfortune-products"
       },
@@ -11987,12 +11987,12 @@
       ],
       "aumBillionTwd": 85,
       "beneficiaries": 61908,
-      "ytdAverageValueMillionTwd": 208.939,
-      "ytdAverageVolume": 20585989,
-      "close": 10.06,
+      "ytdAverageValueMillionTwd": 206.576,
+      "ytdAverageVolume": 20356839,
+      "close": 10.02,
       "performance": {
         "date": null,
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date",
         "source": "twse-etfortune-products"
       },
@@ -12044,12 +12044,12 @@
       ],
       "aumBillionTwd": 21,
       "beneficiaries": 15643,
-      "ytdAverageValueMillionTwd": 88.702,
-      "ytdAverageVolume": 8819672,
-      "close": 10.32,
+      "ytdAverageValueMillionTwd": 85.618,
+      "ytdAverageVolume": 8510190,
+      "close": 10.2,
       "performance": {
         "date": null,
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date",
         "source": "twse-etfortune-products"
       },
@@ -12097,12 +12097,12 @@
       ],
       "aumBillionTwd": 85,
       "beneficiaries": 57368,
-      "ytdAverageValueMillionTwd": 664.592,
-      "ytdAverageVolume": 69369195,
-      "close": 10.02,
+      "ytdAverageValueMillionTwd": 643.036,
+      "ytdAverageVolume": 67059017,
+      "close": 9.98,
       "performance": {
         "date": null,
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date",
         "source": "twse-etfortune-products"
       },
@@ -12150,12 +12150,12 @@
       ],
       "aumBillionTwd": 36,
       "beneficiaries": 13113,
-      "ytdAverageValueMillionTwd": 340.059,
-      "ytdAverageVolume": 32117602,
-      "close": 11.04,
+      "ytdAverageValueMillionTwd": 339.069,
+      "ytdAverageVolume": 32004117,
+      "close": 10.74,
       "performance": {
         "date": null,
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date",
         "source": "twse-etfortune-products"
       },
@@ -12204,13 +12204,13 @@
       ],
       "aumBillionTwd": 506,
       "beneficiaries": 177169,
-      "ytdAverageValueMillionTwd": 827.829,
-      "ytdAverageVolume": 41566732,
-      "close": 23.14,
+      "ytdAverageValueMillionTwd": 824.872,
+      "ytdAverageVolume": 41407448,
+      "close": 22.83,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00982A",
@@ -12259,13 +12259,13 @@
       "themes": [],
       "aumBillionTwd": 7,
       "beneficiaries": 2802,
-      "ytdAverageValueMillionTwd": 17.751,
-      "ytdAverageVolume": 1767157,
-      "close": 9.47,
+      "ytdAverageValueMillionTwd": 17.896,
+      "ytdAverageVolume": 1783475,
+      "close": 9.36,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00982D",
@@ -12303,13 +12303,13 @@
       ],
       "aumBillionTwd": 3,
       "beneficiaries": 1901,
-      "ytdAverageValueMillionTwd": 17.987,
-      "ytdAverageVolume": 1563330,
-      "close": 15.61,
+      "ytdAverageValueMillionTwd": 17.891,
+      "ytdAverageVolume": 1554865,
+      "close": 15.32,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00982T",
@@ -12357,13 +12357,13 @@
       ],
       "aumBillionTwd": 10,
       "beneficiaries": 8439,
-      "ytdAverageValueMillionTwd": 42.15,
-      "ytdAverageVolume": 3634370,
-      "close": 13.22,
+      "ytdAverageValueMillionTwd": 41.976,
+      "ytdAverageVolume": 3618681,
+      "close": 13.2,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00983A",
@@ -12404,13 +12404,13 @@
       "themes": [],
       "aumBillionTwd": 10,
       "beneficiaries": 3947,
-      "ytdAverageValueMillionTwd": 13.364,
-      "ytdAverageVolume": 1314150,
-      "close": 9.71,
+      "ytdAverageValueMillionTwd": 13.391,
+      "ytdAverageVolume": 1317406,
+      "close": 9.6,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00983D",
@@ -12455,13 +12455,13 @@
       ],
       "aumBillionTwd": 98,
       "beneficiaries": 61880,
-      "ytdAverageValueMillionTwd": 129.005,
-      "ytdAverageVolume": 9081221,
-      "close": 15.61,
+      "ytdAverageValueMillionTwd": 128.625,
+      "ytdAverageVolume": 9052315,
+      "close": 15.62,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00984A",
@@ -12510,13 +12510,13 @@
       "themes": [],
       "aumBillionTwd": 114,
       "beneficiaries": 15172,
-      "ytdAverageValueMillionTwd": 124.559,
-      "ytdAverageVolume": 12382512,
-      "close": 9.84,
+      "ytdAverageValueMillionTwd": 126.229,
+      "ytdAverageVolume": 12555231,
+      "close": 9.77,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00984D",
@@ -12559,13 +12559,13 @@
       ],
       "aumBillionTwd": 107,
       "beneficiaries": 45633,
-      "ytdAverageValueMillionTwd": 132.148,
-      "ytdAverageVolume": 7220611,
-      "close": 23.48,
+      "ytdAverageValueMillionTwd": 131.708,
+      "ytdAverageVolume": 7193027,
+      "close": 23.3,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00985A",
@@ -12616,13 +12616,13 @@
       ],
       "aumBillionTwd": 87,
       "beneficiaries": 8782,
-      "ytdAverageValueMillionTwd": 78.73,
-      "ytdAverageVolume": 7671565,
-      "close": 10.09,
+      "ytdAverageValueMillionTwd": 78.801,
+      "ytdAverageVolume": 7679550,
+      "close": 10.06,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00985B",
@@ -12665,13 +12665,13 @@
       ],
       "aumBillionTwd": 6,
       "beneficiaries": 4655,
-      "ytdAverageValueMillionTwd": 9.132,
-      "ytdAverageVolume": 690335,
-      "close": 14.75,
+      "ytdAverageValueMillionTwd": 9.107,
+      "ytdAverageVolume": 688232,
+      "close": 14.6,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00986A",
@@ -12718,13 +12718,13 @@
       ],
       "aumBillionTwd": 26,
       "beneficiaries": 16818,
-      "ytdAverageValueMillionTwd": 91.067,
-      "ytdAverageVolume": 6595837,
-      "close": 17.3,
+      "ytdAverageValueMillionTwd": 90.696,
+      "ytdAverageVolume": 6567005,
+      "close": 17.15,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00987A",
@@ -12769,13 +12769,13 @@
       ],
       "aumBillionTwd": 535,
       "beneficiaries": 228230,
-      "ytdAverageValueMillionTwd": 1024.002,
-      "ytdAverageVolume": 56889618,
-      "close": 16.91,
+      "ytdAverageValueMillionTwd": 1020.342,
+      "ytdAverageVolume": 56696636,
+      "close": 16.48,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00988A",
@@ -12827,12 +12827,12 @@
       "aumBillionTwd": 12,
       "beneficiaries": 6584,
       "ytdAverageValueMillionTwd": 33.642,
-      "ytdAverageVolume": 2103642,
-      "close": 17.76,
+      "ytdAverageVolume": 2102599,
+      "close": 17.52,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.254Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00989A",
@@ -12879,13 +12879,13 @@
       ],
       "aumBillionTwd": 376,
       "beneficiaries": 120134,
-      "ytdAverageValueMillionTwd": 568.781,
-      "ytdAverageVolume": 37344018,
-      "close": 15.89,
+      "ytdAverageValueMillionTwd": 566.298,
+      "ytdAverageVolume": 37179884,
+      "close": 15.58,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.255Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00990A",
@@ -12928,13 +12928,13 @@
       ],
       "aumBillionTwd": 789,
       "beneficiaries": 330841,
-      "ytdAverageValueMillionTwd": 1645.552,
-      "ytdAverageVolume": 101103224,
-      "close": 18.15,
+      "ytdAverageValueMillionTwd": 1640.135,
+      "ytdAverageVolume": 100749144,
+      "close": 17.95,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.255Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00991A",
@@ -12985,12 +12985,12 @@
       ],
       "aumBillionTwd": 38,
       "beneficiaries": 402,
-      "ytdAverageValueMillionTwd": 12.749,
-      "ytdAverageVolume": 857939,
-      "close": 14.6,
+      "ytdAverageValueMillionTwd": 12.602,
+      "ytdAverageVolume": 848490,
+      "close": 14.31,
       "performance": {
         "date": null,
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.255Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date",
         "source": "twse-etfortune-products"
       },
@@ -13038,13 +13038,13 @@
       ],
       "aumBillionTwd": 421,
       "beneficiaries": 174843,
-      "ytdAverageValueMillionTwd": 1129.574,
-      "ytdAverageVolume": 70621329,
-      "close": 18.8,
+      "ytdAverageValueMillionTwd": 1125.264,
+      "ytdAverageVolume": 70334204,
+      "close": 18.68,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.255Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00992A",
@@ -13088,13 +13088,13 @@
       ],
       "aumBillionTwd": 103,
       "beneficiaries": 45821,
-      "ytdAverageValueMillionTwd": 249.067,
-      "ytdAverageVolume": 21963236,
-      "close": 13.95,
+      "ytdAverageValueMillionTwd": 247.672,
+      "ytdAverageVolume": 21837145,
+      "close": 13.73,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.255Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00993A",
@@ -13147,13 +13147,13 @@
       ],
       "aumBillionTwd": 46,
       "beneficiaries": 27616,
-      "ytdAverageValueMillionTwd": 136.833,
-      "ytdAverageVolume": 8743337,
-      "close": 17.4,
+      "ytdAverageValueMillionTwd": 136.214,
+      "ytdAverageVolume": 8702889,
+      "close": 17.11,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.255Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00994A",
@@ -13205,13 +13205,13 @@
       ],
       "aumBillionTwd": 48,
       "beneficiaries": 23763,
-      "ytdAverageValueMillionTwd": 143.723,
-      "ytdAverageVolume": 10408415,
-      "close": 17.9,
+      "ytdAverageValueMillionTwd": 143.096,
+      "ytdAverageVolume": 10359084,
+      "close": 17.59,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.255Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00995A",
@@ -13263,13 +13263,13 @@
       ],
       "aumBillionTwd": 40,
       "beneficiaries": 21623,
-      "ytdAverageValueMillionTwd": 169.545,
-      "ytdAverageVolume": 13164291,
-      "close": 14.6,
+      "ytdAverageValueMillionTwd": 168.307,
+      "ytdAverageVolume": 13067445,
+      "close": 14.35,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.255Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00996A",
@@ -13321,13 +13321,13 @@
       ],
       "aumBillionTwd": 128,
       "beneficiaries": 66462,
-      "ytdAverageValueMillionTwd": 310.398,
-      "ytdAverageVolume": 25824137,
-      "close": 11.7,
+      "ytdAverageValueMillionTwd": 308.371,
+      "ytdAverageVolume": 25657869,
+      "close": 11.49,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.255Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00997A",
@@ -13374,13 +13374,13 @@
       ],
       "aumBillionTwd": 116,
       "beneficiaries": 86186,
-      "ytdAverageValueMillionTwd": 402.405,
-      "ytdAverageVolume": 37773454,
-      "close": 11.35,
+      "ytdAverageValueMillionTwd": 399.138,
+      "ytdAverageVolume": 37463283,
+      "close": 11.23,
       "performance": {
         "date": null,
         "source": "twse-etfortune-products",
-        "observedAt": "2026-09-28T05:42:48.644Z",
+        "observedAt": "2026-09-29T06:00:24.255Z",
         "sourceDateStatus": "official_endpoint_does_not_provide_date"
       },
       "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/etfInfo/00999A",
@@ -14742,7 +14742,7 @@
         "change": 0.25,
         "transaction": 21807,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14756,7 +14756,7 @@
         "change": 0.25,
         "transaction": 19197,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14770,7 +14770,7 @@
         "change": -0.6,
         "transaction": 26594,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14784,7 +14784,7 @@
         "change": 0.9,
         "transaction": 16346,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14798,7 +14798,7 @@
         "change": 0.45,
         "transaction": 25855,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14812,7 +14812,7 @@
         "change": -0.1,
         "transaction": 20301,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14826,7 +14826,7 @@
         "change": 0,
         "transaction": 14691,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14840,7 +14840,7 @@
         "change": -0.05,
         "transaction": 21938,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14854,7 +14854,7 @@
         "change": -0.4,
         "transaction": 33348,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14868,7 +14868,7 @@
         "change": 0.1,
         "transaction": 25946,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14882,7 +14882,7 @@
         "change": -0.4,
         "transaction": 34717,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14896,7 +14896,7 @@
         "change": 0.55,
         "transaction": 16790,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14910,7 +14910,7 @@
         "change": 0.75,
         "transaction": 21087,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14924,7 +14924,7 @@
         "change": 0.55,
         "transaction": 18441,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14938,7 +14938,7 @@
         "change": 0.3,
         "transaction": 24774,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14952,7 +14952,7 @@
         "change": -0.3,
         "transaction": 37803,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14966,7 +14966,7 @@
         "change": -0.25,
         "transaction": 31508,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=0056"
       },
       {
         "ticker": "0056",
@@ -14980,7 +14980,21 @@
         "change": 0.05,
         "transaction": 26617,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=0056"
+      },
+      {
+        "ticker": "0056",
+        "date": "2026-09-29",
+        "tradeVolume": 35991000,
+        "tradeValue": 2037417950,
+        "open": 56.5,
+        "high": 56.9,
+        "low": 56.3,
+        "close": 56.55,
+        "change": -0.1,
+        "transaction": 14691,
+        "source": "twse-stock-day",
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=0056"
       },
       {
         "ticker": "006208",
@@ -14994,7 +15008,7 @@
         "change": 5.45,
         "transaction": 10937,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -15008,7 +15022,7 @@
         "change": -3.15,
         "transaction": 12362,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -15022,7 +15036,7 @@
         "change": -1.4,
         "transaction": 9013,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -15036,7 +15050,7 @@
         "change": 3.45,
         "transaction": 6567,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -15050,7 +15064,7 @@
         "change": 4.4,
         "transaction": 13636,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -15064,7 +15078,7 @@
         "change": -1.6,
         "transaction": 9784,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -15078,7 +15092,7 @@
         "change": 0.25,
         "transaction": 7818,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -15092,7 +15106,7 @@
         "change": -0.75,
         "transaction": 11600,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -15106,7 +15120,7 @@
         "change": -3.45,
         "transaction": 21843,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -15120,7 +15134,7 @@
         "change": -1.45,
         "transaction": 14035,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -15134,7 +15148,7 @@
         "change": -1.15,
         "transaction": 14245,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -15148,7 +15162,7 @@
         "change": 1.1,
         "transaction": 8571,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -15162,7 +15176,7 @@
         "change": 2.8,
         "transaction": 7301,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -15176,7 +15190,7 @@
         "change": 3.8,
         "transaction": 9528,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -15190,7 +15204,7 @@
         "change": 3.5,
         "transaction": 11696,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -15204,7 +15218,7 @@
         "change": 1,
         "transaction": 8788,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -15218,7 +15232,7 @@
         "change": 1.3,
         "transaction": 6286,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=006208"
       },
       {
         "ticker": "006208",
@@ -15232,7 +15246,21 @@
         "change": -0.15,
         "transaction": 6121,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=006208"
+      },
+      {
+        "ticker": "006208",
+        "date": "2026-09-29",
+        "tradeVolume": 2629000,
+        "tradeValue": 672460800,
+        "open": 256.2,
+        "high": 256.8,
+        "low": 254.5,
+        "close": 255.2,
+        "change": -1.65,
+        "transaction": 1423,
+        "source": "twse-stock-day",
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=006208"
       },
       {
         "ticker": "00878",
@@ -15246,7 +15274,7 @@
         "change": 0.58,
         "transaction": 24183,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -15260,7 +15288,7 @@
         "change": -0.11,
         "transaction": 20203,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -15274,7 +15302,7 @@
         "change": -0.07,
         "transaction": 19145,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -15288,7 +15316,7 @@
         "change": 0.53,
         "transaction": 18668,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -15302,7 +15330,7 @@
         "change": 0.28,
         "transaction": 26199,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -15316,7 +15344,7 @@
         "change": -0.32,
         "transaction": 27646,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -15330,7 +15358,7 @@
         "change": 0.06,
         "transaction": 12658,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -15344,7 +15372,7 @@
         "change": 0.02,
         "transaction": 19492,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -15358,7 +15386,7 @@
         "change": -0.15,
         "transaction": 38168,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -15372,7 +15400,7 @@
         "change": 0.23,
         "transaction": 27411,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -15386,7 +15414,7 @@
         "change": -0.03,
         "transaction": 49563,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -15400,7 +15428,7 @@
         "change": 0.27,
         "transaction": 14204,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -15414,7 +15442,7 @@
         "change": 0.26,
         "transaction": 15989,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -15428,7 +15456,7 @@
         "change": 0.1,
         "transaction": 23887,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -15442,7 +15470,7 @@
         "change": 0.28,
         "transaction": 20602,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -15456,7 +15484,7 @@
         "change": 0.1,
         "transaction": 19137,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -15470,7 +15498,7 @@
         "change": -0.12,
         "transaction": 24928,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=00878"
       },
       {
         "ticker": "00878",
@@ -15484,35 +15512,49 @@
         "change": -0.21,
         "transaction": 31524,
         "source": "twse-stock-day",
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=00878"
+      },
+      {
+        "ticker": "00878",
+        "date": "2026-09-29",
+        "tradeVolume": 29610000,
+        "tradeValue": 1035551160,
+        "open": 34.88,
+        "high": 35.15,
+        "low": 34.83,
+        "close": 34.83,
+        "change": -0.05,
+        "transaction": 11718,
+        "source": "twse-stock-day",
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=00878"
       }
     ],
-    "queryDate": "20260928",
-    "updatedAt": "2026-09-28T05:42:50.613Z",
+    "queryDate": "20260929",
+    "updatedAt": "2026-09-29T06:00:25.241Z",
     "source": "twse-stock-day",
-    "lastAttemptedAt": "2026-09-28T05:42:50.613Z",
-    "lastAttemptQueryDate": "20260928",
+    "lastAttemptedAt": "2026-09-29T06:00:25.241Z",
+    "lastAttemptQueryDate": "20260929",
     "sourceAttempts": [
       {
         "ticker": "0056",
         "status": "OK",
-        "rows": 18,
+        "rows": 19,
         "preservedRows": 0,
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=0056"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=0056"
       },
       {
         "ticker": "006208",
         "status": "OK",
-        "rows": 18,
+        "rows": 19,
         "preservedRows": 0,
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=006208"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=006208"
       },
       {
         "ticker": "00878",
         "status": "OK",
-        "rows": 18,
+        "rows": 19,
         "preservedRows": 0,
-        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260928&stockNo=00878"
+        "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20260929&stockNo=00878"
       }
     ]
   },
@@ -15578,7 +15620,7 @@
     ]
   },
   "stocks": {
-    "status": "official_twse_loaded",
+    "status": "preserved_previous_snapshot_after_undated_refresh",
     "requiredFor": [
       "直接股票辨識",
       "ETF 底層股票穿透",
@@ -70726,11 +70768,8 @@
       },
       {
         "source": "tpex-mainboard-daily-close-quotes",
-        "status": "loaded",
-        "rows": 11660,
-        "stockRows": 890,
-        "sourceDataDate": "2026-09-24",
-        "dateEvidence": "官方 Date 欄位",
+        "status": "failed",
+        "error": "read ECONNRESET",
         "url": "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes"
       }
     ],
