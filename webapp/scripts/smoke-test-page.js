@@ -114,6 +114,7 @@ async function main() {
   let chromeProcess = null;
   let customerDataDir = null;
   const failures = [];
+  const requestUrls = new Map();
   const consoleErrors = [];
   const runtimeErrors = [];
   const badResponses = [];
@@ -194,9 +195,13 @@ async function main() {
       if (message.method === "Runtime.exceptionThrown") {
         runtimeErrors.push(message.params.exceptionDetails?.exception?.description || message.params.exceptionDetails?.text || "runtime exception");
       }
+      if (message.method === "Network.requestWillBeSent") requestUrls.set(message.params.requestId, message.params.request.url);
       if (message.method === "Network.loadingFailed") {
         const reason = message.params.errorText || message.params.blockedReason || "loadingFailed";
-        if (reason !== "net::ERR_NETWORK_ACCESS_DENIED") failures.push(reason);
+        const url = requestUrls.get(message.params.requestId) || "";
+        const expectedFontBlock = /^https:\/\/fonts\.(googleapis|gstatic)\.com\//.test(url)
+          && ["net::ERR_BLOCKED_BY_CLIENT", "net::ERR_NETWORK_ACCESS_DENIED", "inspector"].includes(reason);
+        if (!expectedFontBlock) failures.push(`${reason}: ${url}`);
       }
       if (message.method === "Network.responseReceived") {
         const status = message.params.response.status;
@@ -210,6 +215,9 @@ async function main() {
     await send(ws, "Runtime.enable");
     await send(ws, "Emulation.setFocusEmulationEnabled", { enabled: true });
     await send(ws, "Network.enable");
+    // Local functional regression must not wait on a third-party font stylesheet.
+    // Live font rendering is checked separately in the browser visual review.
+    await send(ws, "Network.setBlockedURLs", { urls: ["https://fonts.googleapis.com/*", "https://fonts.gstatic.com/*"] });
     await send(ws, "Page.enable");
     await send(ws, "Page.addScriptToEvaluateOnNewDocument", {
       source: `(() => {
@@ -239,7 +247,11 @@ async function main() {
     });
 
     await send(ws, "Page.navigate", { url: targetUrl });
-    await waitForPageReady(ws);
+    try { await waitForPageReady(ws); } catch (error) {
+      console.error(JSON.stringify({ consoleErrors, runtimeErrors, failedRequests: failures, badResponses,
+        loadingRequests: [...requestUrls.values()].filter(url=>!url.startsWith(targetUrl)) }, null, 2));
+      throw error;
+    }
     await wait(4500);
     // An asynchronous ETF refresh can still be displaying its temporary mobile notice.
     // Wait for the real base status; keep the exact branding assertion below.
