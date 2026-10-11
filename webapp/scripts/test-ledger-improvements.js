@@ -46,6 +46,8 @@ const send = (text, user = "Ubatch", id = `m${++sequence}`) => handleLineWebhook
 
 async function main() {
   const parsed = parseMultilineLedger(screenshotText);
+  const fixtureMonth = parsed.entries[0].occurredAt.slice(0, 7);
+  assert.equal(new Set(parsed.entries.map((entry) => entry.occurredAt.slice(0, 7))).size, 1);
   assert.equal(parsed.entries.length, 22);
   assert.deepEqual(parsed.unresolved, []);
   assert.equal(parsed.entries[3].sourceLine, 5);
@@ -64,14 +66,17 @@ async function main() {
   await send(screenshotText, "Ubatch", "batch-redelivery");
   await send(screenshotText, "Ubatch", "batch-redelivery");
   assert.equal(store.linePendingInput("Ubatch").payload.entries.length, 22);
-  assert.equal(store.lineLedgerSummary("Ubatch").expense, 0, "preview must not write");
+  assert.equal(store.lineLedgerSummary("Ubatch", fixtureMonth).expense, 0, "preview must not write");
   await send("確認記帳");
-  assert.equal(store.lineLedgerSummary("Ubatch").expense, expense);
+  assert.equal(store.lineLedgerSummary("Ubatch", fixtureMonth).expense, expense);
   await send("確認記帳");
-  assert.equal(store.lineLedgerSummary("Ubatch").expense, expense, "confirmation idempotent");
+  assert.equal(store.lineLedgerSummary("Ubatch", fixtureMonth).expense, expense, "confirmation idempotent");
+  const currentMonth = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().slice(0, 7);
+  assert.equal(store.lineLedgerSummary("Ubatch").expense, currentMonth === fixtureMonth ? expense : 0, "default summary remains scoped to the current Taipei month");
   await send(screenshotTwo, "Urender"); await send("確認記帳", "Urender");
-  assert.equal(store.lineLedgerSummary("Urender").expense, 2758);
-  assert.equal(store.lineLedgerSummary("Urender").investment, 0);
+  const renderMonth = parseMultilineLedger(screenshotTwo).entries[0].occurredAt.slice(0, 7);
+  assert.equal(store.lineLedgerSummary("Urender", renderMonth).expense, 2758);
+  assert.equal(store.lineLedgerSummary("Urender", renderMonth).investment, 0);
   const networkGuard = global.fetch;
   try {
     global.fetch = async () => Response.json({ output_text: JSON.stringify({ entries: [
@@ -137,7 +142,7 @@ async function main() {
   await handleLineWebhook(imageEvent("img0"), { store, fetchImpl: fakeFetch }); assert.equal(calls, 0);
   await send("啟用圖片記帳", "Uimage"); await send("同意並啟用圖片記帳", "Uimage");
   await handleLineWebhook(imageEvent("img1"), { store, fetchImpl: fakeFetch });
-  assert.equal(calls, 2); assert.equal(store.lineLedgerSummary("Uimage").expense, 0);
+  assert.equal(calls, 2); assert.equal(store.lineLedgerSummary("Uimage", "2026-09").expense, 0, "image preview must not write its fixture month");
   await handleLineWebhook(imageEvent("img1-pending-copy"), { store, fetchImpl: fakeFetch });
   assert.equal(calls, 2, "pending image blocks further downloads and preserves confirmation");
   await send("確認記帳", "Uimage");
@@ -154,6 +159,6 @@ async function main() {
   await assert.rejects(parseStatementImage({ type: "image/png", buffer: Buffer.from("x") }, { fetchImpl: async () => Response.json({ status: "incomplete" }) }));
   store.deleteLineUserData({ lineUserId: "Usettings" });
   assert.equal(store.userBootstrap(user.id).cashflow.financialSettings, null);
-  console.log(JSON.stringify({ passed: true, screenshotEntries: parsed.entries.length, screenshotExpense: expense, missingExpense: expense - 30807, renderExpense: 2758, atomicBatch: true, reloadSettings: true, emptyHoldings: true, imageConsentAndDuplicateGates: true, externalCalls: 0 }, null, 2));
+  console.log(JSON.stringify({ passed: true, fixtureMonth, currentMonth, screenshotEntries: parsed.entries.length, screenshotExpense: expense, missingExpense: expense - 30807, renderExpense: 2758, atomicBatch: true, reloadSettings: true, emptyHoldings: true, imageConsentAndDuplicateGates: true, externalCalls: 0 }, null, 2));
 }
 main().catch((error) => { console.error(error); process.exitCode = 1; });
