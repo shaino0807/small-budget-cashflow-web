@@ -4,7 +4,7 @@ const { spawn } = require("node:child_process");
 const { publicFiles, isPublicFile } = require("../public-files");
 const { buildPublicSite } = require("./build-public-site");
 const root = path.resolve(__dirname, "..");
-const blocked = [".env.local", ".env.example", "server.js", "customer-store.js", "statement-reader.js", "public-files.js", "scripts/test-image-privacy.js", "private-data/customers.sqlite", "reports/journal-dashboard-fixture.html", "data/../server.js", "assets/../../.env.local", "Dockerfile"];
+const blocked = [".env.local", ".env.example", "server.js", "etf-market.js", "customer-store.js", "statement-reader.js", "public-files.js", "scripts/test-image-privacy.js", "private-data/customers.sqlite", "private-data/market-cache/0050.json", "reports/journal-dashboard-fixture.html", "data/../server.js", "assets/../../.env.local", "Dockerfile"];
 async function main() {
   const destination = fs.mkdtempSync(path.join(os.tmpdir(), "cashflow-public-"));
   assert.equal(buildPublicSite(destination), publicFiles.length);

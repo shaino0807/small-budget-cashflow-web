@@ -3,10 +3,14 @@ const https = require("https");
 const path = require("path");
 const vm = require("vm");
 
-const dbPath = path.join(__dirname, "..", "data", "etf-database.json");
+const dbPath = process.env.ETF_DATABASE_PATH ? path.resolve(process.env.ETF_DATABASE_PATH) : path.join(__dirname, "..", "data", "etf-database.json");
 const requestTimeoutMs = 15000;
 
 const sourceConfigs = {
+  "0050": {
+    holdings: { url: "https://www.yuantaetfs.com/product/detail/0050/ratio", source: "yuanta-holdings-ratio", coverage: "official_nuxt_state" },
+    nav: { url: "https://www.yuantaetfs.com/product/detail/0050/ratio", source: "yuanta-pcf-nav" }
+  },
   "0056": {
     holdings: {
       url: "https://www.yuantaetfs.com/product/detail/0056/ratio",
@@ -95,11 +99,11 @@ function extractNuxtState(html) {
   const code = html.slice(codeStart, codeEnd).trim();
   if (!code.startsWith("(function(")) return null;
   if (/\b(require|process|globalThis|Function|eval|import|XMLHttpRequest)\b/.test(code)) return null;
-  const sandbox = { window: {} };
-  vm.createContext(sandbox);
+  const sandbox = Object.create(null);
+  vm.createContext(sandbox, { codeGeneration: { strings: false, wasm: false } });
   try {
-    vm.runInContext(`window.__NUXT__=${code}`, sandbox, { timeout: 1000 });
-    return sandbox.window.__NUXT__ || null;
+    const serialized = vm.runInContext(`var window = {}; window.__NUXT__=${code}; JSON.stringify(window.__NUXT__)`, sandbox, { timeout: 1000 });
+    return JSON.parse(serialized) || null;
   } catch {
     return null;
   }
@@ -280,7 +284,7 @@ async function main() {
 
     try {
       const holdingsHtml = await fetchText(config.holdings.url);
-      const parsed = ticker === "0056"
+      const parsed = ["0050", "0056"].includes(ticker)
         ? parseYuantaHoldings(holdingsHtml, ticker, config.holdings)
         : ticker === "006208"
           ? parseFubonHoldings(holdingsHtml, ticker, config.holdings)
@@ -301,7 +305,7 @@ async function main() {
 
     try {
       const navHtml = await fetchText(config.nav.url);
-      const parsed = ticker === "0056"
+      const parsed = ["0050", "0056"].includes(ticker)
         ? parseYuantaNav(navHtml, ticker, config.nav, db)
         : ticker === "006208"
           ? parseFubonNav(navHtml, ticker, config.nav, db)
@@ -348,8 +352,8 @@ async function main() {
   }
 
   for (const source of [
-    { id: "yuanta-holdings-ratio", name: "元大投信 ETF 持股比重", url: sourceConfigs["0056"].holdings.url, usage: "0056 官方持股比重頁，優先解析 Nuxt SSR 狀態中的完整 StockWeights" },
-    { id: "yuanta-pcf-nav", name: "元大投信 ETF 持股比重 / PCF 淨值欄位", url: sourceConfigs["0056"].nav.url, usage: "0056 官方 NAV/PCF 欄位" },
+    { id: "yuanta-holdings-ratio", name: "元大投信 ETF 持股比重", url: sourceConfigs["0056"].holdings.url, usage: "0050、0056 官方持股比重頁，優先解析 Nuxt SSR 狀態中的完整 StockWeights" },
+    { id: "yuanta-pcf-nav", name: "元大投信 ETF 持股比重 / PCF 淨值欄位", url: sourceConfigs["0056"].nav.url, usage: "0050、0056 官方 NAV/PCF 欄位" },
     { id: "cathay-fund-detail-nav", name: "國泰投信基金詳情淨值和市價", url: sourceConfigs["00878"].nav.url, usage: "00878 官方收盤價、淨值與日期" },
     { id: "cathay-etf-detail-holdings", name: "國泰投信 ETF 詳情持股權重", url: sourceConfigs["00878"].holdings.url, usage: "00878 官方持股權重頁；目前公開 HTML 未穩定吐出表格列" },
     { id: "fubon-fund-assets", name: "富邦投信 ETF 基金資產", url: sourceConfigs["006208"].holdings.url, usage: "006208 官方基金資產、完整可見持股列與 NAV" }
@@ -372,7 +376,8 @@ async function main() {
   }, null, 2));
 }
 
-main().catch((error) => {
+if (require.main === module) main().catch((error) => {
   console.error(error.message);
   process.exit(1);
 });
+module.exports = { sourceConfigs, fetchText, extractNuxtState, parseYuantaHoldings, parseYuantaNav, parseFubonHoldings, parseFubonNav, parseCathayHoldings, parseCathayNav };

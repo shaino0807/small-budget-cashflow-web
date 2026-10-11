@@ -174,6 +174,67 @@ let authState = {
   sessionExpiresAt: null
 };
 let etfDatabase = null;
+const etfData = window.CashflowEtfData;
+let priceChartTickers = [];
+let priceChartMonths = 1;
+let priceSelectionInitialized = false;
+const etfRequestStates = new Map();
+const etfRequestQueue = new Map();
+let etfQueueRunning = false;
+
+function queueEtfData(ticker, months = 1, force = false) {
+  if (!findEtf(ticker)) return;
+  const previous = etfRequestStates.get(ticker);
+  if (!force && previous?.months >= months && ["loading", "loaded", "failed"].includes(previous.status)) return;
+  if (!backendAvailable()) { etfRequestStates.set(ticker, { status: "offline", months }); return; }
+  etfRequestQueue.set(ticker, Math.max(months, etfRequestQueue.get(ticker) || 0));
+  if (!etfQueueRunning) void processEtfQueue();
+}
+
+async function processEtfQueue() {
+  etfQueueRunning = true;
+  try {
+    while (etfRequestQueue.size) {
+      const [ticker, months] = etfRequestQueue.entries().next().value;
+      etfRequestQueue.delete(ticker);
+      etfRequestStates.set(ticker, { status: "loading", months });
+      renderHoldings(); renderDatabaseView();
+      try {
+        const response = await fetch(apiUrl(`/api/market/etf?ticker=${encodeURIComponent(ticker)}&months=${months}`),
+          { cache: "no-store", credentials: "omit", signal: AbortSignal.timeout(120000) });
+        const payload = await response.json();
+        if (!response.ok || !payload.ok || payload.data?.ticker !== ticker) throw new Error(payload.error || "官方資料查詢失敗");
+        const data = payload.data;
+        for (const name of ["priceSeries", "holdings", "navSeries"]) {
+          etfDatabase[name] ||= { items: [] };
+          etfDatabase[name].items = [...(etfDatabase[name].items || []).filter((row) => row.ticker !== ticker), ...(data[name] || [])];
+        }
+        etfDatabase.distributions = [...(etfDatabase.distributions || []).filter((row) => row.ticker !== ticker), ...(data.distributions || [])];
+        etfDatabase.distributionHistory ||= {};
+        if (data.distributionHistory) etfDatabase.distributionHistory[ticker] = data.distributionHistory;
+        etfDatabase.holdingsCoverage ||= {};
+        if (data.holdingsCoverage) etfDatabase.holdingsCoverage[ticker] = data.holdingsCoverage;
+        etfRequestStates.set(ticker, { status: "loaded", months, attempts: data.sourceAttempts || [] });
+        etfDataQuality = validateEtfDatabase(etfDatabase);
+        enrichHoldingsFromDatabase();
+      } catch (error) { etfRequestStates.set(ticker, { status: "failed", months, error: error.message }); }
+      renderHoldings(); refreshReports();
+    }
+  } finally { etfQueueRunning = false; }
+}
+
+function heldEtfTickers() { return etfData.heldTickers(etfDatabase, state.holdings); }
+
+function yieldText(holding) {
+  if (holding.yieldSource !== "official_ttm") return findEtf(holding.ticker) ? "配息資料待補" : "殖利率待確認";
+  if (holding.yieldStatus === "non_distributing") return "官方確認不配息 · 0%";
+  return `近12個月配息殖利率 ${pct(holding.dividendYield, 2)}${holding.yieldStatus === "short_history" ? "（上市未滿一年）" : ""}`;
+}
+
+function yieldCoverageNote(holdings = state.holdings) {
+  const missing = holdings.filter((holding) => isEtfHolding(holding) && holdingAmount(holding) > 0 && holding.dividendYield === null);
+  return missing.length ? `配息估算未完成：${missing.map((holding) => holding.ticker || "未選標的").join("、")} 缺少完整配息或價格資料；下列金額只計已知部分。` : "依近12個月實際配息試算，未來配息金額尚未確定。";
+}
 let etfDataQuality = {
   status: "loading",
   errors: [],
@@ -256,7 +317,7 @@ function normalizeHolding(holding) {
     ticker: String(holding.ticker || "").trim(),
     amount,
     lots,
-    dividendYield: Number(holding.dividendYield || 0)
+    dividendYield: holding.dividendYield === null || holding.dividendYield === undefined || holding.dividendYield === "" ? null : Number(holding.dividendYield)
   };
 }
 
@@ -376,6 +437,8 @@ function applyMemberBootstrap(bootstrap) {
   updateProfileInputs();
   syncQuizInputs();
   renderMonthlyCashflows();
+  enrichHoldingsFromDatabase();
+  for (const ticker of heldEtfTickers()) queueEtfData(ticker);
   renderHoldings();
   persist();
   refreshReports();
@@ -662,38 +725,18 @@ async function loadEtfDatabase() {
     etfDatabase = await response.json();
     etfDataQuality = validateEtfDatabase(etfDatabase);
     enrichHoldingsFromDatabase();
+    q("#etfSearchOptions").innerHTML = etfDatabase.etfs.map((etf) => `<option value="${escapeHtml(etf.ticker + " " + etf.shortName)}"></option>`).join("");
+    etfRequestStates.clear();
+    for (const ticker of heldEtfTickers()) queueEtfData(ticker);
   } catch (error) {
     etfDatabase = null;
+    state.holdings = state.holdings.map((holding) => isEtfHolding(holding) ? { ...holding, dividendYield: null, yieldSource: "pending_official" } : holding);
     etfDataQuality = {
       status: "failed",
       errors: [`ETF 資料庫載入失敗：${error.message}`],
-      warnings: ["目前會退回本機範例資料，正式對外使用前必須修正。"],
+      warnings: ["官方主檔目前無法載入；ETF 配息估算暫停，請稍後重試。"],
       counts: { etfs: 0, distributions: 0, holdings: 0, stocks: 0, priceSeries: 0, navSeries: 0 }
     };
-  }
-}
-
-async function refreshDatabaseFromServer(reason = "open") {
-  if (!backendAvailable()) return false;
-  try {
-    const status = await fetch(apiUrl("/api/database-status"), { cache: "no-store" });
-    if (!status.ok) return false;
-    if (reason === "manual") showToast("正在更新官方資料庫");
-    const response = await fetch(`${apiUrl("/api/market/refresh")}?reason=${encodeURIComponent(reason)}`, {
-      method: "POST",
-      cache: "no-store"
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const result = await response.json();
-    if (!result.ok) throw new Error(result.error || "更新失敗");
-    await loadEtfDatabase();
-    renderHoldings();
-    refreshReports();
-    showToast("官方資料庫已更新");
-    return true;
-  } catch (error) {
-    if (reason === "manual") showToast(`更新失敗，沿用最後快照：${error.message}`);
-    return false;
   }
 }
 
@@ -790,14 +833,18 @@ function enrichHoldingsFromDatabase() {
         dataDate: stock.latestPrice?.date || holding.dataDate
       };
     }
-    const officialYield = estimatedDividendYield(etf.ticker, 0);
+    const officialYield = etfData.trailingYield(etfDatabase, etf.ticker);
     return {
       ...holding,
       name: etf.shortName,
       type: etfDisplayType(etf, holding.type === "個股" ? "ETF" : holding.type),
       sector: etf.themes?.[0] || etf.displayClassification?.primary || etf.assetTypes?.[0] || holding.sector,
-      dividendYield: officialYield || Number(holding.dividendYield || 0),
-      yieldSource: officialYield > 0 ? "official_distributions" : holding.yieldSource === "official_distributions" ? undefined : holding.yieldSource,
+      legacyDividendYield: holding.legacyDividendYield ?? (holding.yieldSource !== "official_ttm" ? holding.dividendYield : null),
+      dividendYield: officialYield.value,
+      yieldStatus: officialYield.status,
+      yieldSource: officialYield.value === null ? "pending_official" : "official_ttm",
+      yieldPriceDate: officialYield.priceDate,
+      yieldAsOf: officialYield.to,
       dataSource: "official_snapshot",
       dataDate: etf.performance?.date
     };
@@ -881,30 +928,16 @@ function annualDividend(holdings) {
 
 function latestMarketPrice(ticker) {
   const key = String(ticker || "").trim();
-  const navRows = (etfDatabase?.navSeries?.items || [])
-    .filter((row) => row.ticker === key && Number(row.close || row.nav) > 0)
-    .sort((a, b) => String(b.date).localeCompare(String(a.date)));
-  if (navRows[0]) return Number(navRows[0].close || navRows[0].nav);
-
-  const priceRows = (etfDatabase?.priceSeries?.items || [])
-    .filter((row) => row.ticker === key && Number(row.close) > 0)
-    .sort((a, b) => String(b.date).localeCompare(String(a.date)));
-  if (priceRows[0]) return Number(priceRows[0].close);
+  const price = etfData.latestClose(etfDatabase, key);
+  if (price) return Number(price.close);
 
   const stock = findStock(key);
   return Number(stock?.latestPrice?.close || 0);
 }
 
 function estimatedDividendYield(ticker, fallback = 0) {
-  const key = String(ticker || "").trim();
-  const distributions = (etfDatabase?.distributions || [])
-    .filter((row) => row.ticker === key && Number(row.amountPerUnit) > 0)
-    .sort((a, b) => String(b.payDate).localeCompare(String(a.payDate)))
-    .slice(0, 4);
-  const price = latestMarketPrice(key);
-  if (!distributions.length || !price) return Number(fallback || 0);
-  const annualCash = distributions.reduce((sum, row) => sum + Number(row.amountPerUnit || 0), 0);
-  return Number((annualCash / price * 100).toFixed(2));
+  if (findEtf(ticker)) return etfData.trailingYield(etfDatabase, ticker).value;
+  return Number(fallback || 0);
 }
 
 function etfDisplayType(etf, fallback = "ETF") {
@@ -1774,6 +1807,11 @@ function clearMonthlyCashflows() {
 
 function renderHoldings() {
   const root = q("#holdingEditor");
+  const focused = root.contains(document.activeElement) ? document.activeElement : null;
+  const focusRow = focused?.closest(".holding-row");
+  const focusIndex = focusRow ? [...root.children].indexOf(focusRow) : -1;
+  const focusField = focused?.dataset.field || (focused?.hasAttribute("data-holding-amount") ? "holdingAmount" : null);
+  const selection = focused?.selectionStart;
   root.innerHTML = "";
   state.holdings.forEach((holding, index) => {
     const officialEtf = findEtf(holding.ticker);
@@ -1782,21 +1820,21 @@ function renderHoldings() {
     const resolvedName = officialEtf?.shortName || officialStock?.shortName || holding.name || "等待輸入代號";
     const resolvedType = officialStock && !officialEtf ? "個股" : holding.type || "ETF";
     const hasOfficialData = Boolean(officialEtf || officialStock);
-    const hasOfficialYield = Boolean(officialEtf && holding.yieldSource === "official_distributions" && Number(holding.dividendYield) > 0);
+    const hasOfficialYield = Boolean(officialEtf && holding.yieldSource === "official_ttm" && holding.dividendYield !== null);
     const hasLineLots = (holding.lots || []).some((lot) => lot.source === "line");
     const lookupFailed = String(holding.ticker || "").length >= 4 && !hasOfficialData;
-    const yieldLabel = hasOfficialYield ? "官方配息估算" : Number(holding.dividendYield) > 0 ? "手動" : "配息資料待更新";
-    const yieldDetail = Number(holding.dividendYield) > 0 ? `${yieldLabel} ${pct(holding.dividendYield, 2)}` : yieldLabel;
+    const request = etfRequestStates.get(holding.ticker);
+    const yieldDetail = officialEtf ? request?.status === "loading" && !hasOfficialYield ? "正在取得官方配息與價格…" : yieldText(holding) : "個股殖利率可於進階編輯填寫";
     const row = document.createElement("div");
     row.className = "holding-row";
     row.innerHTML = `
       <div class="holding-primary">
-        <label>代號<input data-field="ticker" value="${escapeHtml(holding.ticker)}" inputmode="numeric" autocomplete="off" placeholder="例如 0056" /></label>
+        <label>代號或中文名稱<input data-field="ticker" value="${escapeHtml(holding.ticker)}" list="etfSearchOptions" autocomplete="off" placeholder="0050 或元大台灣50" /></label>
         <label>投入金額<input data-holding-amount type="number" min="0" step="1000" value="${amount || ""}" ${hasLineLots ? "readonly" : ""} placeholder="例如 10000" /></label>
         <div class="holding-identity ${lookupFailed ? "is-warning" : ""}">
           <span>${hasOfficialData ? "系統已帶入" : lookupFailed ? "找不到官方資料" : "等待查詢"}</span>
           <strong>${escapeHtml(resolvedName)}</strong>
-          <small>${escapeHtml(resolvedType)}${officialEtf ? Number(holding.dividendYield) > 0 ? ` · 殖利率 ${pct(holding.dividendYield, 2)}` : " · 配息資料待更新" : ""}</small>
+          <small>${escapeHtml(resolvedType)} · ${escapeHtml(yieldDetail)}</small>
         </div>
         <button class="icon-button" data-remove="${index}" type="button" title="刪除部位" aria-label="刪除部位">×</button>
       </div>
@@ -1810,7 +1848,7 @@ function renderHoldings() {
               ${["ETF", "市值型", "股票型ETF", "高股息", "個股", "債券", "貨幣", "REITs", "原物料", "多資產", "槓桿型", "反向型", "海外", "主題"].map((type) => `<option ${resolvedType === type ? "selected" : ""}>${type}</option>`).join("")}
             </select>
           </label>
-          <label>殖利率<input data-field="dividendYield" type="number" min="0" step="0.01" value="${holding.dividendYield}" ${hasOfficialYield ? "readonly" : ""} /></label>
+          <label>${officialEtf ? "近12個月配息殖利率（%）" : "殖利率（%）"}<input data-field="dividendYield" type="number" min="0" step="0.01" value="${holding.dividendYield ?? ""}" ${officialEtf ? "readonly" : ""} placeholder="${officialEtf ? "等待官方資料" : ""}" /></label>
         </div>
         <div class="lot-editor">
           <div class="lot-title">
@@ -1826,10 +1864,11 @@ function renderHoldings() {
           `).join("")}
         </div>
         ${officialEtf
-          ? `<small class="data-note">${officialEtf.issuer} · 資料日 ${officialEtf.performance.date} · ${yieldDetail}</small>`
+          ? `<small class="data-note">${escapeHtml(officialEtf.issuer)} · 官方資料日 ${officialEtf.performance?.date || "官方未提供"} · ${escapeHtml(yieldDetail)}${hasOfficialYield ? ` · 收盤價日期 ${holding.yieldPriceDate} · 配息統計截至 ${holding.yieldAsOf}` : ""}</small>`
           : officialStock
             ? `<small class="data-note">${officialStock.market} · ${industryDisplayName(officialStock.industry)} · ${officialStock.latestPrice?.date || "官方端點未提供交易日"}</small>`
-            : `<small class="data-note warning">可手動補上名稱、類型與殖利率。</small>`}
+            : `<small class="data-note warning">請輸入代號或從搜尋建議選擇 ETF；名稱有多筆結果時請選出正確代號。</small>`}
+        ${officialEtf && (!hasOfficialYield || request?.status === "failed") ? `<button class="secondary-button mini-button" data-retry-etf="${escapeHtml(holding.ticker)}" type="button">重試官方資料</button>` : ""}
       </details>
     `;
     root.append(row);
@@ -1839,6 +1878,7 @@ function renderHoldings() {
     input.addEventListener("input", (event) => {
       const row = event.target.closest(".holding-row");
       const index = [...root.querySelectorAll(":scope > .holding-row")].indexOf(row);
+      if (index < 0 || !state.holdings[index]) return;
       setManualHoldingAmount(state.holdings[index], Number(event.target.value || 0));
       refreshReports();
     });
@@ -1848,6 +1888,7 @@ function renderHoldings() {
     input.addEventListener("input", (event) => {
       const row = event.target.closest(".holding-row");
       const index = [...root.querySelectorAll(":scope > .holding-row")].indexOf(row);
+      if (index < 0 || !state.holdings[index]) return;
       const field = event.target.dataset.field;
       if (!field) return;
       const numeric = ["amount", "dividendYield", "expenseRatio"].includes(field);
@@ -1857,6 +1898,7 @@ function renderHoldings() {
         enrichHoldingsFromDatabase();
         if (mergeDuplicateHoldings()) showToast("已合併相同代號的持股");
         renderHoldings();
+        queueEtfData(String(event.target.value).trim());
       }
       if (field === "type") state.holdings[index].sector = defaultSector(event.target.value);
       refreshReports();
@@ -1867,18 +1909,36 @@ function renderHoldings() {
     input.addEventListener("change", (event) => {
       const row = event.target.closest(".holding-row");
       const index = [...root.querySelectorAll(":scope > .holding-row")].indexOf(row);
-      state.holdings[index].ticker = String(event.target.value).trim();
+      if (index < 0 || !state.holdings[index]) return;
+      const selected = etfData.resolveEtf(etfDatabase, event.target.value);
+      state.holdings[index].ticker = selected?.ticker || String(event.target.value).trim().toUpperCase();
+      if (!selected && !findStock(state.holdings[index].ticker)) {
+        state.holdings[index].dividendYield = null;
+        state.holdings[index].yieldSource = "pending_official";
+        showToast("請選擇明確的 ETF 代號；中文名稱有多筆結果時不會自動猜選。");
+      }
       enrichHoldingsFromDatabase();
       if (mergeDuplicateHoldings()) showToast("已合併相同代號的持股");
       renderHoldings();
       refreshReports();
+      if (selected) queueEtfData(selected.ticker);
     });
   });
+
+  root.querySelectorAll("[data-retry-etf]").forEach((button) => button.addEventListener("click", () => queueEtfData(button.dataset.retryEtf, 1, true)));
+
+  if (focusIndex >= 0 && focusField) {
+    const selector = focusField === "holdingAmount" ? "[data-holding-amount]" : `[data-field="${focusField}"]`;
+    const restored = root.children[focusIndex]?.querySelector(selector);
+    restored?.focus({ preventScroll: true });
+    if (restored?.type === "text" && selection !== null) restored.setSelectionRange(selection, selection);
+  }
 
   root.querySelectorAll("[data-lot-field]").forEach((input) => {
     input.addEventListener("input", (event) => {
       const row = event.target.closest(".holding-row");
       const index = [...root.querySelectorAll(":scope > .holding-row")].indexOf(row);
+      if (index < 0 || !state.holdings[index]) return;
       const lotIndex = Number(event.target.closest(".lot-row").dataset.lot);
       const field = event.target.dataset.lotField;
       state.holdings[index].lots[lotIndex][field] = Number(event.target.value || 0);
@@ -1902,6 +1962,7 @@ function renderHoldings() {
     button.addEventListener("click", () => {
       const row = button.closest(".holding-row");
       const index = [...root.querySelectorAll(":scope > .holding-row")].indexOf(row);
+      if (index < 0 || !state.holdings[index]) return;
       state.holdings[index].lots.splice(Number(button.dataset.removeLot), 1);
       if (!state.holdings[index].lots.length) state.holdings[index].lots.push({ price: 0, amount: 0 });
       state.holdings[index].amount = holdingAmount(state.holdings[index]);
@@ -2584,7 +2645,7 @@ function scoreHtml(report) {
       </div>
       <div class="metrics">
         <div class="metric"><span>每月可用現金流</span><strong>${formatMoney(investableCashflow(report.profile))}</strong></div>
-        <div class="metric"><span>投資年配息估算</span><strong>${formatMoney(annualDividend(report.holdings))}</strong></div>
+        <div class="metric"><span>投資年配息估算（已知部分）</span><strong>${formatMoney(annualDividend(report.holdings))}</strong><small>${escapeHtml(yieldCoverageNote(report.holdings))}</small></div>
         <div class="metric"><span>高股息依賴</span><strong>${pct(report.highDividendRatio)}</strong></div>
         <div class="metric"><span>退休缺口</span><strong>${formatMoney(report.gap.gap)}</strong></div>
       </div>
@@ -2782,7 +2843,7 @@ function trustSourceHtml() {
         <div class="metric"><span>配息資料</span><strong>${quality.counts.distributions || 0} 筆</strong></div>
         <div class="metric"><span>資料狀態</span><strong>${quality.status === "failed" ? "需檢查" : "可查核"}</strong></div>
       </div>
-      <button class="secondary-button" data-goto="databaseView" type="button">查看資料後台</button>
+      <button class="secondary-button" data-goto="databaseView" type="button">查看 ETF 官方資料與走勢</button>
     </section>
   `;
 }
@@ -3111,6 +3172,8 @@ function applyLineSummaryToState(summary) {
   updateProfileInputs();
   renderMonthlyCashflows();
   state.reportMeta.lineAppliedAt = new Date().toISOString();
+  enrichHoldingsFromDatabase();
+  for (const ticker of heldEtfTickers()) queueEtfData(ticker);
   renderHoldings();
   return true;
 }
@@ -3518,7 +3581,7 @@ function renderDatabaseView() {
   if (!summary) return;
 
   summary.textContent = db
-    ? `快照日期 ${db.metadata.snapshotDate}，官方績效資料日 ${db.metadata.officialPerformanceDate}`
+    ? `主檔快照 ${db.metadata.snapshotDate} · 最後更新 ${observedTime(db.metadata.refreshExecutedAt)} · 市場參考交易日 ${db.metadata.officialPerformanceDate || "官方未提供"}。明細依家庭收支持有的 ETF 顯示。`
     : "ETF 官方資料庫尚未載入";
 
   const statusText = {
@@ -3589,7 +3652,7 @@ function renderDatabaseView() {
       <span>${db.etfs.length} 檔</span>
     </div>
     <table>
-      <thead><tr><th>代號</th><th>名稱</th><th>顯示分類</th><th>官方標籤</th><th>發行公司</th><th>追蹤指數</th><th>資產規模</th><th>資料日</th><th>來源</th></tr></thead>
+      <thead><tr><th>代號</th><th>名稱</th><th>顯示分類</th><th>官方標籤</th><th>發行公司</th><th>追蹤指數</th><th>資產規模</th><th>官方資料日</th><th>最後成功取得</th><th>價格交易日</th><th>來源</th></tr></thead>
       <tbody>
         ${db.etfs.map((etf) => `
           <tr>
@@ -3600,7 +3663,9 @@ function renderDatabaseView() {
             <td>${etf.issuer}</td>
             <td>${etf.indexName}</td>
             <td>${number.format(etf.aumBillionTwd)} 億</td>
-            <td>${etf.performance.date}</td>
+            <td>${etf.performance?.date || "官方未提供"}</td>
+            <td>${observedTime(etf.performance?.observedAt)}</td>
+            <td>${etfData.latestClose(db, etf.ticker)?.date || "尚無有日期價格"}</td>
             <td><a href="${etf.sourceUrl}" target="_blank" rel="noreferrer">TWSE</a></td>
           </tr>
         `).join("")}
@@ -3610,61 +3675,24 @@ function renderDatabaseView() {
 
   q("#databaseSectorTable").innerHTML = databaseSectorHtml(db);
 
-  q("#priceSeriesTable").innerHTML = db?.priceSeries?.items?.length ? `
-    <div class="table-title">
-      <h3>官方價格明細</h3>
-      <span>${db.priceSeries.items.length} 筆</span>
-    </div>
-    <table>
-      <thead><tr><th>日期</th><th>代號</th><th>開盤</th><th>最高</th><th>最低</th><th>收盤</th><th>成交股數</th></tr></thead>
-      <tbody>
-        ${db.priceSeries.items.slice(-18).map((row) => `
-          <tr>
-            <td>${row.date}</td>
-            <td>${row.ticker}</td>
-            <td>${row.open}</td>
-            <td>${row.high}</td>
-            <td>${row.low}</td>
-            <td>${row.close}</td>
-            <td>${number.format(row.tradeVolume || 0)}</td>
-          </tr>
-        `).join("")}
-      </tbody>
-    </table>
-  ` : `<section class="panel"><p>尚未載入官方價格折線。</p></section>`;
+  const held = heldEtfTickers();
+  q("#priceSeriesTable").innerHTML = heldOfficialTable(db, held, "price");
+  q("#holdingsTable").innerHTML = heldOfficialTable(db, held, "holdings");
+  renderPriceChartControls();
 
-  q("#holdingsTable").innerHTML = db?.holdings?.items?.length ? `
-    <div class="table-title">
-      <h3>官方成分股</h3>
-      <span>${db.holdings.items.length} 筆</span>
-    </div>
-    <table>
-      <thead><tr><th>資料日</th><th>ETF</th><th>成分股</th><th>名稱</th><th>權重</th><th>股數</th><th>來源</th></tr></thead>
-      <tbody>
-        ${db.holdings.items.slice(0, 80).map((row) => `
-          <tr>
-            <td>${row.asOfDate || "未揭露"}</td>
-            <td>${row.ticker}</td>
-            <td>${row.holdingTicker}</td>
-            <td>${row.holdingName}</td>
-            <td>${pct(row.weight)}</td>
-            <td>${row.shares === null ? "-" : number.format(row.shares || 0)}</td>
-            <td><a href="${row.sourceUrl}" target="_blank" rel="noreferrer">官方</a></td>
-          </tr>
-        `).join("")}
-      </tbody>
-    </table>
-  ` : `<section class="panel"><p>尚未載入官方成分股權重。</p></section>`;
-
-  q("#navSeriesTable").innerHTML = db?.navSeries?.items?.length ? `
+  const heldNav = (db?.navSeries?.items || []).filter((row) => held.includes(row.ticker)).map((row) => {
+    const close = db.priceSeries?.items?.find((item) => item.ticker === row.ticker && item.date === row.date)?.close;
+    return { ...row, close: close ?? null, premiumDiscountPercent: close && row.nav > 0 ? (close / row.nav - 1) * 100 : null };
+  });
+  q("#navSeriesTable").innerHTML = heldNav.length ? `
     <div class="table-title">
       <h3>NAV/折溢價</h3>
-      <span>${db.navSeries.items.length} 筆</span>
+      <span>${heldNav.length} 筆</span>
     </div>
     <table>
       <thead><tr><th>日期</th><th>ETF</th><th>收盤價</th><th>NAV</th><th>折溢價</th><th>來源</th></tr></thead>
       <tbody>
-        ${db.navSeries.items.map((row) => `
+        ${heldNav.map((row) => `
           <tr>
             <td>${row.date}</td>
             <td>${row.ticker}</td>
@@ -3681,10 +3709,67 @@ function renderDatabaseView() {
   requestAnimationFrame(drawOfficialPriceChart);
 }
 
+function observedTime(value) {
+  const date = new Date(value || "");
+  return Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat("zh-TW", { timeZone: "Asia/Taipei", dateStyle: "short", timeStyle: "short", hour12: false }).format(date) + "（台灣）" : "尚無成功紀錄";
+}
+
+function heldOfficialTable(db, tickers, kind) {
+  const title = kind === "price" ? "官方價格明細" : "官方成分股";
+  if (!tickers.length) return `<section class="panel"><h3>${title}</h3><p>先在家庭收支加入 ETF，即可查看持有標的的官方明細。</p></section>`;
+  return `<h3>${title} · 我的持有 ETF</h3>` + tickers.map((ticker) => {
+    const rows = (kind === "price" ? db?.priceSeries?.items : db?.holdings?.items) || [];
+    const items = rows.filter((row) => row.ticker === ticker).sort((a, b) => kind === "price" ? b.date.localeCompare(a.date) : Number(b.weight) - Number(a.weight));
+    const request = etfRequestStates.get(ticker), coverage = db?.holdingsCoverage?.[ticker];
+    const note = request?.status === "loading" ? "正在取得官方資料…" : !items.length ? "官方資料尚未接入；保留持有部位，稍後可重試。"
+      : kind === "holdings" ? `資料日 ${items[0].asOfDate || "官方未提供"} · ${coverage?.complete ? "已讀取官方完整持股清單" : "完整性待驗證"} · 股票權重合計 ${pct(items.reduce((sum, row) => sum + Number(row.weight || 0), 0), 2)}（其餘可含現金或其他資產）`
+      : `${items.at(-1).date} → ${items[0].date}；列出全部已取得價格，沒有截斷筆數。`;
+    const header = kind === "price" ? "<th>交易日</th><th>開盤</th><th>最高</th><th>最低</th><th>收盤</th><th>成交股數</th>" : "<th>成分股代號</th><th>名稱</th><th>權重</th><th>股數</th><th>官方來源</th>";
+    const body = items.map((row) => kind === "price" ? `<tr data-etf="${ticker}"><td>${row.date}</td><td>${row.open ?? "—"}</td><td>${row.high ?? "—"}</td><td>${row.low ?? "—"}</td><td>${row.close ?? "—"}</td><td>${row.tradeVolume === null ? "—" : number.format(row.tradeVolume || 0)}</td></tr>`
+      : `<tr data-etf="${ticker}"><td>${escapeHtml(row.holdingTicker)}</td><td>${escapeHtml(row.holdingName)}</td><td>${pct(row.weight, 2)}</td><td>${row.shares === null ? "—" : number.format(row.shares || 0)}</td><td><a href="${escapeHtml(row.sourceUrl)}" target="_blank" rel="noreferrer">官方</a></td></tr>`).join("");
+    return `<details open class="held-etf-detail" data-held-etf="${ticker}"><summary>${ticker} ${escapeHtml(findEtf(ticker)?.shortName || "")} · ${items.length} 筆</summary><p class="panel-note">${escapeHtml(note)}</p>${items.length ? `<div class="etf-detail-scroll"><table><thead><tr>${header}</tr></thead><tbody>${body}</tbody></table></div>` : ""}<button class="secondary-button mini-button" data-market-retry="${ticker}" type="button">重新查詢 ${ticker}</button></details>`;
+  }).join("");
+}
+
+function renderPriceChartControls() {
+  if (!priceSelectionInitialized && etfDatabase) {
+    priceChartTickers = heldEtfTickers();
+    priceSelectionInitialized = true;
+  }
+  q("#priceChartSelection").innerHTML = priceChartTickers.map((ticker) => `<button class="secondary-button mini-button" type="button" data-remove-chart="${ticker}" aria-label="移除比較 ${ticker}">${ticker} ${escapeHtml(findEtf(ticker)?.shortName || "")} ×</button>`).join("");
+  q("#priceChartSelection").querySelectorAll("[data-remove-chart]").forEach((button) => button.addEventListener("click", () => {
+    priceChartTickers = priceChartTickers.filter((ticker) => ticker !== button.dataset.removeChart);
+    renderDatabaseView();
+  }));
+  document.querySelectorAll("[data-market-retry]").forEach((button) => button.addEventListener("click", () => queueEtfData(button.dataset.marketRetry, priceChartMonths, true)));
+}
+
+function bindEtfChartControls() {
+  q("#addPriceChartEtf").addEventListener("click", () => {
+    const etf = etfData.resolveEtf(etfDatabase, q("#priceChartSearch").value);
+    if (!etf) { q("#priceChartStatus").textContent = "請從搜尋建議選擇正確 ETF 代號；有多筆結果時不會自動猜選。"; return; }
+    priceChartTickers = [...new Set([...priceChartTickers, etf.ticker])];
+    q("#priceChartSearch").value = "";
+    renderDatabaseView(); queueEtfData(etf.ticker, priceChartMonths);
+  });
+  q("#priceChartSearch").addEventListener("keydown", (event) => {
+    if (event.key === "Enter") { event.preventDefault(); q("#addPriceChartEtf").click(); }
+  });
+  q("#useHeldPriceEtfs").addEventListener("click", () => {
+    priceChartTickers = heldEtfTickers(); renderDatabaseView();
+    priceChartTickers.forEach((ticker) => queueEtfData(ticker, priceChartMonths));
+  });
+  q("#priceChartPeriod").addEventListener("change", (event) => {
+    priceChartMonths = Number(event.target.value); renderDatabaseView();
+    priceChartTickers.forEach((ticker) => queueEtfData(ticker, priceChartMonths));
+  });
+}
+
 function databaseSectorHtml(db) {
   const rows = db?.holdings?.items || [];
-  if (!rows.length) return `<section class="panel"><p>尚未載入官方成分股族群摘要。</p></section>`;
-  const byTicker = db.etfs.map((etf) => {
+  if (!heldEtfTickers().length) return `<section class="panel"><p>先在家庭收支加入 ETF，再查看官方成分股族群摘要。</p></section>`;
+  const byTicker = heldEtfTickers().map((ticker) => {
+    const etf = findEtf(ticker);
     const items = rows.filter((row) => row.ticker === etf.ticker);
     const bySector = items.reduce((acc, row) => {
       const stock = findStock(row.holdingTicker);
@@ -3695,7 +3780,7 @@ function databaseSectorHtml(db) {
     return {
       ticker: etf.ticker,
       name: etf.shortName,
-      sectors: groupEntries(bySector, 100).slice(0, 5),
+      sectors: groupEntries(bySector, 100),
       coverage: items.reduce((sum, row) => sum + Number(row.weight || 0), 0)
     };
   });
@@ -3711,7 +3796,7 @@ function databaseSectorHtml(db) {
           <tr>
             <td>${row.ticker}</td>
             <td>${row.name}</td>
-            <td>${pct(row.coverage)}</td>
+            <td>${row.sectors.length ? pct(row.coverage) : "待補"}</td>
             <td>${row.sectors.length ? row.sectors.map((sector) => `${sector.name} ${pct(sector.amount)}`).join(" / ") : "尚未接上官方成分股"}</td>
           </tr>
         `).join("")}
@@ -3722,30 +3807,30 @@ function databaseSectorHtml(db) {
 
 function drawOfficialPriceChart() {
   const canvas = q("#officialPriceChart");
-  const rows = etfDatabase?.priceSeries?.items || [];
-  if (!canvas || !rows.length) return;
+  if (!canvas) return;
 
   const containerWidth = canvas.parentElement.clientWidth - 36;
   const dpr = window.devicePixelRatio || 1;
-  canvas.width = Math.max(320, containerWidth) * dpr;
+  canvas.width = Math.max(200, containerWidth) * dpr;
   canvas.height = 240 * dpr;
-  canvas.style.width = `${Math.max(320, containerWidth)}px`;
+  canvas.style.width = `${Math.max(200, containerWidth)}px`;
   canvas.style.height = "240px";
   const ctx = canvas.getContext("2d");
   ctx.scale(dpr, dpr);
   const width = canvas.width / dpr;
   const height = canvas.height / dpr;
   const pad = 34;
-  const byTicker = rows.reduce((acc, row) => {
-    if (!acc[row.ticker]) acc[row.ticker] = [];
-    acc[row.ticker].push(row);
-    return acc;
-  }, {});
-  const normalized = Object.fromEntries(Object.entries(byTicker).map(([ticker, tickerRows]) => {
-    const sorted = [...tickerRows].sort((a, b) => a.date.localeCompare(b.date));
-    const base = Number(sorted[0]?.close || 0) || 1;
-    return [ticker, sorted.map((row) => ({ ...row, normalizedClose: Number(row.close || 0) / base * 100 }))];
-  }));
+  const comparison = etfData.priceComparison(etfDatabase, priceChartTickers, priceChartMonths);
+  const normalized = comparison.normalized;
+  ctx.clearRect(0, 0, width, height);
+  renderPriceChartSummary(normalized);
+  const loading = priceChartTickers.some((ticker) => etfRequestStates.get(ticker)?.status === "loading");
+  const reasons = { empty_selection: "請輸入代號或中文名稱，加入比較 ETF。", missing_prices: "部分標的尚無可用價格資料，請重試或移除缺資料標的。", no_common_dates: "所選 ETF 沒有共同交易日，暫時無法比較。", split_in_range: "期間內有分割事件，未調整價格不適合直接比較。" };
+  q("#priceChartStatus").textContent = loading ? "正在取得所選 ETF 的官方價格…" : comparison.reason === "available"
+    ? `共同起點 ${comparison.start} → ${comparison.end}；僅顯示已有官方價格的交易日。`
+    : reasons[comparison.reason];
+  if (!Object.keys(normalized).length) return;
+  const startTime = Date.parse(comparison.start), endTime = Date.parse(comparison.end);
   const allValues = Object.values(normalized).flat().map((row) => row.normalizedClose).filter((value) => Number.isFinite(value));
   const min = Math.floor(Math.min(...allValues) - 1);
   const max = Math.ceil(Math.max(...allValues) + 1);
@@ -3771,14 +3856,14 @@ function drawOfficialPriceChart() {
     ctx.lineWidth = 3;
     ctx.beginPath();
     sorted.forEach((row, pointIndex) => {
-      const x = pad + pointIndex * ((width - pad * 2) / Math.max(1, sorted.length - 1));
+      const x = pad + (Date.parse(row.date) - startTime) / Math.max(1, endTime - startTime) * (width - pad * 2);
       const y = height - pad - ((row.normalizedClose - min) / span) * (height - pad * 2);
       if (pointIndex === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     });
     ctx.stroke();
     ctx.font = "12px Microsoft JhengHei, sans-serif";
-    ctx.fillText(ticker, pad + index * 62, 18);
+    // Accessible legend is rendered as text in priceChartSummary.
   });
 
   ctx.fillStyle = "#65736f";
@@ -3791,17 +3876,18 @@ function drawOfficialPriceChart() {
 function renderPriceChartSummary(normalized) {
   const root = q("#priceChartSummary");
   if (!root) return;
-  const navByTicker = new Map((etfDatabase?.navSeries?.items || []).map((row) => [row.ticker, row]));
-  root.innerHTML = Object.entries(normalized).map(([ticker, rows]) => {
+  const colors = ["#0f766e", "#b45309", "#1d4ed8", "#7c3aed"];
+  root.innerHTML = Object.entries(normalized).map(([ticker, rows], index) => {
     const first = rows[0];
     const last = rows[rows.length - 1];
     const change = first ? last.normalizedClose - first.normalizedClose : 0;
-    const nav = navByTicker.get(ticker);
+    const nav = (etfDatabase?.navSeries?.items || []).find((row) => row.ticker === ticker && row.date === last?.date);
+    const premium = nav?.nav > 0 ? (last.close / nav.nav - 1) * 100 : null;
     return `
       <div class="metric">
-        <span>${ticker} ${last?.date || ""}</span>
+        <span><i class="chart-legend-dot" style="background:${colors[index % colors.length]}" aria-hidden="true"></i>${ticker} ${escapeHtml(findEtf(ticker)?.shortName || "")} ${last?.date || ""}</span>
         <strong>${last?.close ?? "-"}</strong>
-        <small>${change >= 0 ? "+" : ""}${change.toFixed(2)}% · NAV ${nav?.nav ?? "-"} · 折溢價 ${nav?.premiumDiscountPercent === null || nav?.premiumDiscountPercent === undefined ? "-" : pct(nav.premiumDiscountPercent, 2)}</small>
+        <small>${change >= 0 ? "+" : ""}${change.toFixed(2)}% · 同日 NAV ${nav?.nav ?? "待補"} · 折溢價 ${premium === null ? "待補" : pct(premium, 2)}</small>
       </div>
     `;
   }).join("");
@@ -3830,6 +3916,7 @@ function renderPaidReport() {
       ${stockExposureHtml(report)}
       <section class="panel">
         <h3>配息壓力測試</h3>
+        <p class="panel-note">${escapeHtml(yieldCoverageNote(report.holdings))}</p>
         <div class="metrics">
           <div class="metric"><span>月配息估算</span><strong>${formatMoney(report.stress.monthlyDividend)}</strong></div>
           <div class="metric"><span>下修 30%</span><strong>${formatMoney(report.stress.cut30)}</strong></div>
@@ -3891,9 +3978,9 @@ function drawSimulationChart(rows) {
   const canvas = q("#simulationChart");
   const containerWidth = canvas.parentElement.clientWidth - 36;
   const dpr = window.devicePixelRatio || 1;
-  canvas.width = Math.max(320, containerWidth) * dpr;
+  canvas.width = Math.max(200, containerWidth) * dpr;
   canvas.height = 280 * dpr;
-  canvas.style.width = `${Math.max(320, containerWidth)}px`;
+  canvas.style.width = `${Math.max(200, containerWidth)}px`;
   canvas.style.height = "280px";
   const ctx = canvas.getContext("2d");
   ctx.scale(dpr, dpr);
@@ -4162,6 +4249,7 @@ function bindGotoButtons() {
 }
 
 function bindEvents() {
+  bindEtfChartControls();
   document.querySelectorAll("[data-start-finances]").forEach((button) => button.addEventListener("click", (event) => {
     event.preventDefault();
     if (authState.configured && !authState.authenticated) {
@@ -4291,7 +4379,7 @@ function bindEvents() {
     showToast("已套用範例資料");
   });
   q("#addHoldingBtn").addEventListener("click", () => {
-    state.holdings.push({ ticker: "", name: "", type: "ETF", amount: 0, lots: [{ price: 0, amount: 0 }], dividendYield: 0, expenseRatio: 0, sector: "未分類ETF" });
+    state.holdings.push({ ticker: "", name: "", type: "ETF", amount: 0, lots: [{ price: 0, amount: 0 }], dividendYield: null, expenseRatio: 0, sector: "未分類ETF" });
     renderHoldings();
     refreshReports();
     q("#holdingEditor .holding-row:last-child [data-field='ticker']")?.focus();
@@ -4304,13 +4392,10 @@ function bindEvents() {
     persist();
   });
   q("#reloadDataBtn").addEventListener("click", async () => {
-    const updated = await refreshDatabaseFromServer("manual");
-    if (!updated) {
-      await loadEtfDatabase();
-      renderHoldings();
-      refreshReports();
-      showToast("ETF 資料庫已重新讀取");
-    }
+    await loadEtfDatabase();
+    for (const ticker of priceChartTickers) queueEtfData(ticker, priceChartMonths, true);
+    renderHoldings(); refreshReports();
+    showToast("已重新查詢官方資料（來源快取最多 15 分鐘）");
   });
   q("#printBtn").addEventListener("click", () => {
     if (!state.paidUnlocked) return goTo("upgradeView");
@@ -4380,7 +4465,6 @@ async function init() {
   if (hasUnsyncedFinancialDraft()) await syncWebFinancialData();
   registerServiceWorker();
   trackEvent("page_opened", { path: location.pathname });
-  refreshDatabaseFromServer("open");
 }
 
 init();

@@ -4,6 +4,8 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const { isPublicFile } = require("./public-files");
+const { createEtfMarketService } = require("./etf-market");
+const etfMarket = createEtfMarketService();
 const { authSessionDays, createStore, lineLedgerRetentionDays } = require("./customer-store");
 const { verifyNotification } = require("./ecpay");
 const { productCatalog, productFor } = require("./payment-catalog");
@@ -869,6 +871,13 @@ const server = http.createServer((req, res) => {
     } catch (error) {
       sendJson(res, error.statusCode || 400, { ok: false, error: publicStoreError(error) });
     }
+    return;
+  }
+  if (urlPath === "/api/market/etf" && req.method === "GET") {
+    if (!rateLimit(req, 20)) return sendJson(res, 429, { ok: false, error: "ETF 查詢次數過多，請稍後再試" });
+    etfMarket.get(String(url.searchParams.get("ticker") || "").trim().toUpperCase(), Number(url.searchParams.get("months") || 1))
+      .then((data) => sendJson(res, 200, { ok: true, data }))
+      .catch((error) => sendJson(res, error.statusCode || 500, { ok: false, error: error.statusCode ? error.message : "官方資料暫時無法讀取，請稍後重試" }));
     return;
   }
   if (urlPath === "/api/market/database" && req.method === "GET") {

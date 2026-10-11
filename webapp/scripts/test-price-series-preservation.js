@@ -38,7 +38,8 @@ function main() {
     { ticker: "006208", status: "沒有符合資料", rows: [], sourceUrl: "https://example.test/006208" }
   ], { attemptedAt: "2026-08-04T08:00:00.000Z", attemptedQueryDate: "20260804" });
 
-  assert(noData.updatedRows === 0 && noData.preservedRows === 2, "No-data refresh did not preserve all prior rows");
+  assert(db.priceSeries.items.some((item) => item.ticker === "006208" && item.date === "2026-07-31"), "Successful cross-month refresh discarded historical rows");
+  assert(noData.updatedRows === 0 && noData.preservedRows === 3, "No-data refresh did not preserve all prior rows");
   assert(db.priceSeries.status === "no_new_price_rows_preserved_previous", "No-data refresh status is incorrect");
   assert(db.priceSeries.updatedAt === beforeNoDataUpdate, "No-data refresh falsely changed the data update timestamp");
   assert(db.priceSeries.lastAttemptQueryDate === "20260804", "No-data refresh did not record the attempted query date");
