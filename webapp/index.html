@@ -321,7 +321,7 @@
                 <span>適合家用、保險、貸款壓力混在一起的人</span>
               </a>
             </div>
-            <button class="text-link-button" data-goto="databaseView" type="button">管理者查看資料後台</button>
+            <button class="text-link-button" data-goto="databaseView" type="button">查看 ETF 官方資料與走勢</button>
           </div>
         </section>
       </section>
@@ -398,6 +398,7 @@
                 <p class="panel-note">輸入代號與目前投入金額，名稱、類型與殖利率會由資料庫自動帶入。</p>
               </div>
               <button class="secondary-button" id="addHoldingBtn" type="button">＋ 新增部位</button>
+              <button class="secondary-button" data-goto="databaseView" type="button">查看持有 ETF 官方資料與走勢</button>
             </div>
             <div class="holding-editor" id="holdingEditor"></div>
           </section>
@@ -416,8 +417,8 @@
       <section id="databaseView" class="view app-view" aria-labelledby="databaseTitle">
         <div class="section-title">
           <div>
-            <h2 id="databaseTitle">後台資料庫</h2>
-            <p id="databaseSummary">這裡給管理者查核官方資料快照，外部使用者看免費報告即可。</p>
+            <h2 id="databaseTitle">ETF 官方資料與走勢</h2>
+            <p id="databaseSummary">依家庭收支持有的 ETF 查看官方明細，也可以自行選擇比較價格。</p>
           </div>
           <button class="secondary-button" id="reloadDataBtn" type="button">重新讀取</button>
         </div>
@@ -427,7 +428,17 @@
             <h3>價格相對走勢</h3>
             <span class="badge">起點 = 100</span>
           </div>
+          <div id="priceChartControls" class="etf-chart-controls">
+            <label>新增比較 ETF<input id="priceChartSearch" list="etfSearchOptions" autocomplete="off" placeholder="0050 或中文名稱" /></label>
+            <button id="addPriceChartEtf" class="secondary-button" type="button">加入比較</button>
+            <button id="useHeldPriceEtfs" class="secondary-button" type="button">我的持有 ETF</button>
+            <label>期間<select id="priceChartPeriod"><option value="1">近 1 個月</option><option value="3">近 3 個月</option><option value="6">近 6 個月</option></select></label>
+          </div>
+          <div id="priceChartSelection" class="etf-chart-selection" aria-label="已選取比較 ETF"></div>
+          <p id="priceChartStatus" class="panel-note" role="status" aria-live="polite">請選擇比較標的。</p>
+          <p class="panel-note">同一交易日起點為 100，僅比較價格變化，未計入配息。成分股與價格明細依家庭收支持有的 ETF 顯示。</p>
           <div id="priceChartSummary" class="metrics compact-metrics"></div>
+          <p class="panel-note">官方資料查詢使用 15 分鐘快取；資料待補或來源暫時無法回應時，請稍後重試。</p>
           <canvas id="officialPriceChart" height="260" aria-label="官方 ETF 價格相對走勢"></canvas>
         </section>
         <div id="databaseSectorTable" class="table-panel"></div>
@@ -555,6 +566,8 @@
     </footer>
 
     <script src="./cashflow-visual.js"></script>
+    <datalist id="etfSearchOptions"></datalist>
+    <script src="./etf-data.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>

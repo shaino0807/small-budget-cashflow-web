@@ -208,6 +208,7 @@ async function main() {
     });
 
     await send(ws, "Runtime.enable");
+    await send(ws, "Emulation.setFocusEmulationEnabled", { enabled: true });
     await send(ws, "Network.enable");
     await send(ws, "Page.enable");
     await send(ws, "Page.addScriptToEvaluateOnNewDocument", {
@@ -864,6 +865,65 @@ async function main() {
     })()` });
     if (financialCheck.exceptionDetails) throw new Error(financialCheck.exceptionDetails.exception?.description || "financial UI check failed");
     const financialPersistence = financialCheck.result.value;
+    const etfCustomerCheck = await send(ws, "Runtime.evaluate", { awaitPromise: true, returnByValue: true, expression: `(async () => {
+      for (let count = 0; etfQueueRunning && count < 100; count++) await new Promise(resolve => setTimeout(resolve, 20));
+      if (etfQueueRunning) throw new Error('Market queue did not finish');
+      const originalDb = etfDatabase, originalState = state, originalTickers = priceChartTickers;
+      const originalRequests = [...etfRequestStates], originalMonths = priceChartMonths;
+      try {
+        const date = etfData.today(), from = etfData.monthsBefore(date, 12);
+        etfDatabase = structuredClone(originalDb);
+        etfDatabase.distributionHistory = {};
+        etfDatabase.holdingsCoverage = {};
+        etfDatabase.distributions = [];
+        etfDatabase.holdings.items = [];
+        etfDatabase.priceSeries.items = [];
+        for (const ticker of ['0050', '0056', '006208']) {
+          etfRequestStates.set(ticker, {status:'loaded', months:6});
+          etfDatabase.priceSeries.items.push({ticker, date:etfData.monthsBefore(date, 1), close:40}, {ticker,date,close:50});
+          etfDatabase.holdings.items.push(...Array.from({length:100},(_,index)=>({ticker,holdingTicker:String(1000+index),holdingName:'公司'+index,weight:0.99,shares:100,asOfDate:date,sourceUrl:'https://www.yuantaetfs.com/'})));
+          etfDatabase.holdingsCoverage[ticker] = {complete:true,rows:100,asOfDate:date};
+          etfDatabase.distributionHistory[ticker] = {complete:true,from,to:date};
+          etfDatabase.distributions.push({ticker,payDate:date,exDividendDate:date,amountPerUnit:2.5});
+        }
+        state = normalizeState({...structuredClone(originalState), holdings:[]});
+        renderHoldings();
+        for (const name of ['元大台灣50', '0056']) {
+          document.querySelector('#addHoldingBtn').click();
+          const input = document.querySelector('#holdingEditor .holding-row:last-child [data-field="ticker"]');
+          input.value=name; input.dispatchEvent(new Event('input',{bubbles:true})); input.dispatchEvent(new Event('change',{bubbles:true}));
+          const amount=document.querySelector('#holdingEditor .holding-row:last-child [data-holding-amount]');
+          amount.value='10000'; amount.dispatchEvent(new Event('input',{bubbles:true}));
+        }
+        document.querySelector('#etfAllocationSection [data-goto="databaseView"]').click();
+        document.querySelector('#useHeldPriceEtfs').click();
+        const fullHeldRows = [...document.querySelectorAll('#holdingsTable [data-held-etf]')].map(e=>({ticker:e.dataset.heldEtf,open:e.open,rows:e.querySelectorAll('tbody tr').length}));
+        const heldPriceRows = [...document.querySelectorAll('#priceSeriesTable [data-held-etf]')].map(e=>e.dataset.heldEtf);
+        const autoYield = [...document.querySelectorAll('#holdingEditor [data-field="dividendYield"]')].every(e=>e.readOnly && Number(e.value)===5);
+        const nameResolved = state.holdings[0].ticker==='0050';
+        const search=document.querySelector('#priceChartSearch'); search.value='006208'; document.querySelector('#addPriceChartEtf').click();
+        await new Promise(resolve=>requestAnimationFrame(resolve));
+        const independentComparison = priceChartTickers.includes('006208') && !document.querySelector('#holdingsTable [data-held-etf="006208"]');
+        const sameDateBase = document.querySelector('#priceChartStatus').textContent.includes(etfData.monthsBefore(date,1));
+        const widthFits = document.documentElement.scrollWidth <= document.documentElement.clientWidth;
+        document.querySelector('#priceChartSelection button').focus();
+        await new Promise(resolve=>requestAnimationFrame(resolve));
+        const focusDiagnostic = {active:document.activeElement.outerHTML.slice(0,200),view:document.querySelector('.view.is-active')?.id,outline:getComputedStyle(document.activeElement).outlineStyle,rules:[...document.styleSheets[0].cssRules].filter(rule=>rule.selectorText?.includes('priceChartSelection')).map(rule=>rule.cssText)};
+        const keyboardFocus = document.activeElement.matches('#priceChartSelection button') && getComputedStyle(document.activeElement).outlineStyle!=='none';
+        etfDatabase.distributionHistory['0050'].complete=false; enrichHoldingsFromDatabase(); renderHoldings();
+        const missingYield = state.holdings[0].dividendYield===null && document.querySelector('#holdingEditor .holding-row [data-field="dividendYield"]').value==='' && yieldCoverageNote().includes('只計已知部分');
+        state.holdings=[]; renderHoldings(); document.querySelector('#useHeldPriceEtfs').click();
+        await new Promise(resolve=>requestAnimationFrame(resolve));
+        const emptyClears = priceChartTickers.length===0 && document.querySelector('#priceChartSummary').children.length===0 && !document.querySelector('#holdingsTable [data-held-etf]');
+        return {nameResolved,autoYield,fullHeldRows,heldPriceRows,independentComparison,sameDateBase,widthFits,keyboardFocus,focusDiagnostic,missingYield,emptyClears};
+      } finally {
+        etfDatabase=originalDb; state=originalState; priceChartTickers=originalTickers; priceChartMonths=originalMonths;
+        etfRequestStates.clear(); originalRequests.forEach(([key,value])=>etfRequestStates.set(key,value));
+        enrichHoldingsFromDatabase(); renderHoldings(); refreshReports(); persist();
+      }
+    })()` });
+    if (etfCustomerCheck.exceptionDetails) throw new Error(etfCustomerCheck.exceptionDetails.exception?.description || 'ETF customer UI check failed');
+    const etfCustomer = etfCustomerCheck.result.value;
     const failedApiResponses = await evalValue(ws, "window.__smokeFailedApiResponses || []");
     const result = {
       url: targetUrl,
@@ -874,6 +934,7 @@ async function main() {
       badResponses,
       failedApiResponses,
       financialPersistence,
+      etfCustomer,
       landing,
       requiredValidation,
       advancedInput,
@@ -899,7 +960,10 @@ async function main() {
       f5Persistence,
       dashboardF5Persistence,
       database,
-      passed: Object.values(financialPersistence).every(Boolean) && consoleErrors.length === 0
+      passed: ['nameResolved','autoYield','independentComparison','sameDateBase','widthFits','keyboardFocus','missingYield','emptyClears'].every(key=>etfCustomer[key])
+        && JSON.stringify(etfCustomer.fullHeldRows)===JSON.stringify([{ticker:'0050',open:true,rows:100},{ticker:'0056',open:true,rows:100}])
+        && JSON.stringify(etfCustomer.heldPriceRows)===JSON.stringify(['0050','0056'])
+        && Object.values(financialPersistence).every(Boolean) && consoleErrors.length === 0
         && runtimeErrors.length === 0
         && failures.length === 0
         && badResponses.length === 0
@@ -967,8 +1031,8 @@ async function main() {
         && !simpleHoldingEditor.identity.includes("等待輸入代號")
         && !simpleHoldingEditor.advancedOpen
         && simpleHoldingEditor.typeLocked
-        && !simpleHoldingEditor.yieldLocked
-        && simpleHoldingEditor.identity.includes("配息資料待更新")
+        && simpleHoldingEditor.yieldLocked
+        && simpleHoldingEditor.identity.includes("配息資料待補")
         && simpleHoldingEditor.storedAmount === 10000
         && simpleHoldingEditor.lotAmount === 10000
         && simpleHoldingEditor.bodyOverflow === 0

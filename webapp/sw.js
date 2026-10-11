@@ -1,10 +1,11 @@
-const cacheName = "cashflow-map-v31";
+const cacheName = "cashflow-map-v32";
 const assets = [
   "./",
   "./index.html",
   "./styles.css",
   "./journal.css",
   "./cashflow-visual.js",
+  "./etf-data.js",
   "./app.js",
   "./runtime-config.js",
   "./data/etf-database.json",
@@ -28,6 +29,7 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   const request = event.request;
   const url = new URL(request.url);
+  if (url.pathname.includes("/api/")) return;
   const isAppShell = request.mode === "navigate" || [".html", ".css", ".js"].some((suffix) => url.pathname.endsWith(suffix));
   if (isAppShell) {
     event.respondWith(

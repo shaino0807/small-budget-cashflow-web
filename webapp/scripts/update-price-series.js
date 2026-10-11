@@ -20,7 +20,7 @@ function taipeiQueryDate(date = new Date()) {
 
 function getJson(url, redirectCount = 0) {
   return new Promise((resolve, reject) => {
-    https
+    const req = https
       .get(url, { headers: { "User-Agent": "SmallBudgetCashflowMap/0.1" } }, (res) => {
         if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location) {
           if (redirectCount >= 5) {
@@ -48,6 +48,7 @@ function getJson(url, redirectCount = 0) {
         });
       })
       .on("error", reject);
+    req.setTimeout(15000, () => req.destroy(new Error("Price request timed out")));
   });
 }
 
@@ -64,8 +65,8 @@ function rocDateToIso(value) {
   return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
 }
 
-async function fetchMonthlyPrice(ticker) {
-  const url = `https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=${queryDate}&stockNo=${ticker}`;
+async function fetchMonthlyPrice(ticker, date = queryDate) {
+  const url = `https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=${date}&stockNo=${ticker}`;
   const json = await getJson(url);
   if (json.stat !== "OK") {
     return { ticker, sourceUrl: url, rows: [], status: json.stat || "not_ok" };
@@ -98,7 +99,9 @@ function applyPriceRefresh(db, targets, results, { attemptedAt = new Date().toIS
   for (const result of results) {
     const freshRows = Array.isArray(result.rows) ? result.rows : [];
     if (freshRows.length) {
-      effectiveItems.push(...freshRows);
+      const merged = new Map(previousItems.filter((row) => row.ticker === result.ticker).map((row) => [row.date, row]));
+      freshRows.forEach((row) => merged.set(row.date, row));
+      effectiveItems.push(...[...merged.values()].sort((a, b) => a.date.localeCompare(b.date)));
       updatedRows += freshRows.length;
       continue;
     }
@@ -148,7 +151,8 @@ function applyPriceRefresh(db, targets, results, { attemptedAt = new Date().toIS
 
 async function main() {
   const db = JSON.parse(fs.readFileSync(dbPath, "utf8"));
-  const featuredTickers = new Set(db.metadata?.featuredTickers || db.etfs.map((etf) => etf.ticker));
+  const requested = process.env.ETF_PRICE_TICKERS?.split(",").map((ticker) => ticker.trim()).filter(Boolean);
+  const featuredTickers = new Set(requested || [...(db.metadata?.featuredTickers || []), "0050", "0056"]);
   const targets = db.etfs.filter((etf) => featuredTickers.has(etf.ticker));
   const results = [];
   for (const etf of targets) {

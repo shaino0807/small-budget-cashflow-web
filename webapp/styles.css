@@ -3679,3 +3679,15 @@ body[data-member-auth="ready"] .brand p {
     white-space: nowrap;
   }
 }
+.etf-chart-controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin: 16px 0; }
+.etf-chart-controls label { display: grid; gap: 6px; min-width: 0; }
+.etf-chart-controls input { width: min(100%, 280px); }
+.etf-chart-selection { display: flex; flex-wrap: wrap; gap: 8px; }
+.held-etf-detail { margin: 14px 0; padding: 12px; border: 1px solid #d9e2df; border-radius: 12px; }
+.held-etf-detail > summary { cursor: pointer; font-weight: 700; }
+.etf-detail-scroll { overflow-x: auto; max-width: 100%; }
+.held-etf-detail table { width: 100%; }
+.etf-chart-controls button:focus-visible, .etf-chart-selection button:focus-visible, .held-etf-detail summary:focus-visible { outline: 3px solid #0f766e; outline-offset: 3px; }
+@media (max-width: 640px) { .etf-chart-controls label:first-child { width: 100%; } .etf-chart-controls input { width: 100%; } }
+.chart-legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+.etf-chart-controls button:focus, #priceChartSelection button:focus { outline: 3px solid #0f766e; outline-offset: 3px; }
