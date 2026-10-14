@@ -341,7 +341,7 @@ async function updateDatabase() {
   updatePromise = (async () => {
     const startedAt = new Date().toISOString();
     const steps = [];
-    for (const script of ["update-etf-master.js", "update-price-series.js", "update-issuer-official-data.js", "update-stock-master.js", "finalize-data-quality.js", "validate-etf-data.js"]) {
+    for (const script of ["refresh-official-database.js"]) {
       steps.push(await runScript(script));
     }
     return { ok: true, startedAt, finishedAt: new Date().toISOString(), freshness: databaseFreshness(), steps };

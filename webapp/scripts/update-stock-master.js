@@ -1,275 +1,152 @@
-const fs = require("fs");
-const https = require("https");
-const path = require("path");
-
-const dbPath = path.join(__dirname, "..", "data", "etf-database.json");
-const twseCompanyUrl = "https://openapi.twse.com.tw/v1/opendata/t187ap03_L";
-const twseDailyUrl = "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL";
-const tpexDailyUrl = "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes";
-
-function getJson(url, redirectCount = 0) {
+const fs = require("node:fs");
+const https = require("node:https");
+const path = require("node:path");
+const { officialDate, toNumber, atomicWriteJson } = require("./update-safety");
+const sources = {
+  company: { id: "twse-company-basic", url: "https://openapi.twse.com.tw/v1/opendata/t187ap03_L" },
+  TWSE: { id: "twse-stock-day-all", url: "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL" },
+  TPEx: { id: "tpex-mainboard-daily-close-quotes", url: "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes" }
+};
+function getJson(url, redirects = 0) {
   return new Promise((resolve, reject) => {
-    https
-      .get(url, { headers: { "User-Agent": "SmallBudgetCashflowMap/0.1" } }, (res) => {
-        if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location) {
-          if (redirectCount >= 5) {
-            reject(new Error(`Too many redirects for ${url}`));
-            return;
-          }
-          getJson(new URL(res.headers.location, url).toString(), redirectCount + 1).then(resolve, reject);
-          return;
-        }
-        let body = "";
-        res.setEncoding("utf8");
-        res.on("data", (chunk) => {
-          body += chunk;
-        });
-        res.on("end", () => {
-          if (res.statusCode < 200 || res.statusCode >= 300) {
-            reject(new Error(`HTTP ${res.statusCode}`));
-            return;
-          }
-          try {
-            resolve(JSON.parse(body));
-          } catch (error) {
-            reject(new Error(`Invalid JSON: ${error.message}`));
-          }
-        });
-      })
-      .on("error", reject);
+    const req = https.get(url, { headers: { "User-Agent": "SmallBudgetCashflowMap/0.1" } }, (res) => {
+      res.on("error", reject);
+      res.on("aborted", () => reject(new Error("Aborted response: " + url)));
+      if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location) {
+        res.resume();
+        if (redirects >= 5) return reject(new Error("Too many redirects: " + url));
+        getJson(new URL(res.headers.location, url).toString(), redirects + 1).then(resolve, reject);
+        return;
+      }
+      let body = "";
+      res.setEncoding("utf8");
+      res.on("data", (chunk) => { body += chunk; });
+      res.on("end", () => {
+        if (res.statusCode < 200 || res.statusCode >= 300) return reject(new Error("HTTP " + res.statusCode));
+        try { resolve(JSON.parse(body)); } catch (error) { reject(new Error("Invalid JSON: " + error.message)); }
+      });
+    });
+    req.on("error", reject);
+    req.setTimeout(15000, () => req.destroy(new Error("Request timeout: " + url)));
   });
 }
-
-function getField(row, names) {
-  for (const name of names) {
-    if (Object.prototype.hasOwnProperty.call(row, name)) return row[name];
-  }
-  return undefined;
+function field(row, names) {
+  if (!row || typeof row !== "object") return undefined;
+  return names.map((name) => row[name]).find((v) => v != null && String(v).trim() !== "");
 }
-
-function toNumber(value) {
-  if (value === undefined || value === null || value === "") return null;
-  const parsed = Number(String(value).replaceAll(",", "").replace("+", "").trim());
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function normalizeTicker(value) {
-  return String(value || "").trim();
-}
-
-function rocCompactToIso(value) {
-  const match = String(value || "").trim().match(/^(\d{3})(\d{2})(\d{2})$/);
-  if (!match) return null;
-  return `${Number(match[1]) + 1911}-${match[2]}-${match[3]}`;
-}
-
-function isFourDigitStock(ticker) {
-  return /^\d{4}$/.test(ticker);
-}
-
-function stockFromHolding(row) {
-  const ticker = normalizeTicker(row.holdingTicker);
-  if (!ticker) return null;
-  return {
-    ticker,
-    name: row.holdingName || ticker,
-    shortName: row.holdingName || ticker,
-    market: "unknown",
-    industry: row.sector || "",
-    listingDate: null,
-    latestPrice: null,
-    source: "derived-from-etf-holdings",
-    sourceUrl: row.sourceUrl || "",
-    qualityFlags: ["derived_from_etf_holdings"]
-  };
-}
-
-async function main() {
-  const db = JSON.parse(fs.readFileSync(dbPath, "utf8"));
-  const previousStocks = db.stocks && Array.isArray(db.stocks.items) ? db.stocks : null;
-  const byTicker = new Map();
+async function refreshStockMaster(input, { fetchJson = getJson, now = new Date().toISOString() } = {}) {
+  const db = structuredClone(input);
+  const previous = db.stocks || {};
+  // Absence from a response is not evidence of delisting.
+  const byTicker = new Map((previous.items || []).map((row) => [row.ticker, row]));
   const sourceAttempts = [];
-
   for (const row of db.holdings?.items || []) {
-    const stock = stockFromHolding(row);
-    if (stock && !byTicker.has(stock.ticker)) byTicker.set(stock.ticker, stock);
+    const ticker = String(row.holdingTicker || "").trim();
+    if (ticker && !byTicker.has(ticker)) byTicker.set(ticker, {
+      ticker, name: row.holdingName || ticker, shortName: row.holdingName || ticker,
+      market: "unknown", industry: row.sector || "", listingDate: null, latestPrice: null,
+      source: "derived-from-etf-holdings", sourceUrl: row.sourceUrl || "", qualityFlags: ["derived_from_etf_holdings"]
+    });
   }
-
   try {
-    const rows = await getJson(twseCompanyUrl);
-    if (!Array.isArray(rows)) throw new Error("TWSE company response is not an array");
-    rows.forEach((row) => {
-      const ticker = normalizeTicker(getField(row, ["公司代號", "Code", "公司代號 "]));
-      if (!ticker) return;
-      byTicker.set(ticker, {
-        ticker,
-        name: String(getField(row, ["公司名稱", "CompanyName", "公司名稱 "]) || ticker).trim(),
-        shortName: String(getField(row, ["公司簡稱", "Abbreviation", "公司簡稱 "]) || ticker).trim(),
-        market: "TWSE",
-        industry: String(getField(row, ["產業別", "Industry", "產業別 "]) || "").trim(),
-        listingDate: String(getField(row, ["上市日期", "ListingDate", "上市日期 "]) || "").trim() || null,
-        latestPrice: null,
-        source: "twse-company-basic",
-        sourceUrl: twseCompanyUrl,
-        qualityFlags: ["official_master_loaded"]
-      });
-    });
-    sourceAttempts.push({ source: "twse-company-basic", status: "loaded", rows: rows.length, url: twseCompanyUrl });
+    const rows = await fetchJson(sources.company.url);
+    if (!Array.isArray(rows) || !rows.length) throw new Error("Empty or invalid TWSE company response");
+    let accepted = 0;
+    for (const row of rows) {
+      const ticker = String(field(row, ["公司代號", "Code", "公司代號 "]) || "").trim();
+      const name = String(field(row, ["公司名稱", "CompanyName", "公司名稱 "]) || "").trim();
+      if (!/^\d{4,6}$/.test(ticker) || !name) continue;
+      const old = byTicker.get(ticker) || {};
+      byTicker.set(ticker, { ...old, ticker, name,
+        shortName: String(field(row, ["公司簡稱", "Abbreviation", "公司簡稱 "]) || old.shortName || name).trim(),
+        market: "TWSE", industry: String(field(row, ["產業別", "Industry", "產業別 "]) || old.industry || "").trim(),
+        listingDate: officialDate(field(row, ["上市日期", "ListingDate", "上市日期 "])) || old.listingDate || null,
+        latestPrice: old.latestPrice || null, source: sources.company.id, sourceUrl: sources.company.url,
+        qualityFlags: [...new Set([...(old.qualityFlags || []).filter((f) => f !== "derived_from_etf_holdings"), "official_master_loaded"])] });
+      accepted++;
+    }
+    if (!accepted) throw new Error("No valid TWSE company rows");
+    sourceAttempts.push({ source: sources.company.id, status: "loaded", rows: rows.length, accepted, url: sources.company.url });
   } catch (error) {
-    sourceAttempts.push({ source: "twse-company-basic", status: "failed", error: error.message, url: twseCompanyUrl });
+    sourceAttempts.push({ source: sources.company.id, status: "failed", error: error.message, url: sources.company.url });
   }
-
-  try {
-    const rows = await getJson(twseDailyUrl);
-    if (!Array.isArray(rows)) throw new Error("TWSE daily response is not an array");
-    rows.forEach((row) => {
-      const ticker = normalizeTicker(getField(row, ["Code", "證券代號", "證券代號 "]));
-      if (!ticker || !byTicker.has(ticker)) return;
-      const stock = byTicker.get(ticker);
-      stock.latestPrice = {
-        date: null,
-        observedAt: new Date().toISOString(),
-        sourceDateStatus: "official_endpoint_does_not_provide_date",
-        open: toNumber(getField(row, ["OpeningPrice", "開盤價"])),
-        high: toNumber(getField(row, ["HighestPrice", "最高價"])),
-        low: toNumber(getField(row, ["LowestPrice", "最低價"])),
-        close: toNumber(getField(row, ["ClosingPrice", "收盤價"])),
-        tradeVolume: toNumber(getField(row, ["TradeVolume", "成交股數"])),
-        source: "twse-stock-day-all",
-        sourceUrl: twseDailyUrl
-      };
-      stock.qualityFlags = [...new Set([...(stock.qualityFlags || []), "daily_price_loaded"])];
-    });
-    sourceAttempts.push({
-      source: "twse-stock-day-all",
-      status: "loaded",
-      rows: rows.length,
-      sourceDataDate: null,
-      dateEvidence: "官方回應列未提供交易日期",
-      url: twseDailyUrl
-    });
-  } catch (error) {
-    sourceAttempts.push({ source: "twse-stock-day-all", status: "failed", error: error.message, url: twseDailyUrl });
+  let refreshed = 0;
+  for (const market of ["TWSE", "TPEx"]) {
+    const source = sources[market], updated = new Set(), rejected = [], dates = [];
+    let attempt;
+    try {
+      const rows = await fetchJson(source.url);
+      if (!Array.isArray(rows) || !rows.length) throw new Error("Empty or invalid " + market + " quote response");
+      const tickerOf = (row) => String(field(row, market === "TWSE" ? ["Code", "證券代號", "證券代號 "] : ["SecuritiesCompanyCode", "Code", "代號"]) || "").trim();
+      const counts = new Map();
+      for (const row of rows) counts.set(tickerOf(row), (counts.get(tickerOf(row)) || 0) + 1);
+      for (const row of rows) {
+        const ticker = tickerOf(row);
+        if (!(market === "TWSE" ? /^\d{4,6}$/ : /^\d{4}$/).test(ticker)) continue;
+        const old = byTicker.get(ticker);
+        // TWSE quotes include ETFs; the company master identifies equities.
+        if (market === "TWSE" && (!old || old.market !== "TWSE")) continue;
+        if (market === "TPEx" && old?.market === "TWSE") continue;
+        const date = officialDate(field(row, ["Date", "資料日期", "日期"]));
+        const close = toNumber(field(row, market === "TWSE" ? ["ClosingPrice", "收盤價"] : ["Close", "收盤"]));
+        const previousDate = officialDate(old?.latestPrice?.date);
+        const reason = counts.get(ticker) > 1 ? "duplicate_ticker" : !date ? "invalid_date"
+          : date > now.slice(0, 10) ? "future_date" : close === null || close <= 0 ? "invalid_close"
+          : previousDate && date < previousDate ? "older_than_previous" : null;
+        if (reason) { rejected.push({ ticker, reason }); continue; }
+        const name = String(field(row, ["CompanyName", "Name", "名稱"]) || old?.name || ticker).trim();
+        const latestPrice = {
+          date, observedAt: now, sourceDateStatus: "official_row_date",
+          open: toNumber(field(row, ["OpeningPrice", "Open", "開盤價", "開盤"])),
+          high: toNumber(field(row, ["HighestPrice", "High", "最高價", "最高"])),
+          low: toNumber(field(row, ["LowestPrice", "Low", "最低價", "最低"])), close,
+          tradeVolume: toNumber(field(row, ["TradeVolume", "TradingShares", "成交股數"])),
+          ...(market === "TPEx" ? { tradeValue: toNumber(row.TransactionAmount), transaction: toNumber(row.TransactionNumber) } : {}),
+          source: source.id, sourceUrl: source.url
+        };
+        byTicker.set(ticker, { ...old, ticker, name, shortName: old?.shortName || name, market,
+          industry: old?.industry || "", listingDate: old?.listingDate || null, latestPrice,
+          ...(market === "TPEx" ? { issuedShares: toNumber(row.Capitals) ?? old?.issuedShares ?? null } : {}),
+          source: market === "TPEx" ? source.id : old?.source || source.id,
+          sourceUrl: market === "TPEx" ? source.url : old?.sourceUrl || source.url,
+          priceRefreshStatus: "updated", priceRefreshAttemptedAt: now,
+          qualityFlags: [...new Set([...(old?.qualityFlags || []).filter((f) => !["price_preserved", "derived_from_etf_holdings"].includes(f)), "daily_price_loaded"])] });
+        updated.add(ticker);
+        dates.push(date);
+      }
+      attempt = { source: source.id, status: updated.size ? (rejected.length ? "partial" : "loaded") : "failed",
+        rows: rows.length, accepted: updated.size, rejected, sourceDataDate: dates.sort().at(-1) || null,
+        dateEvidence: "官方 Date 欄位；只計通過日期與價格檢查的資料列", url: source.url };
+    } catch (error) {
+      attempt = { source: source.id, status: "failed", accepted: 0, error: error.message, url: source.url };
+    }
+    let preserved = 0;
+    for (const stock of byTicker.values()) {
+      if (stock.market !== market || updated.has(stock.ticker)) continue;
+      if (stock.latestPrice) preserved++;
+      stock.priceRefreshStatus = stock.latestPrice ? "preserved_previous" : "missing";
+      stock.priceRefreshAttemptedAt = now;
+      if (stock.latestPrice) stock.qualityFlags = [...new Set([...(stock.qualityFlags || []), "price_preserved"])];
+    }
+    attempt.preserved = preserved;
+    if (preserved && attempt.status === "loaded") attempt.status = "partial";
+    refreshed += updated.size;
+    sourceAttempts.push(attempt);
   }
-
-  try {
-    const rows = await getJson(tpexDailyUrl);
-    if (!Array.isArray(rows)) throw new Error("TPEx daily response is not an array");
-    let stockRows = 0;
-    const officialDates = [];
-    rows.forEach((row) => {
-      const ticker = normalizeTicker(getField(row, ["SecuritiesCompanyCode", "Code", "代號"]));
-      if (!isFourDigitStock(ticker)) return;
-      stockRows += 1;
-      const date = rocCompactToIso(getField(row, ["Date", "資料日期"]));
-      if (date) officialDates.push(date);
-      const existing = byTicker.get(ticker);
-      byTicker.set(ticker, {
-        ticker,
-        name: String(getField(row, ["CompanyName", "Name", "名稱"]) || existing?.name || ticker).trim(),
-        shortName: String(getField(row, ["CompanyName", "Name", "名稱"]) || existing?.shortName || ticker).trim(),
-        market: "TPEx",
-        industry: existing?.industry || "",
-        listingDate: existing?.listingDate || null,
-        latestPrice: {
-          date,
-          observedAt: new Date().toISOString(),
-          sourceDateStatus: date ? "official_row_date" : "official_row_date_missing",
-          open: toNumber(getField(row, ["Open", "開盤"])),
-          high: toNumber(getField(row, ["High", "最高"])),
-          low: toNumber(getField(row, ["Low", "最低"])),
-          close: toNumber(getField(row, ["Close", "收盤"])),
-          tradeVolume: toNumber(getField(row, ["TradingShares", "成交股數"])),
-          tradeValue: toNumber(getField(row, ["TransactionAmount", "成交金額"])),
-          transaction: toNumber(getField(row, ["TransactionNumber", "成交筆數"])),
-          source: "tpex-mainboard-daily-close-quotes",
-          sourceUrl: tpexDailyUrl
-        },
-        issuedShares: toNumber(getField(row, ["Capitals", "發行股數"])),
-        source: "tpex-mainboard-daily-close-quotes",
-        sourceUrl: tpexDailyUrl,
-        qualityFlags: ["official_tpex_quote_loaded", "daily_price_loaded", "master_from_daily_quote"]
-      });
-    });
-    sourceAttempts.push({
-      source: "tpex-mainboard-daily-close-quotes",
-      status: "loaded",
-      rows: rows.length,
-      stockRows,
-      sourceDataDate: officialDates.sort().at(-1) || null,
-      dateEvidence: "官方 Date 欄位",
-      url: tpexDailyUrl
-    });
-  } catch (error) {
-    sourceAttempts.push({ source: "tpex-mainboard-daily-close-quotes", status: "failed", error: error.message, url: tpexDailyUrl });
-  }
-
-  const items = [...byTicker.values()].sort((a, b) => a.ticker.localeCompare(b.ticker));
-  const derivedCount = items.filter((item) => item.source === "derived-from-etf-holdings").length;
-  const hasOfficialRows = sourceAttempts.some((item) => item.status === "loaded");
-  const hasDatedOfficialRows = items.some((item) => item.latestPrice?.date);
-  const previousHasDatedOfficialRows = previousStocks?.items?.some((item) => item.latestPrice?.date);
-  const shouldPreservePrevious = previousStocks && (
-    !hasOfficialRows ||
-    (!hasDatedOfficialRows && previousHasDatedOfficialRows)
-  );
-
-  if (shouldPreservePrevious) {
-    db.stocks = {
-      ...previousStocks,
-      status: hasOfficialRows
-        ? "preserved_previous_snapshot_after_undated_refresh"
-        : "preserved_previous_snapshot_after_failed_refresh",
-      sourceAttempts
-    };
-  } else {
-    db.stocks = {
-      status: hasOfficialRows
-        ? derivedCount ? "official_twse_loaded_with_derived_gaps" : "official_twse_loaded"
-        : "derived_from_etf_holdings_only",
-      requiredFor: ["直接股票辨識", "ETF 底層股票穿透", "整體股票重疊度"],
-      items,
-      updatedAt: new Date().toISOString(),
-      sourceAttempts,
-      limitations: [
-        "TWSE OpenAPI 可補上市股票主檔與每日行情。",
-        "TPEx OpenAPI 可補上櫃股票每日行情，並以代號與名稱建立上櫃股票主檔；產業別與掛牌日若來源未提供會保留空值，不做假資料補值。",
-        "若使用者輸入興櫃或未上市標的，需再接 TPEx 興櫃或其他正式來源；目前會標示為未知標的，不做假資料補值。",
-        "ETF 成分股只有在投信官方成分資料完整時，才能完整穿透到個股曝險。"
-      ]
-    };
-  }
-
-  db.metadata.sources = (db.metadata.sources || []).filter((source) => !["twse-company-basic", "twse-stock-day-all", "tpex-mainboard-daily-close-quotes"].includes(source.id));
-  db.metadata.sources.push({
-    id: "twse-company-basic",
-    name: "TWSE OpenAPI 上市公司基本資料",
-    url: twseCompanyUrl,
-    usage: "股票主檔、公司簡稱、產業別與上市日期"
-  });
-  db.metadata.sources.push({
-    id: "twse-stock-day-all",
-    name: "TWSE OpenAPI 上市個股日成交資訊",
-    url: twseDailyUrl,
-    usage: "股票每日開高低收、成交量與最新價格"
-  });
-  db.metadata.sources.push({
-    id: "tpex-mainboard-daily-close-quotes",
-    name: "TPEx OpenAPI 上櫃股票行情",
-    url: tpexDailyUrl,
-    usage: "上櫃股票代號、名稱、每日開高低收、成交量、成交金額與發行股數"
-  });
-
-  fs.writeFileSync(dbPath, `${JSON.stringify(db, null, 2)}\n`, "utf8");
-  console.log(JSON.stringify({
-    stocks: items.length,
-    effectiveStocks: db.stocks.items.length,
-    derivedCount: db.stocks.items.filter((item) => item.source === "derived-from-etf-holdings").length,
-    sourceAttempts
-  }, null, 2));
+  db.stocks = { ...previous,
+    status: refreshed ? (sourceAttempts.some((a) => a.status !== "loaded") ? "official_quotes_partial" : "official_quotes_loaded") : "preserved_previous_snapshot_after_failed_refresh",
+    items: [...byTicker.values()].sort((a, b) => a.ticker.localeCompare(b.ticker)),
+    updatedAt: refreshed ? now : previous.updatedAt || null, lastAttemptAt: now, sourceAttempts };
+  db.metadata ||= {};
+  db.metadata.sources = (db.metadata.sources || []).filter((s) => !Object.values(sources).some((v) => v.id === s.id));
+  db.metadata.sources.push(...Object.values(sources).map((s) => ({ ...s, name: s.id, usage: "官方股票主檔或行情；失敗與缺列保留舊資料" })));
+  return db;
 }
-
-main().catch((error) => {
-  console.error(error.message);
-  process.exit(1);
-});
+async function main() {
+  const file = process.env.ETF_DATABASE_PATH ? path.resolve(process.env.ETF_DATABASE_PATH) : path.join(__dirname, "../data/etf-database.json");
+  const db = await refreshStockMaster(JSON.parse(fs.readFileSync(file, "utf8")));
+  atomicWriteJson(file, db);
+  console.log(JSON.stringify({ status: db.stocks.status, stocks: db.stocks.items.length, sourceAttempts: db.stocks.sourceAttempts }, null, 2));
+}
+if (require.main === module) main().catch((error) => { console.error(error.message); process.exitCode = 1; });
+module.exports = { refreshStockMaster, sources, getJson };

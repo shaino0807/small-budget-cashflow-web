@@ -39,8 +39,11 @@ if (db.etfMaster) {
   if (skippedMasterRows.length) {
     warn(false, `ETF master 品質閘門略過官方缺欄位資料：${skippedMasterRows.map((item) => item.ticker || "無代碼").join("、")}`);
   }
+  const rejectedRows = (db.etfMaster.sourceAttempts || []).flatMap((attempt) => attempt.rejected || []);
+  warn(!rejectedRows.length, `ETF 主檔拒收缺欄位或重複資料：${rejectedRows.map((row) => `${row.ticker || "無代碼"}/${row.reason}`).join("、")}`);
+  warn(!db.etfMaster.preserved, `ETF 主檔有 ${db.etfMaster.preserved || 0} 筆沿用前次資料`);
 }
-assert(db.classificationRules?.source === "derived_from_official_twse_fields", "ETF 顯示分類規則來源必須標記為 derived_from_official_twse_fields");
+assert(["derived_from_official_twse_fields", "derived_from_official_exchange_fields"].includes(db.classificationRules?.source), "ETF 顯示分類必須標記為官方欄位推導，不能冒充官方分類");
 assert(db.metadata?.sourceFreshness?.referenceTradingDate, "缺少官方來源基準交易日");
 assert(db.metadata?.officialPerformanceDate === db.metadata?.sourceFreshness?.referenceTradingDate, "officialPerformanceDate 必須等於官方來源基準交易日");
 
@@ -52,7 +55,12 @@ for (const sourceName of requiredFreshnessSources) {
   warn(source?.status === "current", `${sourceName} 來源狀態為 ${source?.status || "missing"}`);
 }
 assert(db.metadata?.sourceFreshness?.sources?.etfMaster?.status === "observed_without_source_date", "ETF master 必須明確標記官方端點未提供資料日期");
-assert(db.metadata?.sourceFreshness?.sources?.twseStockDaily?.status === "observed_without_source_date", "TWSE 全市場日行情必須明確標記官方端點未提供日期");
+assert(
+  db.metadata?.sourceFreshness?.sources?.twseStockDaily?.sourceDataDate === latestDate((db.stocks?.items || [])
+    .filter((row) => row.latestPrice?.source === "twse-stock-day-all").map((row) => row.latestPrice.date)),
+  "上市來源日期必須等於目前保留官方行情資料列日期"
+);
+warn(db.metadata?.sourceFreshness?.sources?.twseStockDaily?.status === "current", "上市行情未全數更新，請檢查來源狀態");
 assert(
   db.metadata?.sourceFreshness?.sources?.stockMaster?.sourceDataDate === latestDate((db.stocks?.items || []).map((row) => row.latestPrice?.date)),
   "股票來源日期必須等於股票行情資料列的真正最大日期"
@@ -82,7 +90,8 @@ for (const etf of db.etfs) {
   tickers.add(etf.ticker);
   assert(etf.shortName && etf.fundName, `${etf.ticker} 缺名稱`);
   assert(etf.issuer, `${etf.ticker} 缺發行公司`);
-  assert(etf.indexName, `${etf.ticker} 缺追蹤指數`);
+  assert(etf.indexName || etf.indexNameStatus === "official_field_empty", `${etf.ticker} 缺追蹤指數或明確缺口標記`);
+  warn(Boolean(etf.indexName), `${etf.ticker} 官方主檔追蹤指數空白，尚待逐檔核實`);
   assert(etf.sourceUrl, `${etf.ticker} 缺來源 URL`);
   assert(etf.displayClassification?.primary, `${etf.ticker} 缺顯示分類`);
 

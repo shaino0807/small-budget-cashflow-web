@@ -41,26 +41,29 @@ jobs:
           node-version: "22"
 
       - name: Update official ETF database
-        continue-on-error: true
-        run: |
-          node webapp/scripts/update-etf-master.js
-          node webapp/scripts/update-price-series.js
-          node webapp/scripts/update-issuer-official-data.js
-          node webapp/scripts/update-stock-master.js
-          node webapp/scripts/finalize-data-quality.js
+        env:
+          DATA_BATCH_DIR: webapp/data/batches
+        run: node webapp/scripts/refresh-official-database.js
+
+      - name: Save batch verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: market-data-batches
+          path: webapp/data/batches
+          if-no-files-found: warn
 
       - name: Validate available ETF database
         run: |
           node webapp/scripts/test-price-series-preservation.js
-          node webapp/scripts/finalize-data-quality.js
           node webapp/scripts/validate-etf-data.js
 
       - name: Commit refreshed database
         run: |
-          if [ -n "$(git status --porcelain webapp/data/etf-database.json)" ]; then
+          if [ -n "$(git status --porcelain webapp/data/etf-database.json webapp/data/batches)" ]; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add webapp/data/etf-database.json
+            git add webapp/data/etf-database.json webapp/data/batches
             git commit -m "Update ETF database [skip ci]"
             git push
           fi
