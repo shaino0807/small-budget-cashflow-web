@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const { officialDate } = require("./update-safety");
 
 const dbPath = process.env.ETF_DATABASE_PATH
   ? path.resolve(process.env.ETF_DATABASE_PATH)
@@ -7,7 +8,7 @@ const dbPath = process.env.ETF_DATABASE_PATH
 const db = JSON.parse(fs.readFileSync(dbPath, "utf8"));
 
 function validDate(value) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(String(value || ""));
+  return Boolean(value) && officialDate(value) === value;
 }
 
 function latestDate(values) {
@@ -25,10 +26,6 @@ const twseStockAttempt = (db.stocks?.sourceAttempts || []).find((row) => row.sou
 const tpexStockAttempt = (db.stocks?.sourceAttempts || []).find((row) => row.source === "tpex-mainboard-daily-close-quotes");
 // The last fetch attempt can fail while the retained official rows remain valid.
 // Derive the source date from the data being published, never from a fetch timestamp.
-const tpexStockDate = latestDate((db.stocks?.items || [])
-  .filter((row) => row.latestPrice?.source === "tpex-mainboard-daily-close-quotes")
-  .map((row) => row.latestPrice.date));
-const tpexSnapshotPreserved = String(db.stocks?.status || "").startsWith("preserved_previous_snapshot");
 const priceDate = latestDate((db.priceSeries?.items || []).map((row) => row.date));
 const holdingsDate = latestDate((db.holdings?.items || []).map((row) => row.asOfDate));
 const navDate = latestDate((db.navSeries?.items || []).map((row) => row.date));
@@ -40,6 +37,23 @@ function sourceStatus(sourceDataDate, required = true) {
   return lagDays > 3 ? "stale" : "current";
 }
 
+function quoteFreshness(source, attempt) {
+  const rows = (db.stocks?.items || []).filter((r) => r.latestPrice?.source === source);
+  const date = latestDate(rows.map((r) => r.latestPrice.date));
+  const preserved = rows.filter((r) => r.priceRefreshStatus === "preserved_previous").length;
+  const allPreserved = preserved === rows.length || attempt?.status === "failed"
+    || String(db.stocks?.status || "").startsWith("preserved_previous_snapshot");
+  return {
+    observedAt: rows.map((r) => r.latestPrice?.observedAt).filter(Boolean).sort().at(-1) || db.stocks?.updatedAt || null,
+    sourceDataDate: date,
+    oldestSourceDataDate: rows.map((r) => r.latestPrice?.date).filter(validDate).sort()[0] || null,
+    status: date ? allPreserved ? "preserved_previous_snapshot"
+      : preserved || attempt?.status === "partial" ? "partial_snapshot" : sourceStatus(date) : "missing_date",
+    lastAttemptStatus: attempt?.status || "unknown", preservedRows: preserved,
+    evidence: "取目前發布的官方行情列日期；保留資料不以本次執行時間冒充更新"
+  };
+}
+
 db.metadata = db.metadata || {};
 db.metadata.refreshExecutedAt = executedAt;
 db.metadata.officialPerformanceDate = referenceTradingDate;
@@ -48,32 +62,21 @@ db.metadata.sourceFreshness = {
   checkedAt: executedAt,
   sources: {
     etfMaster: {
-      observedAt: executedAt,
+      observedAt: db.etfMaster?.observedAt || null,
+      lastAttemptStatus: db.etfMaster?.status || "unknown",
       sourceDataDate: null,
       status: "observed_without_source_date",
-      evidence: "TWSE ETF e添富商品篩選器回應沒有提供資料日期，不得以執行日冒充交易日"
+      evidence: "TWSE／TPEx ETF 商品篩選器回應沒有提供資料日期，不得以執行日冒充交易日"
     },
     stockMaster: {
       observedAt: db.stocks?.updatedAt || executedAt,
       sourceDataDate: stockDate,
-      status: sourceStatus(stockDate),
+      status: (db.stocks?.items || []).some((row) => row.priceRefreshStatus === "preserved_previous" || row.priceRefreshStatus === "missing")
+        ? "partial_snapshot" : sourceStatus(stockDate),
       evidence: "所有具官方日期欄位的股票行情列最大日期"
     },
-    twseStockDaily: {
-      observedAt: db.stocks?.updatedAt || executedAt,
-      sourceDataDate: twseStockAttempt?.sourceDataDate || null,
-      status: "observed_without_source_date",
-      evidence: twseStockAttempt?.dateEvidence || "TWSE STOCK_DAY_ALL 回應沒有交易日期欄位"
-    },
-    tpexStockDaily: {
-      observedAt: db.stocks?.updatedAt || executedAt,
-      sourceDataDate: tpexStockDate,
-      status: tpexSnapshotPreserved && tpexStockDate ? "preserved_previous_snapshot" : sourceStatus(tpexStockDate),
-      lastAttemptStatus: tpexStockAttempt?.status || "unknown",
-      evidence: tpexSnapshotPreserved
-        ? "本次更新未取得完整日期資料；保留前次官方行情，日期取保留資料列的 TPEx Date 最大值"
-        : "目前官方 TPEx 行情資料列的 Date 最大值"
-    },
+    twseStockDaily: quoteFreshness("twse-stock-day-all", twseStockAttempt),
+    tpexStockDaily: quoteFreshness("tpex-mainboard-daily-close-quotes", tpexStockAttempt),
     priceSeries: {
       observedAt: db.priceSeries?.updatedAt || executedAt,
       sourceDataDate: priceDate,

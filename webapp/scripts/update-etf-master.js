@@ -2,6 +2,8 @@ const fs = require("fs");
 const http = require("http");
 const https = require("https");
 const path = require("path");
+const { officialDate, toNumber, atomicWriteJson } = require("./update-safety");
+const tpexProductsUrl = "https://info.tpex.org.tw/api/etfFilter";
 
 const dbPath = process.env.ETF_DATABASE_PATH
   ? path.resolve(process.env.ETF_DATABASE_PATH)
@@ -45,7 +47,7 @@ function requestProducts(url, body, redirectCount = 0) {
         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
         "Content-Length": Buffer.byteLength(body),
         "User-Agent": "SmallBudgetCashflowMap/0.1",
-        "Referer": productsPageUrl,
+        "Referer": url.startsWith(tpexProductsUrl) ? "https://info.tpex.org.tw/" : productsPageUrl,
         "X-Requested-With": "XMLHttpRequest"
       }
     }, (res) => {
@@ -59,6 +61,8 @@ function requestProducts(url, body, redirectCount = 0) {
         requestProducts(nextUrl, body, redirectCount + 1).then(resolve, reject);
         return;
       }
+      res.on("error", reject);
+      res.on("aborted", () => reject(new Error("Aborted response")));
       let response = "";
       res.setEncoding("utf8");
       res.on("data", (chunk) => {
@@ -95,16 +99,7 @@ function postProducts(params = {}) {
   return requestProducts(productsUrl, body);
 }
 
-function toNumber(value) {
-  if (value === undefined || value === null || value === "") return null;
-  const parsed = Number(String(value).replaceAll(",", "").trim());
-  return Number.isFinite(parsed) ? parsed : null;
-}
 
-function dotDateToIso(value) {
-  const match = String(value || "").trim().match(/^(\d{4})\.(\d{2})\.(\d{2})$/);
-  return match ? `${match[1]}-${match[2]}-${match[3]}` : null;
-}
 
 function pushUnique(target, key, value) {
   if (!value) return;
@@ -112,13 +107,6 @@ function pushUnique(target, key, value) {
   if (!target[key].includes(value)) target[key].push(value);
 }
 
-function mergeQualityFlags(existing) {
-  const keep = (existing?.qualityFlags || []).filter((flag) => ![
-    "official_master_loaded",
-    "official_twse_master_loaded"
-  ].includes(flag));
-  return [...new Set([...keep, "official_twse_master_loaded"])];
-}
 
 function textIncludesAny(text, words) {
   return words.some((word) => text.includes(word));
@@ -205,182 +193,143 @@ function displayClassificationFor(etf) {
     strategy,
     incomeStyle,
     market,
-    source: "derived_from_official_twse_fields",
+    source: etf.listingMarket === "TPEx" ? "derived_from_official_tpex_fields" : "derived_from_official_twse_fields",
     confidence: rules.length ? "rule_based" : "unknown",
     rules
   };
 }
 
-async function main() {
-  const db = JSON.parse(fs.readFileSync(dbPath, "utf8"));
-  const existingByTicker = new Map((db.etfs || []).map((etf) => [etf.ticker, etf]));
-  const rows = await postProducts();
-  const classifications = new Map();
-  const sourceAttempts = [{ source: "twse-etfortune-products", status: "loaded", rows: rows.length, url: productsUrl }];
 
-  for (const filter of filters) {
+async function refreshEtfMaster(input, { fetchProducts = postProducts,
+  fetchTpex = () => requestProducts(tpexProductsUrl, ""),
+  now = new Date().toISOString(), classificationFilters = filters } = {}) {
+  const db = structuredClone(input);
+  const byTicker = new Map((db.etfs || []).map((row) => [row.ticker, row]));
+  const classifications = new Map(), sourceAttempts = [], updated = new Set();
+  const failedClassificationTargets = new Set();
+  const catalogs = [];
+  for (const [market, source, url, fetcher] of [
+    ["TWSE", "twse-etfortune-products", productsUrl, fetchProducts],
+    ["TPEx", "tpex-etf-filter", tpexProductsUrl, fetchTpex]
+  ]) {
     try {
-      const filteredRows = await postProducts({ [filter.field]: filter.value });
-      filteredRows.forEach((row) => {
-        const ticker = String(row.stockNo || "").trim();
-        if (!ticker) return;
-        const current = classifications.get(ticker) || { themes: [], assetTypes: [], rewardTypes: [], managerType: "" };
-        if (filter.target === "managerType") current.managerType = filter.label;
-        else pushUnique(current, filter.target, filter.label);
-        classifications.set(ticker, current);
-      });
-      sourceAttempts.push({ source: `twse-etfortune-filter-${filter.field}-${filter.value}`, status: "loaded", rows: filteredRows.length, label: filter.label, url: productsUrl });
+      const rows = await fetcher();
+      if (!Array.isArray(rows) || !rows.length) throw new Error("Empty or invalid ETF catalog");
+      catalogs.push({ market, source, url, rows });
     } catch (error) {
-      sourceAttempts.push({ source: `twse-etfortune-filter-${filter.field}-${filter.value}`, status: "failed", error: error.message, label: filter.label, url: productsUrl });
+      sourceAttempts.push({ market, source, url, status: "failed", error: error.message });
     }
   }
-
-  const snapshotDate = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Taipei",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  }).format(new Date());
-
-  const skippedIncompleteRows = [];
-  const etfs = rows
-    .map((row) => {
-      const ticker = String(row.stockNo || "").trim();
-      if (!ticker) {
-        skippedIncompleteRows.push({
-          ticker: "",
-          shortName: String(row.stockName || "").trim(),
-          missingFields: ["stockNo"]
-        });
-        return null;
+  if (catalogs.some((c) => c.market === "TWSE")) {
+    for (const filter of classificationFilters) {
+      try {
+        const rows = await fetchProducts({ [filter.field]: filter.value });
+        if (!Array.isArray(rows)) throw new Error("Invalid filter response");
+        for (const row of rows) {
+          const ticker = String(row.stockNo || "").trim();
+          if (!ticker) continue;
+          const current = classifications.get(ticker) || {};
+          if (filter.target === "managerType") current.managerType = filter.label;
+          else pushUnique(current, filter.target, filter.label);
+          classifications.set(ticker, current);
+        }
+        sourceAttempts.push({ source: "twse-etfortune-filter-" + filter.field + "-" + filter.value, status: "loaded", rows: rows.length, label: filter.label, url: productsUrl });
+      } catch (error) {
+        failedClassificationTargets.add(filter.target);
+        sourceAttempts.push({ source: "twse-etfortune-filter-" + filter.field + "-" + filter.value, status: "failed", error: error.message, label: filter.label, url: productsUrl });
       }
-      const existing = existingByTicker.get(ticker) || {};
+    }
+  }
+  const counts = new Map();
+  for (const { rows } of catalogs) for (const row of rows) {
+    const ticker = String(row.stockNo || "").trim();
+    counts.set(ticker, (counts.get(ticker) || 0) + 1);
+  }
+  for (const { market, source, url, rows } of catalogs) {
+    const rejected = [];
+    let accepted = 0;
+    for (const row of rows) {
+      const ticker = String(row.stockNo || "").trim();
+      const shortName = String(row.stockName || "").trim();
+      const issuer = String(row.issuer || "").trim();
+      const listingDate = officialDate(row.listingDate);
+      const reason = !/^0\d{3,5}[A-Z]?$/.test(ticker) ? "invalid_ticker"
+        : counts.get(ticker) > 1 ? "duplicate_ticker" : !shortName || !issuer || !listingDate ? "missing_identity" : null;
+      if (reason) { rejected.push({ ticker, reason }); continue; }
+      const old = byTicker.get(ticker) || {};
       const classification = classifications.get(ticker) || {};
-      const shortName = String(row.stockName || existing.shortName || ticker).trim();
-      const assetTypes = classification.assetTypes || existing.assetTypes || [];
-      const themes = classification.themes || existing.themes || [];
-      const rewardTypes = classification.rewardTypes || existing.rewardTypes || [];
-      const next = {
-        ...existing,
-        ticker,
-        shortName,
-        fundName: existing.fundName || shortName,
-        category: assetTypes[0] || existing.category || "未分類",
-        assetTypes,
-        rewardTypes,
-        managerType: classification.managerType || existing.managerType || "",
-        issuer: String(row.issuer || existing.issuer || "").trim(),
-        indexName: String(row.indexName || existing.indexName || "").trim() || "無",
-        listingDate: dotDateToIso(row.listingDate) || existing.listingDate || null,
-        themes,
-        aumBillionTwd: toNumber(row.totalAv),
-        beneficiaries: toNumber(row.holders),
-        ytdAverageValueMillionTwd: toNumber(row.valueYTD),
-        ytdAverageVolume: toNumber(row.volumeYTD),
-        close: toNumber(row.close1),
-        performance: {
-          ...(existing.performance || {}),
-          date: null,
-          observedAt: new Date().toISOString(),
-          sourceDateStatus: "official_endpoint_does_not_provide_date",
-          source: "twse-etfortune-products"
-        },
-        sourceUrl: `https://www.twse.com.tw/zh/ETFortune/etfInfo/${ticker}`,
-        qualityFlags: mergeQualityFlags(existing)
+      for (const target of ["assetTypes", "themes", "rewardTypes"]) {
+        if (failedClassificationTargets.has(target)) {
+          classification[target] = [...new Set([...(old[target] || []), ...(classification[target] || [])])];
+        }
+      }
+      const close = toNumber(row.close1);
+      // Blank index is unknown, never silently turned into the claim "no index".
+      const indexName = String(Object.hasOwn(row, "indexName") ? row.indexName ?? "" : old.indexName ?? "").trim();
+      const next = { ...old, ticker, shortName, fundName: old.fundName || shortName, issuer, listingDate,
+        listingMarket: market, indexName,
+        indexNameStatus: !indexName ? "official_field_empty" : indexName === "無" ? "official_explicit_none" : "official_field",
+        assetTypes: classification.assetTypes || old.assetTypes || [],
+        themes: classification.themes || old.themes || [],
+        rewardTypes: classification.rewardTypes || old.rewardTypes || [],
+        managerType: classification.managerType || old.managerType || "",
+        aumBillionTwd: toNumber(row.totalAv), beneficiaries: toNumber(row.holders),
+        ytdAverageValueMillionTwd: toNumber(row.valueYTD), ytdAverageVolume: toNumber(row.volumeYTD),
+        close: close !== null && close > 0 ? close : old.close ?? null,
+        performance: { ...(old.performance || {}), date: null, observedAt: now,
+          sourceDateStatus: "official_endpoint_does_not_provide_date", source },
+        sourceUrl: market === "TWSE" ? "https://www.twse.com.tw/zh/ETFortune/etfInfo/" + ticker : tpexProductsUrl,
+        masterObservedAt: now, masterRefreshStatus: "updated",
+        qualityFlags: [...new Set([...(old.qualityFlags || ["holdings_missing", "price_series_missing", "nav_series_missing"]).filter((f) => !["master_preserved", "official_twse_master_loaded", "official_tpex_master_loaded"].includes(f)),
+          market === "TWSE" ? "official_twse_master_loaded" : "official_tpex_master_loaded"])]
       };
       next.displayClassification = displayClassificationFor(next);
-      next.category = assetTypes[0] || next.displayClassification.assetClass || existing.category || "未分類";
-      const missingFields = [
-        !next.issuer && "issuer"
-      ].filter(Boolean);
-      if (missingFields.length) {
-        skippedIncompleteRows.push({
-          ticker,
-          shortName,
-          listingDate: next.listingDate,
-          missingFields
-        });
-        return null;
-      }
-      return next;
-    })
-    .filter(Boolean)
-    .sort((a, b) => a.ticker.localeCompare(b.ticker));
-
-  if (skippedIncompleteRows.length) {
-    sourceAttempts.push({
-      source: "twse-etfortune-master-quality-gate",
-      status: "skipped_incomplete",
-      rows: skippedIncompleteRows.length,
-      reason: "首次出現且官方主檔缺少必填欄位；保留上一版已驗證資料，不猜測內容",
-      items: skippedIncompleteRows
-    });
+      next.category = next.assetTypes[0] || next.displayClassification.assetClass || "未分類";
+      byTicker.set(ticker, next);
+      updated.add(ticker);
+      accepted++;
+    }
+    sourceAttempts.push({ market, source, url, status: accepted ? (rejected.length ? "partial" : "loaded") : "failed",
+      rows: rows.length, accepted, rejected, observedAt: now, sourceDataDate: null });
   }
-
-  db.etfs = etfs;
-  db.metadata = db.metadata || {};
-  db.metadata.snapshotDate = snapshotDate;
-  db.metadata.refreshExecutedAt = new Date().toISOString();
-  db.metadata.buildMode = "official_twse_etfortune_master_with_quality_flags";
-  db.metadata.featuredTickers = db.metadata.featuredTickers || ["0056", "00878", "006208"];
-  db.metadata.sources = (db.metadata.sources || []).filter((source) => source.id !== "twse-etfortune-products");
-  db.metadata.sources.push({
-    id: "twse-etfortune-products",
-    name: "TWSE ETF e添富投資篩選器",
-    url: productsPageUrl,
-    endpoint: productsUrl,
-    usage: "全市場 ETF 主檔、上市日期、追蹤指數、資產規模、收盤價、受益人數、發行人，以及官方篩選器分類"
-  });
-  db.metadata.limitations = [
-    "ETF 全市場主檔與分類來自 TWSE ETF e添富投資篩選器官方端點。",
-    "TWSE 投資篩選器 assetType 資產類別參數目前回 HTTP 403；在取得可穩定讀取的官方端點前，assetTypes 保留官方缺口。",
-    "displayClassification 是根據 TWSE 官方主檔欄位、官方 hashtag / rewardType 篩選器與透明關鍵字規則建立的顯示層分類，不視為官方 assetType。",
-    "ETF 成分股、NAV/折溢價與配息仍需分投信或其他正式來源逐項接入；未接上的 ETF 會保留缺資料狀態。",
-    "00878 NAV 可見但持股權重表格仍是動態頁，需取得正式 API 或下載檔；不使用第三方資料硬補。",
-    ...(skippedIncompleteRows.length
-      ? [`本次 TWSE 官方主檔有 ${skippedIncompleteRows.length} 筆首次出現資料缺少必填欄位，品質閘門已略過：${skippedIncompleteRows.map((item) => item.ticker || "無代碼").join("、")}。`]
-      : [])
-  ];
+  let preserved = 0;
+  for (const row of byTicker.values()) {
+    if (updated.has(row.ticker)) continue;
+    row.masterRefreshStatus = "preserved_previous";
+    row.qualityFlags = [...new Set([...(row.qualityFlags || []), "master_preserved"])];
+    preserved++;
+  }
+  if (!byTicker.size) throw new Error("No usable ETF master; no database written");
+  db.etfs = [...byTicker.values()].sort((a, b) => a.ticker.localeCompare(b.ticker));
+  db.metadata ||= {};
+  db.metadata.refreshExecutedAt = now;
+  db.metadata.buildMode = "official_twse_tpex_master_with_quality_flags";
+  db.metadata.limitations = [...new Set([
+    ...(db.metadata.limitations || []).filter((text) => !text.startsWith("ETF 全市場主檔與分類來自 TWSE")),
+    "上市與上櫃 ETF 主檔分別來自 TWSE／TPEx；來源失敗或缺列保留前次資料並標記。",
+    "主檔端點未提供資料日；空白追蹤指數代表待核實，不推定為無指數。主檔收錄不等於成分股、價格或殖利率已驗收。"
+  ])];
+  db.metadata.sources = (db.metadata.sources || []).filter((s) => !["twse-etfortune-products", "tpex-etf-filter"].includes(s.id));
+  db.metadata.sources.push(
+    { id: "twse-etfortune-products", name: "TWSE ETF e添富", url: productsPageUrl, endpoint: productsUrl, usage: "上市ETF主檔與官方篩選器" },
+    { id: "tpex-etf-filter", name: "TPEx ETF 投資資訊", url: tpexProductsUrl, usage: "上櫃ETF主檔；未提供資料日期與收盤價的欄位保留缺口" });
   db.classificationRules = {
-    status: "display_rules_loaded",
-    source: "derived_from_official_twse_fields",
-    officialFields: ["stockNo", "stockName", "issuer", "indexName", "managerType", "rewardType", "hashtag"],
-    derivedFields: ["displayClassification.primary", "displayClassification.assetClass", "displayClassification.strategy", "displayClassification.incomeStyle", "displayClassification.market"],
-    notes: [
-      "managerType、rewardTypes、themes 來自 TWSE ETF e添富官方篩選器回應。",
-      "assetTypes 只在官方 assetType 篩選器可讀時填入；目前端點回 HTTP 403，所以顯示層資產分類另以規則標記來源。",
-      "分類規則只用於前端瀏覽、報告摘要與資料庫篩選說明，不覆蓋官方欄位。"
-    ]
+    ...(db.classificationRules || {}), status: "display_rules_loaded", source: "derived_from_official_exchange_fields",
+    notes: ["TWSE 篩選器與交易所主檔文字推導顯示分類；不等於官方資產分類。TPEx 未接篩選器分類。"]
   };
-  db.etfMaster = {
-    status: "official_twse_etfortune_loaded",
-    items: etfs.map((etf) => ({
-      ticker: etf.ticker,
-      shortName: etf.shortName,
-      category: etf.category,
-      assetTypes: etf.assetTypes,
-      rewardTypes: etf.rewardTypes,
-      managerType: etf.managerType,
-      themes: etf.themes,
-      displayClassification: etf.displayClassification,
-      issuer: etf.issuer,
-      listingDate: etf.listingDate,
-      indexName: etf.indexName,
-      sourceUrl: etf.sourceUrl
-    })),
-    sourceAttempts
-  };
-
-  fs.writeFileSync(dbPath, `${JSON.stringify(db, null, 2)}\n`, "utf8");
-  console.log(JSON.stringify({
-    etfs: etfs.length,
-    classified: [...classifications.keys()].length,
-    skippedIncompleteRows,
-    sourceAttempts
-  }, null, 2));
+  db.etfMaster = { status: preserved || sourceAttempts.some((s) => s.status !== "loaded") ? "official_master_partial" : "official_master_loaded",
+    observedAt: updated.size ? now : db.etfMaster?.observedAt || null, lastAttemptAt: now, preserved,
+    items: db.etfs.map((row) => ({ ticker: row.ticker, shortName: row.shortName, listingMarket: row.listingMarket,
+      issuer: row.issuer, listingDate: row.listingDate, indexName: row.indexName, indexNameStatus: row.indexNameStatus,
+      category: row.category, assetTypes: row.assetTypes, rewardTypes: row.rewardTypes, managerType: row.managerType,
+      themes: row.themes, displayClassification: row.displayClassification, sourceUrl: row.sourceUrl })),
+    sourceAttempts };
+  return db;
 }
-
-main().catch((error) => {
-  console.error(error.message);
-  process.exit(1);
-});
+async function main() {
+  const db = await refreshEtfMaster(JSON.parse(fs.readFileSync(dbPath, "utf8")));
+  atomicWriteJson(dbPath, db);
+  console.log(JSON.stringify({ etfs: db.etfs.length, status: db.etfMaster.status, sourceAttempts: db.etfMaster.sourceAttempts }, null, 2));
+}
+if (require.main === module) main().catch((error) => { console.error(error.message); process.exitCode = 1; });
+module.exports = { refreshEtfMaster, requestProducts, displayClassificationFor };
