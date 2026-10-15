@@ -1304,7 +1304,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(port, "0.0.0.0", () => {
-  console.log(`小資現金流地圖 webapp: http://localhost:${port}`);
+  console.log(`小資現金流地圖 webapp: http://localhost:${server.address().port}`);
   if (lineAiParserStatus.status === "pending") {
     lineAiParserStatus = { ...lineAiParserStatus, status: "validating", error: null };
     parseLedgerMessageWithAi("午餐 120、飲料 60")

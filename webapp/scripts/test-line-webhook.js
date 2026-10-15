@@ -6,8 +6,8 @@ const os = require("os");
 const path = require("path");
 const { handleLineWebhook, parseIncomingMessage, parseLedgerMessage, parseLedgerMessageWithAi, parseLineCommand } = require("../line-bot");
 
-const port = 5900 + Math.floor(Math.random() * 250);
-const baseUrl = `http://127.0.0.1:${port}`;
+let baseUrl;
+let serverDiagnostics = "";
 const lineSecret = "test-line-channel-secret-32chars";
 const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "cashflow-line-webhook-"));
 
@@ -47,7 +47,8 @@ async function waitForServer(server) {
   const deadline = Date.now() + 30000;
   let lastError = "no response";
   while (Date.now() < deadline) {
-    if (server.exitCode !== null || server.signalCode) throw new Error(`API server exited before readiness (code=${server.exitCode}, signal=${server.signalCode})`);
+    if (server.exitCode !== null || server.signalCode) throw new Error(`API server exited before readiness (code=${server.exitCode}, signal=${server.signalCode}): ${serverDiagnostics}`);
+    if (!baseUrl) { await wait(50); continue; }
     try {
       // Use Node HTTP consistently with the API tests. fetch rejects some valid
       // local ports (e.g. 6000), which the randomized test port can select.
@@ -684,7 +685,7 @@ async function main() {
     cwd: path.join(__dirname, "..", ".."),
     env: {
       ...process.env,
-      PORT: String(port),
+      PORT: "0",
       CUSTOMER_DATA_DIR: dataDir,
       CUSTOMER_DATA_KEY: crypto.randomBytes(32).toString("base64"),
       ACCESS_CODE_PEPPER: crypto.randomBytes(24).toString("base64url"),
@@ -694,8 +695,13 @@ async function main() {
       LINE_REPLY_DISABLED: "1"
     },
     windowsHide: true,
-    stdio: "ignore"
+    stdio: ["ignore", "pipe", "pipe"]
   });
+  server.stdout.on("data", chunk => {
+    const match = String(chunk).match(/webapp: http:\/\/localhost:(\d+)/);
+    if (match) baseUrl = `http://127.0.0.1:${match[1]}`;
+  });
+  server.stderr.on("data", chunk => { serverDiagnostics = (serverDiagnostics + String(chunk)).slice(-3000); });
   try {
     const health = await waitForServer(server);
     if (
