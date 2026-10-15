@@ -5,7 +5,7 @@
   --surface-solid: #fdfbf7;
   --surface-2: #efeee5;
   --text: #303931;
-  --muted: #66665d;
+  --muted: #59594f;
   --line: #d8d0c2;
   --primary: #8c642b;
   --primary-2: #735020;
@@ -22,6 +22,21 @@
   --sans: "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
 }
 body.journal-theme { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.7; }
+/* Contain wide data tables while keeping them reachable with a keyboard. */
+.app-view, .report-layout > *, .metrics > *, .panel { min-width: 0; }
+.table-panel { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
+.table-panel:focus-visible { outline: 2px solid var(--brand-dark); outline-offset: 2px; }
+#databaseSummary, #priceChartStatus, .metric small { overflow-wrap: anywhere; }
+#officialPriceChart { max-width: 100%; }
+#priceChartControls, #databaseView :is(button, input, select, summary, [tabindex]) { scroll-margin-top: 145px; }
+#priceChartAccessible summary { min-height: 44px; padding: 10px 0; cursor: pointer; }
+.etf-chart-controls input, .etf-chart-controls select, .etf-chart-selection button { min-height: 44px; }
+@media (max-width: 640px) {
+  .etf-chart-controls { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .etf-chart-controls > *, .etf-chart-controls input, .etf-chart-controls select { width: 100%; min-width: 0; }
+  input, select, textarea { font-size: 16px; }
+  #databaseView .section-title { flex-wrap: wrap; }
+}
 body.journal-theme::before { content: none; }
 [hidden] { display: none !important; }
 h1, h2, h3, .brand h1 { font-family: var(--serif); letter-spacing: -.025em; color: var(--brand-dark); }

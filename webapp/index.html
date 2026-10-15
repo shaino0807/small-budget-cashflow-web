@@ -429,7 +429,7 @@
             <span class="badge">起點 = 100</span>
           </div>
           <div id="priceChartControls" class="etf-chart-controls">
-            <label>新增比較 ETF<input id="priceChartSearch" list="etfSearchOptions" autocomplete="off" placeholder="0050 或中文名稱" /></label>
+            <label>新增比較 ETF<input id="priceChartSearch" list="etfSearchOptions" aria-describedby="priceChartStatus" autocomplete="off" placeholder="0050 或中文名稱" /></label>
             <button id="addPriceChartEtf" class="secondary-button" type="button">加入比較</button>
             <button id="useHeldPriceEtfs" class="secondary-button" type="button">我的持有 ETF</button>
             <label>期間<select id="priceChartPeriod"><option value="1">近 1 個月</option><option value="3">近 3 個月</option><option value="6">近 6 個月</option></select></label>
@@ -439,13 +439,14 @@
           <p class="panel-note">同一交易日起點為 100，僅比較價格變化，未計入配息。成分股與價格明細依家庭收支持有的 ETF 顯示。</p>
           <div id="priceChartSummary" class="metrics compact-metrics"></div>
           <p class="panel-note">官方資料查詢使用 15 分鐘快取；資料待補或來源暫時無法回應時，請稍後重試。</p>
-          <canvas id="officialPriceChart" height="260" aria-label="官方 ETF 價格相對走勢"></canvas>
+          <canvas id="officialPriceChart" height="260" role="img" aria-label="官方 ETF 價格相對走勢" aria-describedby="priceChartStatus priceChartSummary"></canvas>
+          <details id="priceChartAccessible"><summary>查看比較圖的每日數值</summary><div id="priceChartData" class="table-panel" tabindex="0" role="region" aria-label="比較圖每日數值，可左右捲動"></div></details>
         </section>
-        <div id="databaseSectorTable" class="table-panel"></div>
-        <div id="holdingsTable" class="table-panel"></div>
-        <div id="navSeriesTable" class="table-panel"></div>
-        <div id="priceSeriesTable" class="table-panel"></div>
-        <div id="etfDatabaseTable" class="table-panel"></div>
+        <div id="databaseSectorTable" class="table-panel" tabindex="0" role="region" aria-label="成分股族群摘要，可左右捲動"></div>
+        <div id="holdingsTable" class="table-panel" tabindex="0" role="region" aria-label="官方成分股，可左右捲動"></div>
+        <div id="navSeriesTable" class="table-panel" tabindex="0" role="region" aria-label="官方淨值，可左右捲動"></div>
+        <div id="priceSeriesTable" class="table-panel" tabindex="0" role="region" aria-label="官方價格明細，可左右捲動"></div>
+        <div id="etfDatabaseTable" class="table-panel" tabindex="0" role="region" aria-label="ETF 主檔，可左右捲動"></div>
       </section>
 
       <section id="freeReportView" class="view app-view" aria-labelledby="freeTitle">

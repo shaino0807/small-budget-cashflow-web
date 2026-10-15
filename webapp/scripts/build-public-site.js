@@ -9,7 +9,14 @@ function buildPublicSite(destination) {
   for (const relative of publicFiles) {
     const target = path.join(destination, relative);
     fs.mkdirSync(path.dirname(target), { recursive: true });
-    fs.copyFileSync(path.join(root, relative), target);
+    if (relative === "data/latest-batch.json") {
+      const bytes = fs.readFileSync(path.join(root, "data/etf-database.json"));
+      const id = JSON.parse(bytes).metadata?.dataBatch?.batchId;
+      if (!/^[A-Za-z0-9-]{10,100}$/.test(id)) throw new Error("Invalid published batch ID");
+      const manifest = JSON.parse(fs.readFileSync(path.join(root, "data/batches", id + ".json")));
+      require("../market-snapshot").verifySnapshot(bytes, manifest);
+      fs.writeFileSync(target, JSON.stringify(manifest, null, 2) + "\n");
+    } else fs.copyFileSync(path.join(root, relative), target);
   }
   return publicFiles.length;
 }

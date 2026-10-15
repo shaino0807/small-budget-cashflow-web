@@ -24,4 +24,21 @@ jobs:
       - name: Verify ledger, persistence, image guards and both browser sizes
         run: node webapp/scripts/run-ledger-regressions.js --browser
       - name: Verify updater preservation and candidate rejection
-        run: node --test webapp/scripts/test-updater-guards.js webapp/scripts/test-data-batch.js
+        run: node --test webapp/scripts/test-updater-guards.js webapp/scripts/test-data-batch.js webapp/scripts/test-market-snapshot.js
+      - name: Verify public mobile layout and accessibility
+        shell: pwsh
+        run: |
+          $env:SMOKE_TEST = '1'
+          $env:PORT = '5188'
+          $server = Start-Process node -ArgumentList 'webapp/server.js' -WindowStyle Hidden -PassThru
+          try {
+            node webapp/scripts/test-market-accessibility.js http://127.0.0.1:5188/ accessibility-evidence
+            if ($LASTEXITCODE -ne 0) { throw 'Public accessibility checks failed' }
+          } finally { Stop-Process -Id $server.Id -ErrorAction SilentlyContinue }
+      - name: Save accessibility evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-accessibility
+          path: accessibility-evidence
+          if-no-files-found: warn

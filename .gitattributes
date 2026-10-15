@@ -1,0 +1,3 @@
+# Published batch hashes identify exact bytes on Windows and Linux.
+webapp/data/*.json text eol=lf
+webapp/data/batches/*.json text eol=lf
