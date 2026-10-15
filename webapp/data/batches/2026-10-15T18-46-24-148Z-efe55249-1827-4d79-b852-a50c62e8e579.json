@@ -1,0 +1,1421 @@
+{
+  "schemaVersion": 1,
+  "batchId": "2026-10-15T18-46-24-148Z-efe55249-1827-4d79-b852-a50c62e8e579",
+  "startedAt": "2026-10-15T18:46:24.148Z",
+  "finishedAt": "2026-10-15T18:47:26.406Z",
+  "status": "pass_with_gaps",
+  "version": {
+    "commit": "e724bfe859aa846578eff32f5d8142e876f236f3",
+    "node": "v22.23.3",
+    "codeSha256": "43b32f218b33f2c1c76eba15e70107e5454aebb93ea16bfa1a54cde42fcb65f3"
+  },
+  "previousFileSha256": "0f576d03ff4ac686c799a39c285bcee9bf6e456c3304f854c8b8b71ff6496b9d",
+  "inputInventory": [
+    {
+      "dataset": "etfMaster",
+      "rows": 359,
+      "datedRows": 0,
+      "missingDateRows": 359,
+      "coverage": {
+        "from": null,
+        "to": null
+      },
+      "sources": [
+        {
+          "source": "twse-etfortune-products",
+          "rows": 241,
+          "datedRows": 0,
+          "from": null,
+          "to": null,
+          "urls": [
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00400A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00401A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00402A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00403A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00404A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00405A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00406A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00407A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00408A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00409A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00410A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00412A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/0050",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/0051",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/0052",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/0053",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/0055",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/0056",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/0057",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/0061",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/006203",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/006204",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/006205",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/006206",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/006207",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/006208",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00625K",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00631L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00632R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00633L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00634R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00635U",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00636",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00636K",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00637L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00638R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00639",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00640L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00641R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00642U",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00643",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00643K",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00645",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00646",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00647L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00648R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00650L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00651R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00652",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00653L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00654R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00655L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00656R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00657",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00657K",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00660",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00661",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00662",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00663L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00664R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00665L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00666R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00668",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00668K",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00669R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00670L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00671R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00673R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00674R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00675L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00676R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00678",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00680L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00681R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00682U",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00683L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00684R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00685L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00686R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00688L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00689R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00690",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00692",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00693U",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00700",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00701",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00702",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00703",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00706L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00707R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00708L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00709",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00710B",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00711B",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00712",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00713",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00714",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00715L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00717",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00728",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00730",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00731",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00733",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00735",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00736",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00737",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00738U",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00739",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00752",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00753L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00757",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00762",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00763U",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00770",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00771",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00775B",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00783",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00830",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00850",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00851",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00852L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00861",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00865B",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00875",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00876",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00878",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00881",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00882",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00885",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00891",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00892",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00893",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00894",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00895",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00896",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00897",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00898",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00899",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00900",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00901",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00902",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00903",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00904",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00905",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00907",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00908",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00909",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00910",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00911",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00912",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00913",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00915",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00916",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00917",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00918",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00919",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00920",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00921",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00922",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00923",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00924",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00926",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00927",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00929",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00930",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00932",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00934",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00935",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00936",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00938",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00939",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00940",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00941",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00943",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00944",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00945B",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00946",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00947",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00949",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00951",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00952",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00953B",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00954",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00956",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00960",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00961",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00962",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00963",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00964",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00965",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00971",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00972",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009800",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009801",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009802",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009803",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009804",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009805",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009808",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009809",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00980A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009810",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009811",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009812",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009813",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009816",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009817",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009818",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009819",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00981A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00981T",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009820",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009821",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009824",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009826",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009827",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009828",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009829",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00982A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00982D",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00982T",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00983A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00983D",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00984A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00984D",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00985A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00985B",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00986A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00987A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00988A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00989A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00990A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00991A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00991B",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00992A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00993A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00994A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00995A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00996A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00997A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00999A"
+          ]
+        },
+        {
+          "source": "tpex-etf-filter",
+          "rows": 118,
+          "datedRows": 0,
+          "from": null,
+          "to": null,
+          "urls": [
+            "https://info.tpex.org.tw/api/etfFilter"
+          ]
+        }
+      ]
+    },
+    {
+      "dataset": "stockQuotes",
+      "rows": 1982,
+      "datedRows": 1978,
+      "missingDateRows": 4,
+      "coverage": {
+        "from": "2026-10-13",
+        "to": "2026-10-14"
+      },
+      "sources": [
+        {
+          "source": "twse-stock-day-all",
+          "rows": 1091,
+          "datedRows": 1091,
+          "from": "2026-10-13",
+          "to": "2026-10-13",
+          "urls": [
+            "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL"
+          ]
+        },
+        {
+          "source": "tpex-mainboard-daily-close-quotes",
+          "rows": 887,
+          "datedRows": 887,
+          "from": "2026-10-13",
+          "to": "2026-10-14",
+          "urls": [
+            "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes"
+          ]
+        },
+        {
+          "source": "unspecified",
+          "rows": 4,
+          "datedRows": 0,
+          "from": null,
+          "to": null,
+          "urls": []
+        }
+      ]
+    },
+    {
+      "dataset": "priceSeries",
+      "rows": 36,
+      "datedRows": 36,
+      "missingDateRows": 0,
+      "coverage": {
+        "from": "2026-10-01",
+        "to": "2026-10-14"
+      },
+      "sources": [
+        {
+          "source": "twse-stock-day",
+          "rows": 36,
+          "datedRows": 36,
+          "from": "2026-10-01",
+          "to": "2026-10-14",
+          "urls": [
+            "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20261015&stockNo=0050",
+            "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20261015&stockNo=0056",
+            "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20261015&stockNo=006208",
+            "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20261015&stockNo=00878"
+          ]
+        }
+      ]
+    },
+    {
+      "dataset": "holdings",
+      "rows": 150,
+      "datedRows": 150,
+      "missingDateRows": 0,
+      "coverage": {
+        "from": "2026-10-14",
+        "to": "2026-10-14"
+      },
+      "sources": [
+        {
+          "source": "yuanta-holdings-ratio",
+          "rows": 100,
+          "datedRows": 100,
+          "from": "2026-10-14",
+          "to": "2026-10-14",
+          "urls": [
+            "https://www.yuantaetfs.com/product/detail/0050/ratio",
+            "https://www.yuantaetfs.com/product/detail/0056/ratio"
+          ]
+        },
+        {
+          "source": "fubon-fund-assets",
+          "rows": 50,
+          "datedRows": 50,
+          "from": "2026-10-14",
+          "to": "2026-10-14",
+          "urls": [
+            "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208"
+          ]
+        }
+      ]
+    },
+    {
+      "dataset": "navSeries",
+      "rows": 4,
+      "datedRows": 4,
+      "missingDateRows": 0,
+      "coverage": {
+        "from": "2026-10-14",
+        "to": "2026-10-14"
+      },
+      "sources": [
+        {
+          "source": "yuanta-pcf-nav",
+          "rows": 2,
+          "datedRows": 2,
+          "from": "2026-10-14",
+          "to": "2026-10-14",
+          "urls": [
+            "https://www.yuantaetfs.com/product/detail/0050/ratio",
+            "https://www.yuantaetfs.com/product/detail/0056/ratio"
+          ]
+        },
+        {
+          "source": "cathay-fund-detail-nav",
+          "rows": 1,
+          "datedRows": 1,
+          "from": "2026-10-14",
+          "to": "2026-10-14",
+          "urls": [
+            "https://www.cathaysite.com.tw/fund-details/ECN?tab=net_worth"
+          ]
+        },
+        {
+          "source": "fubon-fund-assets-nav",
+          "rows": 1,
+          "datedRows": 1,
+          "from": "2026-10-14",
+          "to": "2026-10-14",
+          "urls": [
+            "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208"
+          ]
+        }
+      ]
+    },
+    {
+      "dataset": "distributions",
+      "rows": 12,
+      "datedRows": 12,
+      "missingDateRows": 0,
+      "coverage": {
+        "from": "2024-08-09",
+        "to": "2026-06-12"
+      },
+      "sources": [
+        {
+          "source": "twse-etfortune",
+          "rows": 12,
+          "datedRows": 12,
+          "from": "2024-08-09",
+          "to": "2026-06-12",
+          "urls": []
+        }
+      ]
+    }
+  ],
+  "outputInventory": [
+    {
+      "dataset": "etfMaster",
+      "rows": 359,
+      "datedRows": 0,
+      "missingDateRows": 359,
+      "coverage": {
+        "from": null,
+        "to": null
+      },
+      "sources": [
+        {
+          "source": "twse-etfortune-products",
+          "rows": 241,
+          "datedRows": 0,
+          "from": null,
+          "to": null,
+          "urls": [
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00400A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00401A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00402A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00403A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00404A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00405A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00406A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00407A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00408A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00409A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00410A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00412A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/0050",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/0051",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/0052",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/0053",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/0055",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/0056",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/0057",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/0061",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/006203",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/006204",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/006205",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/006206",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/006207",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/006208",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00625K",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00631L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00632R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00633L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00634R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00635U",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00636",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00636K",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00637L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00638R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00639",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00640L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00641R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00642U",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00643",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00643K",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00645",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00646",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00647L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00648R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00650L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00651R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00652",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00653L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00654R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00655L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00656R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00657",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00657K",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00660",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00661",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00662",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00663L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00664R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00665L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00666R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00668",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00668K",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00669R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00670L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00671R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00673R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00674R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00675L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00676R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00678",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00680L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00681R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00682U",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00683L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00684R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00685L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00686R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00688L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00689R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00690",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00692",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00693U",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00700",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00701",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00702",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00703",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00706L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00707R",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00708L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00709",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00710B",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00711B",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00712",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00713",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00714",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00715L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00717",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00728",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00730",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00731",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00733",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00735",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00736",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00737",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00738U",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00739",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00752",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00753L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00757",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00762",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00763U",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00770",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00771",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00775B",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00783",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00830",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00850",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00851",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00852L",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00861",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00865B",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00875",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00876",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00878",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00881",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00882",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00885",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00891",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00892",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00893",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00894",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00895",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00896",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00897",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00898",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00899",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00900",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00901",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00902",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00903",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00904",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00905",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00907",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00908",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00909",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00910",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00911",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00912",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00913",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00915",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00916",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00917",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00918",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00919",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00920",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00921",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00922",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00923",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00924",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00926",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00927",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00929",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00930",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00932",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00934",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00935",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00936",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00938",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00939",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00940",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00941",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00943",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00944",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00945B",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00946",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00947",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00949",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00951",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00952",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00953B",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00954",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00956",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00960",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00961",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00962",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00963",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00964",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00965",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00971",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00972",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009800",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009801",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009802",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009803",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009804",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009805",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009808",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009809",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00980A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009810",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009811",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009812",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009813",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009816",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009817",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009818",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009819",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00981A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00981T",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009820",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009821",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009824",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009826",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009827",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009828",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/009829",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00982A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00982D",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00982T",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00983A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00983D",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00984A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00984D",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00985A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00985B",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00986A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00987A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00988A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00989A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00990A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00991A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00991B",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00992A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00993A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00994A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00995A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00996A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00997A",
+            "https://www.twse.com.tw/zh/ETFortune/etfInfo/00999A"
+          ]
+        },
+        {
+          "source": "tpex-etf-filter",
+          "rows": 118,
+          "datedRows": 0,
+          "from": null,
+          "to": null,
+          "urls": [
+            "https://info.tpex.org.tw/api/etfFilter"
+          ]
+        }
+      ]
+    },
+    {
+      "dataset": "stockQuotes",
+      "rows": 1983,
+      "datedRows": 1979,
+      "missingDateRows": 4,
+      "coverage": {
+        "from": "2026-10-13",
+        "to": "2026-10-15"
+      },
+      "sources": [
+        {
+          "source": "twse-stock-day-all",
+          "rows": 1091,
+          "datedRows": 1091,
+          "from": "2026-10-13",
+          "to": "2026-10-14",
+          "urls": [
+            "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL"
+          ]
+        },
+        {
+          "source": "tpex-mainboard-daily-close-quotes",
+          "rows": 888,
+          "datedRows": 888,
+          "from": "2026-10-13",
+          "to": "2026-10-15",
+          "urls": [
+            "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes"
+          ]
+        },
+        {
+          "source": "unspecified",
+          "rows": 4,
+          "datedRows": 0,
+          "from": null,
+          "to": null,
+          "urls": []
+        }
+      ]
+    },
+    {
+      "dataset": "priceSeries",
+      "rows": 40,
+      "datedRows": 40,
+      "missingDateRows": 0,
+      "coverage": {
+        "from": "2026-10-01",
+        "to": "2026-10-15"
+      },
+      "sources": [
+        {
+          "source": "twse-stock-day",
+          "rows": 40,
+          "datedRows": 40,
+          "from": "2026-10-01",
+          "to": "2026-10-15",
+          "urls": [
+            "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20261016&stockNo=0050",
+            "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20261016&stockNo=0056",
+            "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20261016&stockNo=006208",
+            "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20261016&stockNo=00878"
+          ]
+        }
+      ]
+    },
+    {
+      "dataset": "holdings",
+      "rows": 150,
+      "datedRows": 150,
+      "missingDateRows": 0,
+      "coverage": {
+        "from": "2026-10-15",
+        "to": "2026-10-15"
+      },
+      "sources": [
+        {
+          "source": "yuanta-holdings-ratio",
+          "rows": 100,
+          "datedRows": 100,
+          "from": "2026-10-15",
+          "to": "2026-10-15",
+          "urls": [
+            "https://www.yuantaetfs.com/product/detail/0050/ratio",
+            "https://www.yuantaetfs.com/product/detail/0056/ratio"
+          ]
+        },
+        {
+          "source": "fubon-fund-assets",
+          "rows": 50,
+          "datedRows": 50,
+          "from": "2026-10-15",
+          "to": "2026-10-15",
+          "urls": [
+            "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208"
+          ]
+        }
+      ]
+    },
+    {
+      "dataset": "navSeries",
+      "rows": 4,
+      "datedRows": 4,
+      "missingDateRows": 0,
+      "coverage": {
+        "from": "2026-10-15",
+        "to": "2026-10-15"
+      },
+      "sources": [
+        {
+          "source": "yuanta-pcf-nav",
+          "rows": 2,
+          "datedRows": 2,
+          "from": "2026-10-15",
+          "to": "2026-10-15",
+          "urls": [
+            "https://www.yuantaetfs.com/product/detail/0050/ratio",
+            "https://www.yuantaetfs.com/product/detail/0056/ratio"
+          ]
+        },
+        {
+          "source": "cathay-fund-detail-nav",
+          "rows": 1,
+          "datedRows": 1,
+          "from": "2026-10-15",
+          "to": "2026-10-15",
+          "urls": [
+            "https://www.cathaysite.com.tw/fund-details/ECN?tab=net_worth"
+          ]
+        },
+        {
+          "source": "fubon-fund-assets-nav",
+          "rows": 1,
+          "datedRows": 1,
+          "from": "2026-10-15",
+          "to": "2026-10-15",
+          "urls": [
+            "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208"
+          ]
+        }
+      ]
+    },
+    {
+      "dataset": "distributions",
+      "rows": 12,
+      "datedRows": 12,
+      "missingDateRows": 0,
+      "coverage": {
+        "from": "2024-08-09",
+        "to": "2026-06-12"
+      },
+      "sources": [
+        {
+          "source": "twse-etfortune",
+          "rows": 12,
+          "datedRows": 12,
+          "from": "2024-08-09",
+          "to": "2026-06-12",
+          "urls": []
+        }
+      ]
+    }
+  ],
+  "sourceAttempts": [
+    {
+      "source": "twse-etfortune-filter-managerType-Active",
+      "status": "loaded",
+      "rows": 35,
+      "label": "主動式ETF",
+      "url": "https://www.twse.com.tw/zh/ETFortune/ajaxProductsResult"
+    },
+    {
+      "source": "twse-etfortune-filter-managerType-Passive",
+      "status": "loaded",
+      "rows": 207,
+      "label": "被動式ETF",
+      "url": "https://www.twse.com.tw/zh/ETFortune/ajaxProductsResult"
+    },
+    {
+      "source": "twse-etfortune-filter-assetType-Stock",
+      "status": "loaded",
+      "rows": 208,
+      "label": "股票型",
+      "url": "https://www.twse.com.tw/zh/ETFortune/ajaxProductsResult"
+    },
+    {
+      "source": "twse-etfortune-filter-assetType-Bond",
+      "status": "loaded",
+      "rows": 15,
+      "label": "債券型",
+      "url": "https://www.twse.com.tw/zh/ETFortune/ajaxProductsResult"
+    },
+    {
+      "source": "twse-etfortune-filter-assetType-MultiAsset",
+      "status": "loaded",
+      "rows": 2,
+      "label": "多資產",
+      "url": "https://www.twse.com.tw/zh/ETFortune/ajaxProductsResult"
+    },
+    {
+      "source": "twse-etfortune-filter-assetType-RawMaterial",
+      "status": "loaded",
+      "rows": 14,
+      "label": "期貨型原物料",
+      "url": "https://www.twse.com.tw/zh/ETFortune/ajaxProductsResult"
+    },
+    {
+      "source": "twse-etfortune-filter-assetType-FX",
+      "status": "loaded",
+      "rows": 0,
+      "label": "貨幣型",
+      "url": "https://www.twse.com.tw/zh/ETFortune/ajaxProductsResult"
+    },
+    {
+      "source": "twse-etfortune-filter-assetType-REITs",
+      "status": "loaded",
+      "rows": 2,
+      "label": "REITs",
+      "url": "https://www.twse.com.tw/zh/ETFortune/ajaxProductsResult"
+    },
+    {
+      "source": "twse-etfortune-filter-rewardType-Vanilla",
+      "status": "loaded",
+      "rows": 200,
+      "label": "原型",
+      "url": "https://www.twse.com.tw/zh/ETFortune/ajaxProductsResult"
+    },
+    {
+      "source": "twse-etfortune-filter-rewardType-L",
+      "status": "loaded",
+      "rows": 21,
+      "label": "槓桿型",
+      "url": "https://www.twse.com.tw/zh/ETFortune/ajaxProductsResult"
+    },
+    {
+      "source": "twse-etfortune-filter-rewardType-I",
+      "status": "loaded",
+      "rows": 20,
+      "label": "反向型",
+      "url": "https://www.twse.com.tw/zh/ETFortune/ajaxProductsResult"
+    },
+    {
+      "source": "twse-etfortune-filter-hashtag-ff808081899b8efc0189aa050440001c",
+      "status": "loaded",
+      "rows": 34,
+      "label": "高股息",
+      "url": "https://www.twse.com.tw/zh/ETFortune/ajaxProductsResult"
+    },
+    {
+      "source": "twse-etfortune-filter-hashtag-ff808081899b8efc0189aa05af5c001d",
+      "status": "loaded",
+      "rows": 7,
+      "label": "高息低波動",
+      "url": "https://www.twse.com.tw/zh/ETFortune/ajaxProductsResult"
+    },
+    {
+      "source": "twse-etfortune-filter-hashtag-ff808081899b8efc0189aa05ed24001e",
+      "status": "loaded",
+      "rows": 25,
+      "label": "因子投資",
+      "url": "https://www.twse.com.tw/zh/ETFortune/ajaxProductsResult"
+    },
+    {
+      "source": "twse-etfortune-filter-hashtag-ff808081899b8efc0189aa06281f001f",
+      "status": "loaded",
+      "rows": 5,
+      "label": "等權重",
+      "url": "https://www.twse.com.tw/zh/ETFortune/ajaxProductsResult"
+    },
+    {
+      "source": "twse-etfortune-filter-hashtag-ff808081899b8efc0189aa066a5a0020",
+      "status": "loaded",
+      "rows": 35,
+      "label": "全市場指數",
+      "url": "https://www.twse.com.tw/zh/ETFortune/ajaxProductsResult"
+    },
+    {
+      "source": "twse-etfortune-filter-hashtag-ff808081899b8efc0189aa06d5ce0021",
+      "status": "loaded",
+      "rows": 91,
+      "label": "大型權值",
+      "url": "https://www.twse.com.tw/zh/ETFortune/ajaxProductsResult"
+    },
+    {
+      "source": "twse-etfortune-filter-hashtag-ff808081899b8efc0189aa070e910022",
+      "status": "loaded",
+      "rows": 16,
+      "label": "中小型權值",
+      "url": "https://www.twse.com.tw/zh/ETFortune/ajaxProductsResult"
+    },
+    {
+      "source": "twse-etfortune-filter-hashtag-ff808081899b8efc0189aa074b8d0023",
+      "status": "loaded",
+      "rows": 52,
+      "label": "科技主題型",
+      "url": "https://www.twse.com.tw/zh/ETFortune/ajaxProductsResult"
+    },
+    {
+      "source": "twse-etfortune-filter-hashtag-ff808081899b8efc0189aa0786cb0024",
+      "status": "loaded",
+      "rows": 4,
+      "label": "金融",
+      "url": "https://www.twse.com.tw/zh/ETFortune/ajaxProductsResult"
+    },
+    {
+      "source": "twse-etfortune-filter-hashtag-ff808081899b8efc0189aa07ec700025",
+      "status": "loaded",
+      "rows": 8,
+      "label": "綠能及電動車",
+      "url": "https://www.twse.com.tw/zh/ETFortune/ajaxProductsResult"
+    },
+    {
+      "source": "twse-etfortune-filter-hashtag-ff808081899b8efc0189aa082e6d0026",
+      "status": "loaded",
+      "rows": 4,
+      "label": "生技",
+      "url": "https://www.twse.com.tw/zh/ETFortune/ajaxProductsResult"
+    },
+    {
+      "source": "twse-etfortune-filter-hashtag-ff808081899b8efc0189aa0864d40027",
+      "status": "loaded",
+      "rows": 13,
+      "label": "公司治理及ESG",
+      "url": "https://www.twse.com.tw/zh/ETFortune/ajaxProductsResult"
+    },
+    {
+      "market": "TWSE",
+      "source": "twse-etfortune-products",
+      "url": "https://www.twse.com.tw/zh/ETFortune/ajaxProductsResult",
+      "status": "partial",
+      "rows": 242,
+      "accepted": 241,
+      "rejected": [
+        {
+          "ticker": "00415A",
+          "reason": "missing_identity"
+        }
+      ],
+      "observedAt": "2026-10-15T18:46:24.235Z",
+      "sourceDataDate": null
+    },
+    {
+      "market": "TPEx",
+      "source": "tpex-etf-filter",
+      "url": "https://info.tpex.org.tw/api/etfFilter",
+      "status": "loaded",
+      "rows": 118,
+      "accepted": 118,
+      "rejected": [],
+      "observedAt": "2026-10-15T18:46:24.235Z",
+      "sourceDataDate": null
+    },
+    {
+      "source": "twse-company-basic",
+      "status": "loaded",
+      "rows": 1095,
+      "accepted": 1095,
+      "url": "https://openapi.twse.com.tw/v1/opendata/t187ap03_L"
+    },
+    {
+      "source": "twse-stock-day-all",
+      "status": "partial",
+      "rows": 1381,
+      "accepted": 1090,
+      "rejected": [
+        {
+          "ticker": "1423",
+          "reason": "invalid_close"
+        },
+        {
+          "ticker": "2321",
+          "reason": "invalid_close"
+        },
+        {
+          "ticker": "5906",
+          "reason": "invalid_close"
+        }
+      ],
+      "sourceDataDate": "2026-10-14",
+      "dateEvidence": "官方 Date 欄位；只計通過日期與價格檢查的資料列",
+      "url": "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL",
+      "preserved": 1
+    },
+    {
+      "source": "tpex-mainboard-daily-close-quotes",
+      "status": "partial",
+      "rows": 12565,
+      "accepted": 872,
+      "rejected": [
+        {
+          "ticker": "2035",
+          "reason": "invalid_close"
+        },
+        {
+          "ticker": "2724",
+          "reason": "invalid_close"
+        },
+        {
+          "ticker": "2949",
+          "reason": "invalid_close"
+        },
+        {
+          "ticker": "3064",
+          "reason": "invalid_close"
+        },
+        {
+          "ticker": "3629",
+          "reason": "invalid_close"
+        },
+        {
+          "ticker": "4154",
+          "reason": "invalid_close"
+        },
+        {
+          "ticker": "5520",
+          "reason": "invalid_close"
+        },
+        {
+          "ticker": "5523",
+          "reason": "invalid_close"
+        },
+        {
+          "ticker": "5703",
+          "reason": "invalid_close"
+        },
+        {
+          "ticker": "6228",
+          "reason": "invalid_close"
+        },
+        {
+          "ticker": "6496",
+          "reason": "invalid_close"
+        },
+        {
+          "ticker": "6597",
+          "reason": "invalid_close"
+        },
+        {
+          "ticker": "7713",
+          "reason": "invalid_close"
+        },
+        {
+          "ticker": "8455",
+          "reason": "invalid_close"
+        },
+        {
+          "ticker": "8923",
+          "reason": "invalid_close"
+        }
+      ],
+      "sourceDataDate": "2026-10-15",
+      "dateEvidence": "官方 Date 欄位；只計通過日期與價格檢查的資料列",
+      "url": "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes",
+      "preserved": 16
+    },
+    {
+      "ticker": "0050",
+      "status": "OK",
+      "rows": 10,
+      "preservedRows": 0,
+      "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20261016&stockNo=0050"
+    },
+    {
+      "ticker": "0056",
+      "status": "OK",
+      "rows": 10,
+      "preservedRows": 0,
+      "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20261016&stockNo=0056"
+    },
+    {
+      "ticker": "006208",
+      "status": "OK",
+      "rows": 10,
+      "preservedRows": 0,
+      "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20261016&stockNo=006208"
+    },
+    {
+      "ticker": "00878",
+      "status": "OK",
+      "rows": 10,
+      "preservedRows": 0,
+      "sourceUrl": "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20261016&stockNo=00878"
+    },
+    {
+      "ticker": "0050",
+      "kind": "holdings",
+      "status": "loaded",
+      "rows": 50,
+      "url": "https://www.yuantaetfs.com/product/detail/0050/ratio"
+    },
+    {
+      "ticker": "0056",
+      "kind": "holdings",
+      "status": "loaded",
+      "rows": 50,
+      "url": "https://www.yuantaetfs.com/product/detail/0056/ratio"
+    },
+    {
+      "ticker": "00878",
+      "kind": "holdings",
+      "status": "no_visible_rows",
+      "rows": 0,
+      "preservedRows": 0,
+      "url": "https://www.cathaysite.com.tw/ETF/detail/ECN?lang=en_US"
+    },
+    {
+      "ticker": "006208",
+      "kind": "holdings",
+      "status": "loaded",
+      "rows": 50,
+      "url": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208"
+    },
+    {
+      "ticker": "0050",
+      "kind": "nav",
+      "status": "loaded",
+      "rows": 1,
+      "url": "https://www.yuantaetfs.com/product/detail/0050/ratio"
+    },
+    {
+      "ticker": "0056",
+      "kind": "nav",
+      "status": "loaded",
+      "rows": 1,
+      "url": "https://www.yuantaetfs.com/product/detail/0056/ratio"
+    },
+    {
+      "ticker": "00878",
+      "kind": "nav",
+      "status": "loaded",
+      "rows": 1,
+      "url": "https://www.cathaysite.com.tw/fund-details/ECN?tab=net_worth"
+    },
+    {
+      "ticker": "006208",
+      "kind": "nav",
+      "status": "loaded",
+      "rows": 1,
+      "url": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208"
+    }
+  ],
+  "sourceRegistry": [
+    {
+      "id": "sitca-etf-basic",
+      "name": "投信投顧公會 ETF 基本資料",
+      "url": "https://www.sitca.org.tw/ROC/SITCA_ETF/etf-info.html",
+      "usage": "ETF 主檔欄位口徑：經理公司、基金名稱、成立日、分類、追蹤指數、是否配息、證券代號、證券簡稱"
+    },
+    {
+      "id": "twse-etfortune",
+      "name": "臺灣證券交易所 ETF e添富",
+      "url": "https://www.twse.com.tw/zh/ETFortune/",
+      "usage": "ETF 商品頁、近期配息、績效資料日期、資產規模、受益人次"
+    },
+    {
+      "id": "twse-distribution-disclosure",
+      "name": "TWSE ETF 收益分配揭露新聞稿",
+      "url": "https://www.twse.com.tw/staticFiles/news/news/tsecnews/ff8080818b7e232e018b7fe01dca0016.pdf",
+      "usage": "收益分配組成揭露口徑與合規提醒"
+    },
+    {
+      "id": "mops",
+      "name": "公開資訊觀測站",
+      "url": "https://mops.twse.com.tw/mops/web/index",
+      "usage": "收益分配組成與公告查核入口"
+    },
+    {
+      "id": "twse-openapi-stock-day-all",
+      "name": "TWSE OpenAPI 上市個股日成交資訊",
+      "url": "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL",
+      "usage": "ETF 每日開高低收、成交量與成交金額"
+    },
+    {
+      "id": "twse-etfortune-products",
+      "name": "TWSE ETF e添富",
+      "url": "https://www.twse.com.tw/zh/ETFortune/products",
+      "endpoint": "https://www.twse.com.tw/zh/ETFortune/ajaxProductsResult",
+      "usage": "上市ETF主檔與官方篩選器"
+    },
+    {
+      "id": "tpex-etf-filter",
+      "name": "TPEx ETF 投資資訊",
+      "url": "https://info.tpex.org.tw/api/etfFilter",
+      "usage": "上櫃ETF主檔；未提供資料日期與收盤價的欄位保留缺口"
+    },
+    {
+      "id": "twse-stock-day",
+      "name": "TWSE STOCK_DAY 各日成交資訊",
+      "url": "https://www.twse.com.tw/exchangeReport/STOCK_DAY",
+      "usage": "ETF 月內價格折線、開高低收、成交量與成交金額"
+    },
+    {
+      "id": "yuanta-holdings-ratio",
+      "name": "元大投信 ETF 持股比重",
+      "url": "https://www.yuantaetfs.com/product/detail/0056/ratio",
+      "usage": "0050、0056 官方持股比重頁，優先解析 Nuxt SSR 狀態中的完整 StockWeights"
+    },
+    {
+      "id": "yuanta-pcf-nav",
+      "name": "元大投信 ETF 持股比重 / PCF 淨值欄位",
+      "url": "https://www.yuantaetfs.com/product/detail/0056/ratio",
+      "usage": "0050、0056 官方 NAV/PCF 欄位"
+    },
+    {
+      "id": "cathay-fund-detail-nav",
+      "name": "國泰投信基金詳情淨值和市價",
+      "url": "https://www.cathaysite.com.tw/fund-details/ECN?tab=net_worth",
+      "usage": "00878 官方收盤價、淨值與日期"
+    },
+    {
+      "id": "cathay-etf-detail-holdings",
+      "name": "國泰投信 ETF 詳情持股權重",
+      "url": "https://www.cathaysite.com.tw/ETF/detail/ECN?lang=en_US",
+      "usage": "00878 官方持股權重頁；目前公開 HTML 未穩定吐出表格列"
+    },
+    {
+      "id": "fubon-fund-assets",
+      "name": "富邦投信 ETF 基金資產",
+      "url": "https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208",
+      "usage": "006208 官方基金資產、完整可見持股列與 NAV"
+    },
+    {
+      "id": "twse-company-basic",
+      "url": "https://openapi.twse.com.tw/v1/opendata/t187ap03_L",
+      "name": "twse-company-basic",
+      "usage": "官方股票主檔或行情；失敗與缺列保留舊資料"
+    },
+    {
+      "id": "twse-stock-day-all",
+      "url": "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL",
+      "name": "twse-stock-day-all",
+      "usage": "官方股票主檔或行情；失敗與缺列保留舊資料"
+    },
+    {
+      "id": "tpex-mainboard-daily-close-quotes",
+      "url": "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes",
+      "name": "tpex-mainboard-daily-close-quotes",
+      "usage": "官方股票主檔或行情；失敗與缺列保留舊資料"
+    }
+  ],
+  "steps": [
+    {
+      "step": "update-etf-master.js",
+      "status": "pass",
+      "elapsedMs": 13355
+    },
+    {
+      "step": "update-price-series.js",
+      "status": "pass",
+      "elapsedMs": 2269
+    },
+    {
+      "step": "update-issuer-official-data.js",
+      "status": "pass",
+      "elapsedMs": 28785
+    },
+    {
+      "step": "update-stock-master.js",
+      "status": "pass",
+      "elapsedMs": 17651
+    },
+    {
+      "step": "finalize-data-quality.js",
+      "status": "pass",
+      "elapsedMs": 86
+    },
+    {
+      "step": "validate-etf-data.js",
+      "status": "pass",
+      "elapsedMs": 57
+    }
+  ],
+  "checks": {
+    "status": "pass_with_gaps",
+    "errors": [],
+    "warnings": [
+      "stockQuotes/1589: missing/invalid date,invalid close",
+      "stockQuotes/2321: missing/invalid date,invalid close",
+      "stockQuotes/3064: invalid close",
+      "stockQuotes/4155: missing/invalid date,invalid close",
+      "stockQuotes/5703: invalid close",
+      "stockQuotes/5906: missing/invalid date,invalid close",
+      "stockQuotes/8923: invalid close"
+    ],
+    "checks": [
+      "unique identities",
+      "calendar/source dates",
+      "new price positivity and OHLC consistency",
+      "nonnegative volumes/amounts",
+      "holding weight bounds",
+      "preserved gaps explicitly reported"
+    ],
+    "notVerified": [
+      "all issuer holdings completeness",
+      "all tracked index correctness",
+      "full-market independent cross-source comparison"
+    ]
+  },
+  "integrityMeaning": "SHA-256 identifies bytes, not correctness. Content checks and source coverage are separate.",
+  "outputFileSha256": "3a474e5bc5076da431f56dd3fbd23ebb315c9f82d048bfdd20fe68f2269ac8ca",
+  "promotion": "validated_candidate"
+}
