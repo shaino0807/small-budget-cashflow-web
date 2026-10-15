@@ -121,7 +121,7 @@ function createEtfMarketService({ databasePath = path.join(__dirname, "data", "e
   async function get(ticker, months = 1) {
     if (!/^0\d{3,5}[A-Z]?$/.test(ticker)) throw Object.assign(new Error("ETF 代號格式不正確"), { statusCode: 400 });
     if (![1, 3, 6].includes(months)) throw Object.assign(new Error("價格期間只能是 1、3 或 6 個月"), { statusCode: 400 });
-    const db = JSON.parse(fs.readFileSync(databasePath, "utf8"));
+    const db = JSON.parse(fs.readFileSync(typeof databasePath === "function" ? databasePath() : databasePath, "utf8"));
     if (!db.etfs.some((etf) => etf.ticker === ticker)) throw Object.assign(new Error("官方主檔沒有此 ETF"), { statusCode: 404 });
     const cached = readCache(ticker);
     if (cached && Number.isFinite(Date.parse(cached.attemptedAt)) && cached.coverageMonths >= months && today(new Date(cached.attemptedAt)) === today(now())

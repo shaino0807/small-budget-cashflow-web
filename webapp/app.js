@@ -174,6 +174,7 @@ let authState = {
   sessionExpiresAt: null
 };
 let etfDatabase = null;
+let snapshotNotice = "";
 const etfData = window.CashflowEtfData;
 let priceChartTickers = [];
 let priceChartMonths = 1;
@@ -720,6 +721,11 @@ async function loadEtfDatabase() {
     let response = await fetch(source, { cache: "no-store" }).catch(() => null);
     if ((!response || !response.ok) && source !== "./data/etf-database.json") {
       response = await fetch("./data/etf-database.json", { cache: "no-store" });
+      snapshotNotice = "後端暫時無法回應，已使用網站保存的快照。";
+    } else {
+      snapshotNotice = response?.headers.get("X-Market-Sync") === "preserved_previous"
+        ? "最新批次暫時無法驗證，已保留前次通過驗證的快照。"
+        : "整包資料使用網站發布的已驗證快照；個別 ETF 查詢可能有較新的來源日期。";
     }
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     etfDatabase = await response.json();
@@ -752,7 +758,7 @@ function validateEtfDatabase(db) {
 
   if (!db?.classificationRules) {
     warnings.push("ETF 顯示分類規則尚未載入");
-  } else if (db.classificationRules.source !== "derived_from_official_twse_fields") {
+  } else if (!["derived_from_official_twse_fields", "derived_from_official_exchange_fields"].includes(db.classificationRules.source)) {
     warnings.push("ETF 顯示分類規則來源需重新確認");
   }
 
@@ -932,7 +938,8 @@ function latestMarketPrice(ticker) {
   if (price) return Number(price.close);
 
   const stock = findStock(key);
-  return Number(stock?.latestPrice?.close || 0);
+  const close = etfData.numberOrNull(stock?.latestPrice?.close);
+  return close > 0 ? close : null;
 }
 
 function estimatedDividendYield(ticker, fallback = 0) {
@@ -3581,7 +3588,7 @@ function renderDatabaseView() {
   if (!summary) return;
 
   summary.textContent = db
-    ? `主檔快照 ${db.metadata.snapshotDate} · 最後更新 ${observedTime(db.metadata.refreshExecutedAt)} · 市場參考交易日 ${db.metadata.officialPerformanceDate || "官方未提供"}。明細依家庭收支持有的 ETF 顯示。`
+    ? `主檔快照 ${db.metadata.snapshotDate || "官方未提供"} · 最後更新 ${observedTime(db.metadata.refreshExecutedAt)} · 市場參考交易日 ${db.metadata.officialPerformanceDate || "官方未提供"}。${snapshotNotice} 明細依家庭收支持有的 ETF 顯示。`
     : "ETF 官方資料庫尚未載入";
 
   const statusText = {
@@ -3602,7 +3609,7 @@ function renderDatabaseView() {
       <div class="metrics">
         <div class="metric"><span>ETF 主檔</span><strong>${quality.counts.etfs}</strong></div>
         <div class="metric"><span>顯示分類</span><strong>${classifiedCount}</strong><small>規則透明標記</small></div>
-        <div class="metric"><span>官方 assetType</span><strong>${officialAssetTypesCount}</strong><small>TWSE 端點目前 403</small></div>
+        <div class="metric"><span>官方資產分類</span><strong>${officialAssetTypesCount}</strong><small>依本批官方欄位；未提供者保留未知</small></div>
         <div class="metric"><span>股票主檔</span><strong>${quality.counts.stocks}</strong></div>
         <div class="metric"><span>配息資料</span><strong>${quality.counts.distributions}</strong></div>
         <div class="metric"><span>成分股</span><strong>${quality.counts.holdings}</strong></div>
@@ -3625,7 +3632,7 @@ function renderDatabaseView() {
     </section>
     <section class="panel">
       <h3>ETF 分類規則</h3>
-      <p class="panel-note">全市場主檔來自 TWSE e添富官方端點；顯示分類只使用官方欄位、官方篩選器標籤與透明關鍵字規則，不覆蓋官方 assetType。</p>
+      <p class="panel-note">主檔來自證交所與櫃買中心官方來源；顯示分類使用官方欄位、篩選器標籤與透明關鍵字規則，不覆蓋官方資產分類。</p>
       <div class="classification-strip">
         ${Object.entries((db?.etfs || []).reduce((acc, etf) => {
           const key = etf.displayClassification?.primary || "未分類";
@@ -3740,6 +3747,7 @@ function renderPriceChartControls() {
   q("#priceChartSelection").querySelectorAll("[data-remove-chart]").forEach((button) => button.addEventListener("click", () => {
     priceChartTickers = priceChartTickers.filter((ticker) => ticker !== button.dataset.removeChart);
     renderDatabaseView();
+    q("#priceChartSearch").focus({ preventScroll: true });
   }));
   document.querySelectorAll("[data-market-retry]").forEach((button) => button.addEventListener("click", () => queueEtfData(button.dataset.marketRetry, priceChartMonths, true)));
 }
@@ -3747,10 +3755,12 @@ function renderPriceChartControls() {
 function bindEtfChartControls() {
   q("#addPriceChartEtf").addEventListener("click", () => {
     const etf = etfData.resolveEtf(etfDatabase, q("#priceChartSearch").value);
-    if (!etf) { q("#priceChartStatus").textContent = "請從搜尋建議選擇正確 ETF 代號；有多筆結果時不會自動猜選。"; return; }
+    if (!etf) { q("#priceChartStatus").textContent = "請從搜尋建議選擇正確 ETF 代號；有多筆結果時不會自動猜選。"; q("#priceChartSearch").setAttribute("aria-invalid", "true"); q("#priceChartSearch").focus(); return; }
+    q("#priceChartSearch").removeAttribute("aria-invalid");
     priceChartTickers = [...new Set([...priceChartTickers, etf.ticker])];
     q("#priceChartSearch").value = "";
     renderDatabaseView(); queueEtfData(etf.ticker, priceChartMonths);
+    q("#priceChartSearch").focus({ preventScroll: true });
   });
   q("#priceChartSearch").addEventListener("keydown", (event) => {
     if (event.key === "Enter") { event.preventDefault(); q("#addPriceChartEtf").click(); }
@@ -3822,6 +3832,9 @@ function drawOfficialPriceChart() {
   const pad = 34;
   const comparison = etfData.priceComparison(etfDatabase, priceChartTickers, priceChartMonths);
   const normalized = comparison.normalized;
+  q("#priceChartData").innerHTML = Object.keys(normalized).length
+    ? `<table><caption>比較圖每日數值：起點 100，未計入配息</caption><thead><tr><th scope="col">ETF</th><th scope="col">日期</th><th scope="col">收盤價</th><th scope="col">相對價格</th></tr></thead><tbody>${Object.entries(normalized).flatMap(([ticker, rows]) => rows.map(row => `<tr><th scope="row">${escapeHtml(ticker)}</th><td>${escapeHtml(row.date)}</td><td>${row.close}</td><td>${row.normalizedClose.toFixed(2)}</td></tr>`)).join("")}</tbody></table>`
+    : "<p>尚無可比較的每日數值；請參考上方資料狀態。</p>";
   ctx.clearRect(0, 0, width, height);
   renderPriceChartSummary(normalized);
   const loading = priceChartTickers.some((ticker) => etfRequestStates.get(ticker)?.status === "loading");
@@ -4220,6 +4233,8 @@ function goTo(viewId, sectionId = "", memberNav = "", options = {}) {
   document.querySelectorAll(".tab").forEach((tab) => tab.classList.toggle("is-active", tab.dataset.view === viewId));
   syncWorkspaceTabs();
   syncMemberBottomNav();
+  const heading = document.querySelector(`#${viewId} h2`);
+  if (heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }); }
   if (viewId === "simulationView") requestAnimationFrame(() => drawSimulationChart(latestReport.simulation));
   window.scrollTo({ top: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
 }

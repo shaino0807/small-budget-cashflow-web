@@ -13,7 +13,8 @@ async function main() {
     assert.equal(isPublicFile(file), false);
     assert.equal(fs.existsSync(path.join(destination, file)), false);
   }
-  for (const file of publicFiles) assert.deepEqual(fs.readFileSync(path.join(destination, file)), fs.readFileSync(path.join(root, file)));
+  for (const file of publicFiles.filter(file => file !== "data/latest-batch.json")) assert.deepEqual(fs.readFileSync(path.join(destination, file)), fs.readFileSync(path.join(root, file)));
+  require("../market-snapshot").verifySnapshot(fs.readFileSync(path.join(destination, "data/etf-database.json")), JSON.parse(fs.readFileSync(path.join(destination, "data/latest-batch.json"))));
   const port = 6000 + Math.floor(Math.random() * 500);
   const server = spawn(process.execPath, [path.join(root, "server.js")], {
     windowsHide: true, stdio: ["ignore", "pipe", "pipe"],

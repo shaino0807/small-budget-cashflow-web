@@ -5,7 +5,14 @@ const fs = require("fs");
 const path = require("path");
 const { isPublicFile } = require("./public-files");
 const { createEtfMarketService } = require("./etf-market");
-const etfMarket = createEtfMarketService();
+const { createMarketSnapshot } = require("./market-snapshot");
+const marketSnapshot = createMarketSnapshot({
+  bundledPath: path.join(__dirname, "data", "etf-database.json"),
+  directory: path.join(process.env.CUSTOMER_DATA_DIR || path.join(__dirname, "private-data"), "market-snapshots"),
+  sourceBase: process.env.SMOKE_TEST === "1" ? "" : process.env.MARKET_SNAPSHOT_BASE_URL ||
+    (process.env.RENDER ? "https://shaino0807.github.io/small-budget-cashflow-web/" : "")
+});
+const etfMarket = createEtfMarketService({ databasePath: () => marketSnapshot.databasePath() });
 const { authSessionDays, createStore, lineLedgerRetentionDays } = require("./customer-store");
 const { verifyNotification } = require("./ecpay");
 const { productCatalog, productFor } = require("./payment-catalog");
@@ -297,6 +304,7 @@ function setSecurityHeaders(req, res) {
   if (origin && allowedOrigins.includes(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Access-Control-Expose-Headers", "X-Market-Sync, X-Market-Batch");
     res.setHeader("Vary", "Origin");
   }
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Report-Access-Code, X-Line-Signature, X-Confirm-Delete");
@@ -308,7 +316,7 @@ function setSecurityHeaders(req, res) {
 }
 
 function databaseFreshness() {
-  const db = JSON.parse(fs.readFileSync(path.join(root, "data", "etf-database.json"), "utf8"));
+  const db = marketSnapshot.read().db;
   return {
     snapshotDate: db.metadata?.snapshotDate,
     refreshExecutedAt: db.metadata?.refreshExecutedAt,
@@ -487,7 +495,7 @@ async function reconcileStoredLinePayOrder(order) {
   return order;
 }
 
-const server = http.createServer((req, res) => {
+const server = http.createServer(async (req, res) => {
   setSecurityHeaders(req, res);
   const requestOrigin = String(req.headers.origin || "");
   if (requestOrigin && !allowedOrigins.includes(requestOrigin)) {
@@ -880,16 +888,33 @@ const server = http.createServer((req, res) => {
       .catch((error) => sendJson(res, error.statusCode || 500, { ok: false, error: error.statusCode ? error.message : "官方資料暫時無法讀取，請稍後重試" }));
     return;
   }
-  if (urlPath === "/api/market/database" && req.method === "GET") {
+  if ((urlPath === "/api/market/database" || urlPath === "/data/etf-database.json") && req.method === "GET") {
+    await marketSnapshot.sync();
+    const sync = marketSnapshot.status();
     res.writeHead(200, {
+      "X-Market-Sync": sync.status,
+      "X-Market-Batch": sync.batchId || "",
       "Content-Type": "application/json; charset=utf-8",
       "Cache-Control": "no-store",
       "X-Content-Type-Options": "nosniff"
     });
-    fs.createReadStream(path.join(root, "data", "etf-database.json")).pipe(res);
+    res.end(marketSnapshot.read().bytes);
+    return;
+  }
+  if ((urlPath === "/api/market/snapshot" || urlPath === "/data/latest-batch.json") && req.method === "GET") {
+    await marketSnapshot.sync();
+    const snapshot = marketSnapshot.status();
+    sendJson(res, 200, urlPath === "/data/latest-batch.json" ? snapshot.batch : snapshot);
     return;
   }
   if ((urlPath === "/api/update-database" || urlPath === "/api/market/refresh") && ["GET", "POST"].includes(req.method)) {
+    if (marketSnapshot.enabled) {
+      if (!rateLimit(req, 6)) return sendJson(res, 429, { ok: false, error: "重新讀取次數過多，請稍後再試" });
+      const snapshot = await marketSnapshot.sync({ force: true });
+      return sendJson(res, snapshot.error ? 503 : 200, { ok: !snapshot.error,
+        snapshot, freshness: databaseFreshness(),
+        publication: { mode: "single_writer_pages", message: "整包資料由 Pages 排程發布；此操作同步已發布批次，不另建不同批次。" } });
+    }
     if (process.env.SMOKE_TEST === "1") {
       dispatchGitHubAction()
         .then((githubAction) => sendJson(res, 200, {
