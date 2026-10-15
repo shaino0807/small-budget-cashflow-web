@@ -369,6 +369,7 @@ function apiUrl(pathname) {
 async function apiRequest(pathname, options = {}) {
   const { headers = {}, ...rest } = options;
   const response = await fetch(apiUrl(pathname), {
+    signal: AbortSignal.timeout(15000),
     cache: "no-store",
     credentials: "include",
     headers: { "Content-Type": "application/json", ...headers },
@@ -718,9 +719,9 @@ function trackEvent(eventType, metadata = {}) {
 async function loadEtfDatabase() {
   try {
     const source = backendAvailable() ? apiUrl("/api/market/database") : "./data/etf-database.json";
-    let response = await fetch(source, { cache: "no-store" }).catch(() => null);
+    let response = await fetch(source, { cache: "no-store", signal: AbortSignal.timeout(15000) }).catch(() => null);
     if ((!response || !response.ok) && source !== "./data/etf-database.json") {
-      response = await fetch("./data/etf-database.json", { cache: "no-store" });
+      response = await fetch("./data/etf-database.json", { cache: "no-store", signal: AbortSignal.timeout(15000) });
       snapshotNotice = "後端暫時無法回應，已使用網站保存的快照。";
     } else {
       snapshotNotice = response?.headers.get("X-Market-Sync") === "preserved_previous"

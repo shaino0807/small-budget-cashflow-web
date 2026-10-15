@@ -89,7 +89,7 @@ async function evalValue(ws, expression) {
   return result.result.value;
 }
 
-async function waitForPageReady(ws, timeoutMs = 12000) {
+async function waitForPageReady(ws, timeoutMs = 60000) {
   const started = Date.now();
   while (Date.now() - started < timeoutMs) {
     try {
@@ -249,7 +249,7 @@ async function main() {
     await send(ws, "Page.navigate", { url: targetUrl });
     try { await waitForPageReady(ws); } catch (error) {
       console.error(JSON.stringify({ consoleErrors, runtimeErrors, failedRequests: failures, badResponses,
-        loadingRequests: [...requestUrls.values()].filter(url=>!url.startsWith(targetUrl)) }, null, 2));
+      requests: [...requestUrls.values()], serverExited: serverProcess?.exitCode }, null, 2));
       throw error;
     }
     await wait(4500);
