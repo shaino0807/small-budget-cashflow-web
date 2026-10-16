@@ -35,9 +35,9 @@ const options = { databasePath, cacheDir, now: () => clock, allowNetwork: true,
 (async () => {
   const service = createEtfMarketService(options);
   for (const [ticker, months, status] of [["../0050", 1, 400], ["0050", 2, 400], ["0000", 1, 404]]) {
-    await assert.rejects(service.get(ticker, months), (error) => error.statusCode === status);
+    await assert.rejects(service.refresh(ticker, months), (error) => error.statusCode === status);
   }
-  const [first, same] = await Promise.all([service.get("0050"), service.get("0050")]);
+  const [first, same] = await Promise.all([service.refresh("0050"), service.refresh("0050")]);
   assert.deepEqual(first, same, "concurrent identical requests coalesced");
   assert.equal(requests.length, 4, "one issuer, one history, current and preceding month fetched once");
   assert.equal(first.holdings.length, 100, "full portfolio, no 80-row cap or basket substitution");
@@ -48,27 +48,27 @@ const options = { databasePath, cacheDir, now: () => clock, allowNetwork: true,
   assert(requests.includes("0050:20260901"), "month boundary requests preceding month");
   assert(!JSON.stringify(first).includes("MUST_NOT_LEAK"), "public endpoint whitelist excludes customer fields");
   assert.equal(trailingYield({ etfs: raw.etfs, priceSeries: { items: first.priceSeries }, distributions: first.distributions, distributionHistory: { "0050": first.distributionHistory } }, "0050", "2026-10-11").value, 5);
-  await service.get("0050");
+  await service.refresh("0050");
   assert.equal(requests.length, 4, "15 minute cache avoids repeated upstream requests");
-  await service.get("0050", 3);
+  await service.refresh("0050", 3);
   assert(requests.includes("0050:20260701"), "extended period loads real earlier months");
-  const success = await service.get("0050", 3);
+  const success = await service.refresh("0050", 3);
   clock = new Date("2026-10-11T13:20:00Z"); fail = true;
-  const retained = await service.get("0050", 3);
+  const retained = await service.refresh("0050", 3);
   assert.deepEqual(retained.holdings, success.holdings);
   assert.deepEqual(retained.distributions, success.distributions);
   assert.equal(retained.distributionHistory.updatedAt, success.distributionHistory.updatedAt, "failure preserves successful observation timestamp");
   assert(retained.sourceAttempts.some((attempt) => attempt.status === "failed_preserved_previous"));
   const restarted = createEtfMarketService({ ...options, allowNetwork: false });
-  assert.deepEqual((await restarted.get("0050", 3)).holdings, success.holdings, "cache survives service restart");
-  const unsupported = await service.get("00999");
+  assert.deepEqual((await restarted.refresh("0050", 3)).holdings, success.holdings, "cache survives service restart");
+  const unsupported = await service.refresh("00999");
   assert.equal(unsupported.distributionHistory, null, "unconnected issuer does not invent yield");
   assert(unsupported.sourceAttempts.some((attempt) => attempt.status === "adapter_not_connected"));
   assert.throws(() => parseDividends({ ResultCode: 0, Data: { Data: [{ FUND_ID: "OTHER", FUND_TYPE: "3" }] } }, "0050", "1066", ""), /different fund/);
   assert.equal(fs.readFileSync(databasePath, "utf8"), before, "market lookup never rewrites production master");
   const mismatch = createEtfMarketService({ ...options, allowNetwork: true, cacheDir: path.join(dir, "mismatch"),
     fetchText: async () => `<script>window.__NUXT__=(function(){return ${JSON.stringify(official)}})();</script>` });
-  const rejected = await mismatch.get("0056");
+  const rejected = await mismatch.refresh("0056");
   assert.equal(rejected.holdings.length, 0, "mismatched official identity cannot replace holdings");
   assert.equal(rejected.navSeries.length, 0, "mismatched official identity cannot replace NAV");
   assert(rejected.sourceAttempts.some((attempt) => /identity/.test(attempt.error || "")));

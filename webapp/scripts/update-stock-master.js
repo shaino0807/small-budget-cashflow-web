@@ -41,6 +41,7 @@ async function refreshStockMaster(input, { fetchJson = getJson, now = new Date()
   const byTicker = new Map((previous.items || []).map((row) => [row.ticker, row]));
   const sourceAttempts = [];
   for (const row of db.holdings?.items || []) {
+    if (row.assetType && row.assetType !== "stock") continue;
     const ticker = String(row.holdingTicker || "").trim();
     if (ticker && !byTicker.has(ticker)) byTicker.set(ticker, {
       ticker, name: row.holdingName || ticker, shortName: row.holdingName || ticker,

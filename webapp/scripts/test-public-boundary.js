@@ -13,7 +13,14 @@ async function main() {
     assert.equal(isPublicFile(file), false);
     assert.equal(fs.existsSync(path.join(destination, file)), false);
   }
-  for (const file of publicFiles.filter(file => file !== "data/latest-batch.json")) assert.deepEqual(fs.readFileSync(path.join(destination, file)), fs.readFileSync(path.join(root, file)));
+  for (const file of publicFiles.filter(file => !["data/latest-batch.json","data/etf-catalog.json"].includes(file))) assert.deepEqual(fs.readFileSync(path.join(destination, file)), fs.readFileSync(path.join(root, file)));
+  const catalog = JSON.parse(fs.readFileSync(path.join(destination,"data/etf-catalog.json")));
+  assert.equal(catalog.holdings.items.length,0,"initial catalog defers full portfolios");
+  for (const etf of catalog.etfs) {
+    const selected=JSON.parse(fs.readFileSync(path.join(destination,"data/etfs",etf.ticker+".json")));
+    assert.equal(selected.data.ticker,etf.ticker);assert.equal(selected.data.batchId,catalog.metadata.dataBatch.batchId);
+    assert(!JSON.stringify(selected).includes("privateCustomer"));
+  }
   require("../market-snapshot").verifySnapshot(fs.readFileSync(path.join(destination, "data/etf-database.json")), JSON.parse(fs.readFileSync(path.join(destination, "data/latest-batch.json"))));
   const port = 6000 + Math.floor(Math.random() * 500);
   const server = spawn(process.execPath, [path.join(root, "server.js")], {

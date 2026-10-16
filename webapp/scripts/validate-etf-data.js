@@ -132,8 +132,10 @@ for (const row of db.holdings.items || []) {
   assert(tickers.has(row.ticker), `成分股 ETF ticker 不在主檔：${row.ticker}`);
   assert(row.holdingTicker, `${row.ticker} 成分股缺股票代號`);
   assert(row.holdingName, `${row.ticker}/${row.holdingTicker} 成分股缺名稱`);
-  assert(Number(row.weight) >= 0, `${row.ticker}/${row.holdingTicker} 權重不可小於 0`);
-  warn(!db.stocks || stockTickers.has(row.holdingTicker), `${row.ticker}/${row.holdingTicker} 未對應股票主檔`);
+  const signed = ["future","option","buy","cash","other"].includes(row.assetType);
+  const unweighted = ["cash","other","fund","repo"].includes(row.assetType) && row.weight === null && (Number.isFinite(row.marketValue) || Number.isFinite(row.purchaseCost));
+  assert(unweighted || Number.isFinite(row.weight) && (signed || row.weight >= 0 && row.weight <= 100), `${row.ticker}/${row.holdingTicker} 權重／曝險格式不正確`);
+  if (!row.assetType) warn(!db.stocks || stockTickers.has(row.holdingTicker), `${row.ticker}/${row.holdingTicker} 未對應股票主檔`);
 }
 
 const result = {

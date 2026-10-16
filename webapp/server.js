@@ -12,7 +12,11 @@ const marketSnapshot = createMarketSnapshot({
   sourceBase: process.env.SMOKE_TEST === "1" ? "" : process.env.MARKET_SNAPSHOT_BASE_URL ||
     (process.env.RENDER ? "https://shaino0807.github.io/small-budget-cashflow-web/" : "")
 });
-const etfMarket = createEtfMarketService({ databasePath: () => marketSnapshot.databasePath() });
+const etfMarket = createEtfMarketService({ readDatabase: () => {
+  marketSnapshot.requestSync();
+  const snapshot = marketSnapshot.current();
+  return { db: snapshot.db, key: snapshot.db.metadata?.dataBatch?.batchId || snapshot };
+} });
 const { authSessionDays, createStore, lineLedgerRetentionDays } = require("./customer-store");
 const { verifyNotification } = require("./ecpay");
 const { productCatalog, productFor } = require("./payment-catalog");
@@ -316,7 +320,7 @@ function setSecurityHeaders(req, res) {
 }
 
 function databaseFreshness() {
-  const db = marketSnapshot.read().db;
+  const db = marketSnapshot.current().db;
   return {
     snapshotDate: db.metadata?.snapshotDate,
     refreshExecutedAt: db.metadata?.refreshExecutedAt,
@@ -495,6 +499,7 @@ async function reconcileStoredLinePayOrder(order) {
   return order;
 }
 
+let catalogCache = {};
 const server = http.createServer(async (req, res) => {
   setSecurityHeaders(req, res);
   const requestOrigin = String(req.headers.origin || "");
@@ -882,23 +887,38 @@ const server = http.createServer(async (req, res) => {
     return;
   }
   if (urlPath === "/api/market/etf" && req.method === "GET") {
-    if (!rateLimit(req, 20)) return sendJson(res, 429, { ok: false, error: "ETF 查詢次數過多，請稍後再試" });
+    if (!rateLimit(req, 120)) return sendJson(res, 429, { ok: false, error: "ETF 查詢次數過多，請稍後再試" });
     etfMarket.get(String(url.searchParams.get("ticker") || "").trim().toUpperCase(), Number(url.searchParams.get("months") || 1))
       .then((data) => sendJson(res, 200, { ok: true, data }))
       .catch((error) => sendJson(res, error.statusCode || 500, { ok: false, error: error.statusCode ? error.message : "官方資料暫時無法讀取，請稍後重試" }));
     return;
   }
+  if ((urlPath === "/api/market/catalog" || urlPath === "/data/etf-catalog.json") && req.method === "GET") {
+    marketSnapshot.requestSync();
+    const current = marketSnapshot.current();
+    const date = new Date().toLocaleDateString("en-CA",{timeZone:"Asia/Taipei"});
+    if (catalogCache.key !== current.db || catalogCache.date !== date) catalogCache = {key:current.db,date,body:JSON.stringify(require("./market-view").marketCatalog(current.db))};
+    res.writeHead(200, {"Content-Type":"application/json; charset=utf-8", "Cache-Control":"no-cache",
+      "X-Market-Batch": current.db.metadata?.dataBatch?.batchId || "", "X-Market-Sync":marketSnapshot.info().status, "X-Content-Type-Options":"nosniff"});
+    res.end(catalogCache.body); return;
+  }
+  const selectedMarketFile = urlPath.match(/^\/data\/etfs\/(0\d{3,5}[A-Z]?)\.json$/);
+  if (selectedMarketFile && req.method === "GET") {
+    try { sendJson(res,200,{ok:true,data:await etfMarket.get(selectedMarketFile[1],6)}); }
+    catch(error) { sendJson(res,error.statusCode||500,{ok:false,error:"官方資料尚未備妥"}); }
+    return;
+  }
   if ((urlPath === "/api/market/database" || urlPath === "/data/etf-database.json") && req.method === "GET") {
-    await marketSnapshot.sync();
-    const sync = marketSnapshot.status();
+    marketSnapshot.requestSync();
+    const current = marketSnapshot.current();
     res.writeHead(200, {
-      "X-Market-Sync": sync.status,
-      "X-Market-Batch": sync.batchId || "",
+      "X-Market-Sync": marketSnapshot.info().status,
+      "X-Market-Batch": current.db.metadata?.dataBatch?.batchId || "",
       "Content-Type": "application/json; charset=utf-8",
       "Cache-Control": "no-store",
       "X-Content-Type-Options": "nosniff"
     });
-    res.end(marketSnapshot.read().bytes);
+    res.end(current.bytes);
     return;
   }
   if ((urlPath === "/api/market/snapshot" || urlPath === "/data/latest-batch.json") && req.method === "GET") {

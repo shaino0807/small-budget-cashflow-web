@@ -16,10 +16,10 @@ function toNumber(value) {
   const number = Number(text);
   return Number.isFinite(number) ? number : null;
 }
-function atomicWriteJson(file, value) {
+function atomicWriteJson(file, value, { space = 2 } = {}) {
   const temp = path.join(path.dirname(file), `.${path.basename(file)}.${process.pid}.${Date.now()}.tmp`);
   try {
-    fs.writeFileSync(temp, `${JSON.stringify(value, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
+    fs.writeFileSync(temp, `${JSON.stringify(value, null, space)}\n`, { encoding: "utf8", flag: "wx" });
     fs.renameSync(temp, file);
   } finally { if (fs.existsSync(temp)) fs.unlinkSync(temp); }
 }

@@ -24,7 +24,7 @@ jobs:
       - name: Verify ledger, persistence, image guards and both browser sizes
         run: node webapp/scripts/run-ledger-regressions.js --browser
       - name: Verify updater preservation and candidate rejection
-        run: node --test webapp/scripts/test-updater-guards.js webapp/scripts/test-data-batch.js webapp/scripts/test-market-snapshot.js
+        run: node --test webapp/scripts/test-updater-guards.js webapp/scripts/test-data-batch.js webapp/scripts/test-market-snapshot.js webapp/scripts/test-market-reader.js
       - name: Verify public mobile layout and accessibility
         shell: pwsh
         run: |

@@ -29,8 +29,40 @@ function mergeRows(previous, fresh, key) {
 }
 function createEtfMarketService({ databasePath = path.join(__dirname, "data", "etf-database.json"),
   cacheDir = path.join(process.env.CUSTOMER_DATA_DIR || path.join(__dirname, "private-data"), "market-cache"),
-  fetchText = issuer.fetchText, fetchPrice = fetchMonthlyPrice, now = () => new Date(), allowNetwork = process.env.SMOKE_TEST !== "1" } = {}) {
+  fetchText = issuer.fetchText, fetchPrice = fetchMonthlyPrice, now = () => new Date(), allowNetwork = process.env.SMOKE_TEST !== "1",
+  readDatabase } = {}) {
   const memory = new Map(), inFlight = new Map();
+  let indexedKey, indexed;
+  function snapshotIndex() {
+    let db, key;
+    if (readDatabase) ({ db, key } = readDatabase());
+    else {
+      const file = typeof databasePath === "function" ? databasePath() : databasePath;
+      const stat = fs.statSync(file);
+      key = `${file}:${stat.mtimeMs}:${stat.size}`;
+      if (indexed && key === indexedKey) return indexed;
+      db = JSON.parse(fs.readFileSync(file, "utf8"));
+    }
+    if (indexed && key === indexedKey) return indexed;
+    const map = new Map((db.etfs || []).map(etf => [etf.ticker, {
+      version: 2, ticker: etf.ticker, batchId: db.metadata?.dataBatch?.batchId || null,
+      priceSeries: [], holdings: [], navSeries: [], distributions: [],
+      holdingsCoverage: db.holdingsCoverage?.[etf.ticker] || null,
+      distributionHistory: db.distributionHistory?.[etf.ticker] || null,
+      coverageMonths: 0, attemptedAt: db.metadata?.refreshExecutedAt || null,
+      sourceAttempts: [], readMode: "validated_snapshot", currency: etf.currency || null
+    }]));
+    for (const [kind, rows] of [["priceSeries", db.priceSeries?.items], ["holdings", db.holdings?.items],
+      ["navSeries", db.navSeries?.items], ["distributions", db.distributions]]) {
+      for (const row of rows || []) map.get(row.ticker)?.[kind].push(row);
+    }
+    for (const item of map.values()) {
+      item.priceSeries.sort((a,b) => a.date.localeCompare(b.date));
+      item.dataStatus = item.priceSeries.length || item.holdings.length ? "available" : "not_yet_available";
+    }
+    indexedKey = key; indexed = map;
+    return map;
+  }
   let active = 0;
   function readCache(ticker) {
     if (memory.has(ticker)) return memory.get(ticker);
@@ -118,7 +150,7 @@ function createEtfMarketService({ databasePath = path.join(__dirname, "data", "e
     } catch { result.cacheWarning = "persistent_cache_unavailable"; }
     return result;
   }
-  async function get(ticker, months = 1) {
+  async function refresh(ticker, months = 1) {
     if (!/^0\d{3,5}[A-Z]?$/.test(ticker)) throw Object.assign(new Error("ETF 代號格式不正確"), { statusCode: 400 });
     if (![1, 3, 6].includes(months)) throw Object.assign(new Error("價格期間只能是 1、3 或 6 個月"), { statusCode: 400 });
     const db = JSON.parse(fs.readFileSync(typeof databasePath === "function" ? databasePath() : databasePath, "utf8"));
@@ -128,7 +160,7 @@ function createEtfMarketService({ databasePath = path.join(__dirname, "data", "e
       && now().getTime() - Date.parse(cached.attemptedAt) < 15 * 60000) return cached;
     if (inFlight.has(ticker)) {
       const pending = await inFlight.get(ticker);
-      return pending.coverageMonths >= months ? pending : get(ticker, months);
+      return pending.coverageMonths >= months ? pending : refresh(ticker, months);
     }
     if (active >= 2) throw Object.assign(new Error("官方資料查詢中，請稍後重試"), { statusCode: 503 });
     active++;
@@ -136,6 +168,14 @@ function createEtfMarketService({ databasePath = path.join(__dirname, "data", "e
     inFlight.set(ticker, pending);
     return pending;
   }
-  return { get };
+  function getSaved(ticker, months = 1) {
+    if (!/^0\d{3,5}[A-Z]?$/.test(ticker)) throw Object.assign(new Error("ETF 代號格式不正確"), { statusCode: 400 });
+    if (![1, 3, 6].includes(months)) throw Object.assign(new Error("價格期間只能是 1、3 或 6 個月"), { statusCode: 400 });
+    const data = snapshotIndex().get(ticker);
+    if (!data) throw Object.assign(new Error("官方主檔沒有此 ETF"), { statusCode: 404 });
+    // Customer reads never initiate issuer requests or wait for refresh slots.
+    return { ...data, requestedMonths: months };
+  }
+  return { get: async (ticker, months) => getSaved(ticker, months), getSaved, refresh };
 }
 module.exports = { createEtfMarketService, dividendUrl, parseDividends, mergeRows };

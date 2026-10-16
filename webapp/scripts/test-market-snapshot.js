@@ -49,10 +49,23 @@ test('rollback, missing history, changed batch identity and invalid numeric cont
 test('parallel readers share one bounded download',async t=>{
  const f=setup(t),s=createMarketSnapshot(f.options);await Promise.all([s.sync(),s.sync(),s.sync()]);assert.equal(f.requests(),2);
 });
+
+test('full-market source and validation receipts larger than 2 MB still synchronize',async t=>{
+ const f=setup(t);f.next.manifest.sourceEvidence='x'.repeat(2400000);
+ const s=createMarketSnapshot(f.options);await s.sync();
+ assert.equal(s.status().batchId,f.next.manifest.batchId);assert.equal(s.status().manifestVerified,true);
+});
 test('corrupt persisted data is detected on read and falls back to bundled bytes',async t=>{
  const f=setup(t),s=createMarketSnapshot(f.options);await s.sync();
  fs.writeFileSync(path.join(f.options.directory,f.next.manifest.batchId+'.data.json'),'{}');
  assert.deepEqual(s.read().bytes,f.old.bytes);assert.equal(s.status().status,'preserved_previous');
+});
+
+test('same-batch sync detects disk corruption without claiming a fresh readback',async t=>{
+ const f=setup(t),s=createMarketSnapshot(f.options);await s.sync();
+ fs.writeFileSync(path.join(f.options.directory,f.next.manifest.batchId+'.data.json'),'{}');
+ const result=await s.sync();assert.equal(result.status,'preserved_previous');assert.equal(result.persistentReadback,false);
+ assert.deepEqual(s.current().bytes,f.next.bytes,'customer reads keep the verified memory snapshot');
 });
 test('credentials and insecure source URLs are refused',t=>{
  const f=setup(t);for(const sourceBase of ['http://example.test/','https://secret@example.test/'])assert.throws(()=>createMarketSnapshot({...f.options,sourceBase}),/HTTPS/);
