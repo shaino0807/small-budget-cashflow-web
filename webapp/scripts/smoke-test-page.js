@@ -892,6 +892,7 @@ async function main() {
         // catalog summaries cannot describe the synthetic portfolio.
         delete etfDatabase.yieldSummaries;
         delete etfDatabase.datasetCounts;
+        etfDatabase.marketCoverage = {...etfDatabase.marketCoverage, asOf:date};
         etfDatabase.distributionHistory = {};
         etfDatabase.holdingsCoverage = {};
         etfDatabase.distributions = [];
