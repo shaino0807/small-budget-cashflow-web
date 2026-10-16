@@ -2,6 +2,19 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os');
 const {createEtfMarketService}=require('../etf-market');
 const {trailingYield}=require('../etf-data');
+
+test('unverified issuer identity cannot create a payout conflict or independent acceptance',()=>{
+ const {reconcileEvents}=require('./reconcile-market-events');
+ const html='<table><tr><th>證券代號</th><th>名稱</th><th>除息日</th><th>空</th><th>發放日</th><th>金額</th></tr><tr><td>0050</td><td>基金</td><td>2026/06/17</td><td></td><td>2026/07/20</td><td>1</td></tr></table> Start_Year option[value="2003"] End_Year option[value="2026"]';
+ const c={read:id=>id==='twse-payout-all-history'?html:null,records:()=>[{id:'twse-payout-all-history',path:'public-response.raw'}]};
+ const run=(identityVerified,amount)=>reconcileEvents({asOf:'2026-10-16',items:[{ticker:'0050',market:'TWSE',sourceRefs:[],history:{identityVerified,completeWindow:true,rows:[{payDate:'2026-07-20',exDate:'2026-06-17',amount}]}}]},c).items[0];
+ for(const identity of [false,undefined])for(const amount of [1,9]){
+  const r=run(identity,amount);assert.equal(r.history.sourceKind,'exchange');assert.equal(r.history.rows[0].amount,1);
+  assert.equal(r.history.independentlyReconciled,false);assert.equal(r.payoutCrossCheck.conflicts,0);assert.equal(r.payoutCrossCheck.issuerIdentityVerified,false);
+ }
+ assert.equal(run(true,1).history.independentlyReconciled,true);
+ assert.equal(run(true,9).payoutCrossCheck.conflicts,1,'verified contradictory records must still block');
+});
 test('30 distinct customer reads succeed during source outage without making upstream requests',async()=>{
  let calls=0,key='batch-a';
  const db={metadata:{dataBatch:{batchId:key}},etfs:Array.from({length:30},(_,i)=>({ticker:'0'+String(500+i)})),

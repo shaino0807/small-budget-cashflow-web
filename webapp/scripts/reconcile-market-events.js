@@ -22,7 +22,11 @@ function reconcileEvents(reference,c){
   if(!receipts.get(id)?.path)continue;
   const paid=records.filter(row=>!(row.payDate&&row.payDate>asOf||row.exDate&&row.exDate>asOf));
   const malformed=paid.filter(row=>!row.payDate||!row.exDate||!(row.amount>0)),valid=paid.filter(row=>row.payDate&&row.exDate&&row.amount>0);
-  const h=ref.history,issuer=(h?.rows||[]).filter(row=>!row.estimated&&row.payDate>from&&row.payDate<=asOf&&row.exDate&&row.amount>0),other=valid.filter(row=>row.payDate>from);
+  // A successful response can still be a default page for a different fund.
+  // Only ticker-verified issuer records can corroborate or contradict an exchange.
+  const unverifiedHistory=ref.history,h=unverifiedHistory?.identityVerified===true?unverifiedHistory:null;
+  if(unverifiedHistory&&!h){ref.notes||=[];ref.notes.push('Issuer payout identity not verified; excluded from cross-source comparison.');}
+  const issuer=(h?.rows||[]).filter(row=>!row.estimated&&row.payDate>from&&row.payDate<=asOf&&row.exDate&&row.amount>0),other=valid.filter(row=>row.payDate>from);
   const conflicts=[];
   for(const row of issuer){const match=other.find(r=>r.exDate===row.exDate);if(match&&(row.payDate!==match.payDate||Math.abs(row.amount-match.amount)>1e-8))conflicts.push({exDate:row.exDate,issuer:{payDate:row.payDate,amount:row.amount},exchange:{payDate:match.payDate,amount:match.amount}});}
   const complete=ref.market==='TWSE'&&allWindow&&!malformed.length;
@@ -41,7 +45,7 @@ function reconcileEvents(reference,c){
     coverageBasis:'official complete 2003-to-current-year TWSE announcement history; future payments excluded; no pagination'};
   }
   ref.sourceRefs.push({id,dataDate:null,dateBasis:complete?'full announcement history; individual actual pay dates':'recent records only; no completeness claim'});
-  ref.payoutCrossCheck={sourceId:id,completeWindow:complete,paidRecords:valid.length,malformedRecords:malformed.length,conflicts:conflicts.length,independentWindowMatched:!!ref.history?.independentlyReconciled};
+  ref.payoutCrossCheck={sourceId:id,completeWindow:complete,paidRecords:valid.length,malformedRecords:malformed.length,issuerIdentityVerified:!!h,conflicts:conflicts.length,independentWindowMatched:!!ref.history?.independentlyReconciled};
  }
  const actual=read('twse-splits-2024-2026');
  reference.splits=[];
