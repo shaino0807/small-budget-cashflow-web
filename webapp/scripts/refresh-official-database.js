@@ -33,9 +33,12 @@ const steps = ["update-etf-master.js", "update-price-series.js", "update-issuer-
   "update-stock-master.js", "update-full-market-data.js", "finalize-data-quality.js", "validate-etf-data.js"];
 
 function runStep(script, candidate) {
+  // A fresh full-market run includes over a thousand source tasks plus issuer
+  // histories. Keep a finite budget without killing valid work at 15 minutes.
+  const timeout = (script === "update-full-market-data.js" ? 40 : 15) * 60 * 1000;
   const result = spawnSync(process.execPath, [path.join(__dirname, script)], {
     env: { ...process.env, ETF_DATABASE_PATH: candidate }, stdio: "inherit", windowsHide: true,
-    timeout: 15 * 60 * 1000
+    timeout
   });
   if (result.error || result.status !== 0) throw new Error(script + " failed: " + (result.error?.message || result.status));
 }
