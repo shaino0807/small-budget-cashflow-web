@@ -6,7 +6,8 @@ async function collectAdditional(client,db,asOf){
   if(!row)continue;const id=row.match(/stock_id=([^&"']+)/)?.[1];if(!id)continue;
   await client.get('sinopac-pcf-'+etf.ticker,'https://sitc.sinopac.com/SinopacEtfs/Etfs/Pcf/'+etf.ticker);
   await client.get('sinopac-profile-'+etf.ticker,'https://sitc.sinopac.com/newweb/sitcFund/page.do?stock_id='+id);
-  await client.get('sinopac-history-'+etf.ticker,'https://sitc.sinopac.com/SinopacEtfs/Funds/DividenEtf?fund='+id+'&range=5');
+  await client.get('sinopac-history-'+etf.ticker,'https://sitc.sinopac.com/SinopacEtfs/Funds/DividenEtf',
+   {method:'POST',body:new URLSearchParams({fundId:id,range:'5',hdnTimeRange:'5'}).toString()});
   await client.sleep(200);
  }
  const base='https://www.nomurafunds.com.tw/API/ETFAPI/api/Fund/';
@@ -129,10 +130,9 @@ function normalizeAdditional(reference,client){
    const list=read('sinopac-list'),row=typeof list==='string'?[...list.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)].map(m=>m[1]).find(s=>new RegExp('\\b'+t+'\\b').test(u.text(s))):null;
    ref.profile.nonDistributing=!!row&&/不分配/.test(u.text(row));
    add('sinopac-profile-'+t,null,'same-fund detail');add('sinopac-list',null,'explicit distribution policy in ticker row');
-   const history=read('sinopac-history-'+t),tb=typeof history==='string'?u.tables(history).find(x=>x[0].length>=6&&/發放/.test(x[0].join(' '))):null;
-   if(tb){const h=tb[0],pay=h.findIndex(x=>/發放/.test(x)),ex=h.findIndex(x=>/除息/.test(x)),amt=h.findIndex(x=>/每單位/.test(x));
-    ref.history={identityVerified:tb.slice(1).every(r=>u.name(r[0])===u.name(ref.identity.shortName)),completeWindow:true,windowFrom:'1900-01-01',windowTo:reference.asOf,
-     rows:tb.slice(1).map(r=>({payDate:u.date(r[pay]),exDate:u.date(r[ex]),amount:u.number(r[amt])})),coverageBasis:'official range=5 (成立以來) query'};
+   const history=read('sinopac-history-'+t),parsedHistory=require('./sinopac-payout-history').parseSinopacHistory(history,{shortName:ref.identity.shortName,asOf:reference.asOf});
+   if(parsedHistory){
+    ref.history={...parsedHistory,sourceId:'sinopac-history-'+t};
     add('sinopac-history-'+t,null,'each official 發放日 in all-history response');
    }else if(ref.profile.nonDistributing)ref.history={identityVerified:true,completeWindow:true,nonDistributing:true,rows:[],coverageBasis:'official ticker-row 不分配 policy'};
   }
