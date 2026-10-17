@@ -6,6 +6,8 @@
   "use strict";
   const numberOrNull = (value) => value === null || value === undefined || String(value).trim() === "" ? null
     : Number.isFinite(Number(String(value).replaceAll(",", ""))) ? Number(String(value).replaceAll(",", "")) : null;
+  const splitFactor = split => Number.isSafeInteger(split.numerator) && split.numerator > 0
+    && Number.isSafeInteger(split.denominator) && split.denominator > 0 ? split.numerator / split.denominator : numberOrNull(split.ratio);
   function isoDate(value) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ""))) return null;
     const date = new Date(`${value}T00:00:00Z`);
@@ -44,27 +46,45 @@
       .filter((row) => row.ticker === ticker && isoDate(row.date) && row.date <= asOf && numberOrNull(row.close) > 0)
       .sort((a, b) => b.date.localeCompare(a.date))[0] || null;
   }
-  function trailingYield(db, ticker, asOf = today()) {
+  function financialAsOf(db, requested = today()) {
+    const saved=isoDate(db?.marketCoverage?.asOf);
+    const age=saved?(Date.parse(requested+'T00:00:00Z')-Date.parse(saved+'T00:00:00Z'))/86400000:null;
+    // Use the explicitly dated saved snapshot through a weekend/update boundary.
+    // Keep its date visible, and follow the existing three-day freshness limit.
+    return saved&&age>=0&&age<=3?saved:requested;
+  }
+  function trailingYield(db, ticker, asOf = financialAsOf(db)) {
+    const summary = db?.yieldSummaries?.[ticker];
+    if (summary?.asOf === asOf) return { ...summary };
     const history = db?.distributionHistory?.[ticker];
     const price = latestClose(db, ticker, asOf);
     const from = monthsBefore(asOf, 12);
     const base = { value: null, status: "missing_history", from, to: asOf, priceDate: price?.date || null,
       close: price ? numberOrNull(price.close) : null, observedAt: history?.updatedAt || null, sourceUrl: history?.sourceUrl || null };
-    if (!history?.complete || !isoDate(history.from) || !isoDate(history.to) || history.from > from || history.to < asOf) return base;
+    const etf = (db.etfs || []).find((item) => item.ticker === ticker);
+    const partial = isoDate(etf?.listingDate) && etf.listingDate > from && etf.listingDate <= asOf;
+    const requiredFrom = partial ? etf.listingDate : from;
+    if (!history?.complete || !isoDate(history.from) || !isoDate(history.to) || history.from > requiredFrom || history.to < asOf) return base;
     if (!price) return { ...base, status: "missing_price" };
+    if (history.acceptance === "conflict" || history.conflicts?.length) return { ...base, status: "source_conflict" };
+    if (history.currency && price.currency && history.currency !== price.currency) return { ...base, status: "currency_mismatch" };
     if (history.nonDistributing === true) return { ...base, value: 0, cash: 0, status: "non_distributing" };
     const unique = new Map();
     for (const row of db?.distributions || []) {
-      if (row.ticker !== ticker || !isoDate(row.payDate) || row.payDate <= from || row.payDate > asOf || !(numberOrNull(row.amountPerUnit) > 0)) continue;
-      const adjustments = (db.splits || []).filter((split) => split.ticker === ticker && isoDate(split.date) && split.date > row.payDate && split.date <= asOf);
+      if (row.ticker !== ticker) continue;
+      if (!isoDate(row.payDate) || !isoDate(row.exDividendDate) || !(numberOrNull(row.amountPerUnit) > 0)) return { ...base, status: "invalid_distribution" };
+      if (row.payDate <= from || row.payDate > asOf || row.estimated === true) continue;
+      if (row.currency && history.currency && row.currency !== history.currency) return { ...base, status: "currency_mismatch" };
+      const adjustments = (db.splits || []).filter((split) => split.ticker === ticker && isoDate(split.date) && split.date > row.exDividendDate && split.date <= asOf);
       if (adjustments.some((split) => !(numberOrNull(split.ratio) > 0))) return { ...base, status: "invalid_split" };
-      const adjustedCash = numberOrNull(row.amountPerUnit) / adjustments.reduce((factor, split) => factor * numberOrNull(split.ratio), 1);
-      unique.set(`${row.payDate}|${row.exDividendDate || ""}`, adjustedCash);
+      const adjustedCash = numberOrNull(row.amountPerUnit) / adjustments.reduce((factor, split) => factor * splitFactor(split), 1);
+      const key = row.exDividendDate;
+      const previous = unique.get(key);
+      if (previous && (previous.payDate !== row.payDate || Math.abs(previous.cash-adjustedCash)>1e-8)) return { ...base, status: "conflicting_distribution" };
+      unique.set(key, { payDate:row.payDate, cash:adjustedCash });
     }
-    const cash = [...unique.values()].reduce((sum, amount) => sum + amount, 0);
+    const cash = Number([...unique.values()].reduce((sum, row) => sum + BigInt(Math.round(row.cash*1e8)), 0n)) / 1e8;
     if (!unique.size) return { ...base, status: "no_paid_distributions" };
-    const etf = (db.etfs || []).find((item) => item.ticker === ticker);
-    const partial = isoDate(etf?.listingDate) && etf.listingDate > from;
     return { ...base, cash, payments: unique.size, value: Number((cash / base.close * 100).toFixed(2)),
       status: partial ? "short_history" : "available" };
   }
@@ -81,12 +101,13 @@
     if (!commonDates.length) return { normalized: {}, missing: [], reason: "no_common_dates" };
     const start = commonDates[0];
     const splits = (db.splits || []).filter((split) => tickers.includes(split.ticker) && split.date > start && split.date <= end);
-    if (splits.length) return { normalized: {}, missing: [], reason: "split_in_range" };
+    if (splits.some(split => !(numberOrNull(split.ratio) > 0))) return { normalized: {}, missing: [], reason: "split_not_verified" };
     const normalized = Object.fromEntries(series.map(({ ticker, rows }) => {
-      const base = numberOrNull(rows.find((row) => row.date === start).close);
-      return [ticker, rows.filter((row) => row.date >= start && row.date <= end).map((row) => ({ ...row, normalizedClose: numberOrNull(row.close) / base * 100 }))];
+      const adjusted = row => numberOrNull(row.close) / splits.filter(split => split.ticker === ticker && split.date > row.date).reduce((factor, split) => factor * splitFactor(split), 1);
+      const base = adjusted(rows.find((row) => row.date === start));
+      return [ticker, rows.filter((row) => row.date >= start && row.date <= end).map((row) => ({ ...row, adjustedClose: adjusted(row), normalizedClose: adjusted(row) / base * 100 }))];
     }));
-    return { normalized, missing: [], start, end, reason: "available" };
+    return { normalized, missing: [], start, end, splitAdjusted: splits.length > 0, reason: "available" };
   }
-  return { numberOrNull, isoDate, today, monthsBefore, searchEtfs, resolveEtf, heldTickers, latestClose, trailingYield, priceComparison };
+  return { numberOrNull, isoDate, today, monthsBefore, searchEtfs, resolveEtf, heldTickers, latestClose, financialAsOf, trailingYield, priceComparison };
 });

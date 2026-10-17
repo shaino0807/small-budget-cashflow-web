@@ -4,7 +4,7 @@ const sha256=bytes=>crypto.createHash("sha256").update(bytes).digest("hex");
 function datasets(db){return [
  ["etfMaster",db.etfs||[],null],["stockQuotes",(db.stocks?.items||[]).map(s=>({...s.latestPrice,ticker:s.ticker,refreshStatus:s.priceRefreshStatus})), "date"],
  ["priceSeries",db.priceSeries?.items||[],"date"],["holdings",db.holdings?.items||[],"asOfDate"],
- ["navSeries",db.navSeries?.items||[],"date"],["distributions",db.distributions||[],"payDate"]
+ ["navSeries",db.navSeries?.items||[],"date"],["distributions",db.distributions||[],"payDate"],["splits",db.splits||[],"date"]
 ];}
 function inventory(db){
  return datasets(db).map(([name,rows,dateKey])=>{
@@ -30,6 +30,7 @@ function checkContent(before,after,{today=new Date().toISOString().slice(0,10)}=
    if(seen.has(identity))errors.push(name+": duplicate "+identity);
    seen.add(identity);
    if(!row.ticker)issues.push("missing ticker");
+   if(['ticker','fundName','shortName','holdingName','name'].some(field=>typeof row[field]==='string'&&row[field].includes('\uFFFD')))issues.push('invalid text encoding');
    if(dateKey){
     const date=row[dateKey];
     if(!date||officialDate(date)!==date)issues.push("missing/invalid "+dateKey);
@@ -41,26 +42,41 @@ function checkContent(before,after,{today=new Date().toISOString().slice(0,10)}=
     if(nums.every(n=>typeof n==="number"&&Number.isFinite(n))&&(row.high<Math.max(row.open,row.close,row.low)||row.low>Math.min(row.open,row.close,row.high)))issues.push("inconsistent OHLC");
     if(row.tradeVolume!=null&&(!Number.isFinite(row.tradeVolume)||row.tradeVolume<0))issues.push("invalid volume");
    }
-   if(name==="holdings"&&(!row.holdingTicker||!Number.isFinite(row.weight)||row.weight<0||row.weight>100))issues.push("invalid holding/weight");
+   if(name==="holdings"){
+    const derivative=["future","option","buy","cash","other"].includes(row.assetType);
+    const unweighted=["cash","other","fund","repo"].includes(row.assetType)&&row.weight===null&&(Number.isFinite(row.marketValue)||Number.isFinite(row.purchaseCost));
+    if(!row.holdingTicker||!unweighted&&(!Number.isFinite(row.weight)||!derivative&&(row.weight<0||row.weight>100)))issues.push("invalid holding/weight");
+   }
    if(name==="distributions"&&(!Number.isFinite(row.amountPerUnit)||row.amountPerUnit<0))issues.push("invalid distribution amount");
+   if(name==="splits"){
+    if(row.ratio!=null&&(!Number.isFinite(row.ratio)||row.ratio<=0))issues.push("invalid split ratio");
+    if(row.numerator!=null||row.denominator!=null){
+     if(!Number.isSafeInteger(row.numerator)||row.numerator<=0||!Number.isSafeInteger(row.denominator)||row.denominator<=0
+       ||Math.abs(row.numerator/row.denominator-row.ratio)>1e-7)issues.push("invalid exact split units");
+    }
+    if(row.ratio==null)warnings.push("splits/"+identity+": ratio not verified; affected calculations blocked");
+   }
    if(issues.length){
     // Existing gaps stay visible; do not turn them into proof of a successful refresh.
     const unchanged=old.get(identity)===JSON.stringify(row);
     const preserved=name==="stockQuotes"&&row.refreshStatus==="preserved_previous";
     const missingQuote=name==="stockQuotes"&&row.close==null&&(!old.has(identity)||row.refreshStatus==="missing");
-    (unchanged||preserved||missingQuote?warnings:errors).push(name+"/"+identity+": "+issues.join(","));
+    const explicitUnknownPositionDate=name==="holdings"&&row.source==="issuer-official-full-published-positions"
+      &&row.dateStatus==="official_position_date_not_declared"&&row.sourceUrl&&row.observedAt
+      &&issues.every(issue=>issue==="missing/invalid asOfDate");
+    (unchanged||preserved||missingQuote||explicitUnknownPositionDate?warnings:errors).push(name+"/"+identity+": "+issues.join(","));
    }
   }
  }
  return {status:errors.length?"fail":warnings.length?"pass_with_gaps":"pass",errors,warnings,checks:["unique identities","calendar/source dates","new price positivity and OHLC consistency","nonnegative volumes/amounts","holding weight bounds","preserved gaps explicitly reported"],notVerified:["all issuer holdings completeness","all tracked index correctness","full-market independent cross-source comparison"]};
 }
-function key(name,row){return name==="etfMaster"||name==="stockQuotes"?row.ticker:name==="holdings"?[row.ticker,row.holdingTicker,row.asOfDate].join(":"):name==="distributions"?[row.ticker,row.payDate,row.exDate||"",row.amountPerUnit].join(":"):[row.ticker,row.date].join(":");}
+function key(name,row){return name==="etfMaster"||name==="stockQuotes"?row.ticker:name==="holdings"?[row.ticker,row.positionId||row.holdingTicker,row.asOfDate].join(":"):name==="distributions"?[row.ticker,row.payDate,row.exDate||"",row.amountPerUnit].join(":"):[row.ticker,row.date].join(":");}
 function codeVersion(){
- const files=["data-batch.js","refresh-official-database.js","update-etf-master.js","update-stock-master.js","update-price-series.js","update-issuer-official-data.js","finalize-data-quality.js","validate-etf-data.js","update-safety.js"];
+ const files=["../etf-data.js","data-batch.js","refresh-official-database.js","update-etf-master.js","update-stock-master.js","update-price-series.js","update-issuer-official-data.js","finalize-data-quality.js","validate-etf-data.js","update-safety.js","update-full-market-data.js","collect-official-market.js","collect-additional-issuers.js","collect-more-issuers.js","collect-specialist-issuers.js","collect-session-issuers.js","collect-last-issuers.js","official-native-fetch.js","reconcile-market-events.js","official-split-reference.json","collect-price-history.js","collect-history-issuers.js","collect-index-fields.js","issuer-reference.js","official-source-client.js","official-source-recipes.json","official-text.js","apply-market-reference.js"];
  return {commit:process.env.GITHUB_SHA||process.env.RENDER_GIT_COMMIT||null,node:process.version,codeSha256:sha256(files.map(f=>f+"\n"+fs.readFileSync(path.join(__dirname,f),"utf8")).join("\n"))};
 }
 function createBatch(before,after,{id,startedAt,steps,checks,previousSha256,error}){
- const attempts=[...(after.etfMaster?.sourceAttempts||[]),...(after.stocks?.sourceAttempts||[]),...(after.priceSeries?.sourceAttempts||[]),...(after.holdings?.sourceAttempts||[]),...(after.navSeries?.sourceAttempts||[])];
+ const attempts=[...(after.etfMaster?.sourceAttempts||[]),...(after.stocks?.sourceAttempts||[]),...(after.priceSeries?.sourceAttempts||[]),...(after.holdings?.sourceAttempts||[]),...(after.navSeries?.sourceAttempts||[]),...(after.marketCoverage?.sourceAttempts||[])];
  const sourceGaps=attempts.some(a=>!["loaded","OK"].includes(a.status)||a.preserved||a.preservedRows||a.rejected?.length);
  return {schemaVersion:1,batchId:id,startedAt,finishedAt:new Date().toISOString(),status:error?"failed":sourceGaps&&checks?.status==="pass"?"pass_with_gaps":checks?.status||"not_tested",
   version:codeVersion(),previousFileSha256:previousSha256,inputInventory:inventory(before),outputInventory:inventory(after),

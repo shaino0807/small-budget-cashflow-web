@@ -1,0 +1,90 @@
+[
+  {
+    "ticker": "00632R",
+    "date": "2024-12-11",
+    "ratio": 0.14285714,
+    "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/announcement?company=A00005&date=20241210&fund=00632R&seq=1&type=other",
+    "numerator": 1,
+    "denominator": 7
+  },
+  {
+    "ticker": "00676R",
+    "date": "2025-02-19",
+    "ratio": 0.16666667,
+    "sourceUrl": "https://wwwc.twse.com.tw/staticFiles/news/news/tsecnews/8a8216d693f2cafc019401dee1770078.pdf",
+    "numerator": 1,
+    "denominator": 6
+  },
+  {
+    "ticker": "00663L",
+    "date": "2025-06-11",
+    "ratio": 7,
+    "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/announcement?company=A00037&date=20250610&fund=00663L&seq=1&type=all",
+    "numerator": 7,
+    "denominator": 1
+  },
+  {
+    "ticker": "0050",
+    "date": "2025-06-18",
+    "ratio": 4,
+    "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/announcement?company=A00005&date=20250617&fund=0050&seq=1&type=other",
+    "numerator": 4,
+    "denominator": 1
+  },
+  {
+    "ticker": "00673R",
+    "date": "2025-10-22",
+    "ratio": 0.25,
+    "sourceUrl": "https://wwwc.twse.com.tw/staticFiles/news/news/tsecnews/8a8216d6993bf1510199520a8414007b.pdf",
+    "numerator": 1,
+    "denominator": 4
+  },
+  {
+    "ticker": "00706L",
+    "date": "2025-10-22",
+    "ratio": 0.25,
+    "sourceUrl": "https://wwwc.twse.com.tw/staticFiles/news/news/tsecnews/8a8216d6993bf1510199520a8414007b.pdf",
+    "numerator": 1,
+    "denominator": 4
+  },
+  {
+    "ticker": "0052",
+    "date": "2025-11-26",
+    "ratio": 7,
+    "sourceUrl": "https://investoredu.twse.com.tw/Mobile_pages/..%2FFileSystem%2FFileUpload%2F2f4bbb9f-2589-4318-a307-3d22eea8e971.pdf",
+    "numerator": 7,
+    "denominator": 1
+  },
+  {
+    "ticker": "00715L",
+    "date": "2025-12-10",
+    "ratio": 0.5,
+    "sourceUrl": "https://wwwc.twse.com.tw/staticFiles/news/news/tsecnews/8a8216d69a3d6cf9019a587a81770071.pdf",
+    "numerator": 1,
+    "denominator": 2
+  },
+  {
+    "ticker": "00631L",
+    "date": "2026-03-31",
+    "ratio": 22,
+    "sourceUrl": "https://www.twse.com.tw/staticFiles/news/news/tsecnews/8a8216d69c37647f019c994679ba00cf.pdf",
+    "numerator": 22,
+    "denominator": 1
+  },
+  {
+    "ticker": "00674R",
+    "date": "2026-04-22",
+    "ratio": 0.2,
+    "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/announcement?company=A00005&date=20260421&fund=00674R&seq=1&type=other",
+    "numerator": 1,
+    "denominator": 5
+  },
+  {
+    "ticker": "00685L",
+    "date": "2026-07-07",
+    "ratio": 24,
+    "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/announcement?company=A00016&date=20260706&fund=00685L&seq=1&type=other",
+    "numerator": 24,
+    "denominator": 1
+  }
+]

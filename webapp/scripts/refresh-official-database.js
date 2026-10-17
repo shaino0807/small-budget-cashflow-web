@@ -30,7 +30,7 @@ function validatePreservation(before, after) {
 }
 
 const steps = ["update-etf-master.js", "update-price-series.js", "update-issuer-official-data.js",
-  "update-stock-master.js", "finalize-data-quality.js", "validate-etf-data.js"];
+  "update-stock-master.js", "update-full-market-data.js", "finalize-data-quality.js", "validate-etf-data.js"];
 
 function runStep(script, candidate) {
   const result = spawnSync(process.execPath, [path.join(__dirname, script)], {
@@ -67,10 +67,11 @@ function refreshDatabase(file, { execute = runStep, batchDir = process.env.DATA_
     after.metadata.dataBatch = { batchId: id, schemaVersion: 1, status: batch.status, finishedAt: batch.finishedAt,
       version: batch.version, coverage: batch.outputInventory.map(({ sources, ...row }) => row),
       checks: { status: checks.status, errors: checks.errors.length, warnings: checks.warnings.length, notVerified: checks.notVerified } };
-    batch.outputFileSha256 = sha256(Buffer.from(JSON.stringify(after, null, 2) + "\n"));
+    // Canonical data is compact; the separately readable manifest retains audit detail.
+    batch.outputFileSha256 = sha256(Buffer.from(JSON.stringify(after) + "\n"));
     batch.promotion = "validated_candidate";
     writeBatch(batchDir, batch);
-    atomicWriteJson(file, after);
+    atomicWriteJson(file, after, { space: 0 });
     return after;
   } catch (error) {
     const batch = createBatch(before, after, { id, startedAt, steps: completedSteps, checks, previousSha256: sha256(beforeBytes), error: error.message });

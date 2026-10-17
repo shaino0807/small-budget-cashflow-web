@@ -378,6 +378,9 @@ async function main() {
         advancedOpen: row?.querySelector(".holding-advanced")?.open || false,
         typeLocked: row?.querySelector('[data-field="type"]')?.disabled || false,
         yieldLocked: row?.querySelector('[data-field="dividendYield"]')?.readOnly || false,
+        officialYield: holding?.dividendYield ?? null,
+        officialYieldStatus: holding?.yieldStatus || null,
+        yieldInput: row?.querySelector('[data-field="dividendYield"]')?.value ?? "",
         storedAmount: Number(holding?.amount || 0),
         lotAmount: Number(holding?.lots?.[0]?.amount || 0),
         bodyOverflow: Math.max(0, document.body.scrollWidth - document.documentElement.clientWidth)
@@ -885,6 +888,11 @@ async function main() {
       try {
         const date = etfData.today(), from = etfData.monthsBefore(date, 12);
         etfDatabase = structuredClone(originalDb);
+        // This fixture replaces the underlying prices and payments, so its previous
+        // catalog summaries cannot describe the synthetic portfolio.
+        delete etfDatabase.yieldSummaries;
+        delete etfDatabase.datasetCounts;
+        etfDatabase.marketCoverage = {...etfDatabase.marketCoverage, asOf:date};
         etfDatabase.distributionHistory = {};
         etfDatabase.holdingsCoverage = {};
         etfDatabase.distributions = [];
@@ -1044,7 +1052,12 @@ async function main() {
         && !simpleHoldingEditor.advancedOpen
         && simpleHoldingEditor.typeLocked
         && simpleHoldingEditor.yieldLocked
-        && simpleHoldingEditor.identity.includes("配息資料待補")
+        // Real official coverage changes over time; verify the bound value or the
+        // pending state. The synthetic missingYield case separately forces a gap.
+        && (simpleHoldingEditor.officialYield === null
+          ? simpleHoldingEditor.identity.includes("配息資料待補") && simpleHoldingEditor.yieldInput === ""
+          : Number(simpleHoldingEditor.yieldInput) === simpleHoldingEditor.officialYield
+            && simpleHoldingEditor.identity.includes(simpleHoldingEditor.officialYieldStatus === "non_distributing" ? "官方確認不配息" : "近12個月配息殖利率"))
         && simpleHoldingEditor.storedAmount === 10000
         && simpleHoldingEditor.lotAmount === 10000
         && simpleHoldingEditor.bodyOverflow === 0

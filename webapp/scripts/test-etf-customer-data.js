@@ -13,11 +13,11 @@ const db = {
     { ticker: "0050", payDate: "2026-04-10", amountPerUnit: 2 },
     { ticker: "0050", payDate: "2026-10-11", amountPerUnit: 3 },
     { ticker: "0050", payDate: "2026-10-12", amountPerUnit: 50 },
-    { ticker: "0050", payDate: null, amountPerUnit: 20 },
-    { ticker: "0050", payDate: "2026-02-30", amountPerUnit: 20 },
     { ticker: "0050", payDate: "2026-04-10", amountPerUnit: 2 }
   ]
 };
+// Synthetic events use distinct, explicit ex-dates. Undated histories are tested separately below.
+db.distributions.forEach(row => { row.exDividendDate = row.payDate; });
 check(data.resolveEtf(db, "0050").ticker, "0050", "leading zero code");
 check(data.resolveEtf(db, "元大台灣50").ticker, "0050", "Chinese name");
 check(data.resolveEtf(db, "0056 元大高股息").ticker, "0056", "datalist label");
@@ -27,7 +27,12 @@ check(data.heldTickers(db, [{ ticker: "0050" }, { ticker: "0050" }, { ticker: "0
 check(data.isoDate("2026-02-30"), null, "invalid calendar date");
 check(data.numberOrNull(null), null, "missing numeric evidence is not zero");
 check(data.trailingYield(db, "0050", "2026-10-11").value, 6, "all actual paid cash in trailing calendar year, not last four payments");
-check(data.trailingYield(db, "0050", "2026-10-11").payments, 3, "duplicates and future/undated payments excluded");
+check(data.trailingYield(db, "0050", "2026-10-11").payments, 3, "duplicates and future payments excluded");
+for (const payDate of [null,"2026-02-30"]) {
+  const invalid = structuredClone(db);
+  invalid.distributions.push({ticker:"0050",payDate,exDividendDate:"2026-02-01",amountPerUnit:20});
+  check(data.trailingYield(invalid,"0050","2026-10-11").value,null,"an incomplete paid-date history cannot yield an apparently complete total");
+}
 check(data.latestClose(db, "0050", "2026-10-11").close, 100, "future price excluded");
 check(data.latestClose(db, "0056", "2026-10-11"), null, "NAV is not a market close");
 for (const date of ["2026-09-30", "2026-10-01", "2026-10-11", "2026-12-31", "2027-01-01", "2028-02-29"]) {
@@ -35,7 +40,7 @@ for (const date of ["2026-09-30", "2026-10-01", "2026-10-11", "2026-12-31", "202
   fixture.distributionHistory["0050"].to = date;
   fixture.priceSeries.items = [{ ticker: "0050", date, close: 50 }];
   const from = data.monthsBefore(date, 12);
-  fixture.distributions = [{ ticker: "0050", payDate: from, amountPerUnit: 100 }, { ticker: "0050", payDate: date, amountPerUnit: 2 }];
+  fixture.distributions = [{ ticker: "0050", payDate: from, exDividendDate:from, amountPerUnit: 100 }, { ticker: "0050", payDate: date, exDividendDate:date, amountPerUnit: 2 }];
   check(data.trailingYield(fixture, "0050", date).value, 4, `month/year/leap boundary ${date}`);
 }
 check(data.monthsBefore("2028-02-29", 12), "2027-02-28", "leap day clamped");
@@ -65,5 +70,8 @@ check(comparison.normalized["0050"].map((row) => Number(row.normalizedClose.toFi
 check(data.priceComparison(prices, ["0050", "00999"], 1, "2026-10-11").reason, "missing_prices", "missing selection not silently dropped");
 check(data.priceComparison(prices, [], 1, "2026-10-11").reason, "empty_selection", "empty chart cleared");
 prices.splits = [{ ticker: "0050", date: "2026-10-02", ratio: 4 }];
-check(data.priceComparison(prices, ["0050", "0056"], 1, "2026-10-11").reason, "split_in_range", "known split blocks unadjusted misleading comparison");
+prices.priceSeries.items.find(row => row.ticker === "0050" && row.date === "2026-10-08").close = 30.25;
+check(data.priceComparison(prices, ["0050", "0056"], 1, "2026-10-11").normalized["0050"].map(row=>Number(row.normalizedClose.toFixed(2))), [100,110], "split-adjusted comparison preserves economic price change");
+prices.splits[0].ratio = null;
+check(data.priceComparison(prices, ["0050", "0056"], 1, "2026-10-11").reason, "split_not_verified", "unknown split ratio blocks misleading comparison");
 console.log(JSON.stringify({ passed: true, cases, monthBoundary: true, officialMissingIsNull: true }));
