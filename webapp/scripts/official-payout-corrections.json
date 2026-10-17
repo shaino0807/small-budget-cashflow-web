@@ -1,0 +1,13 @@
+[
+  {
+    "id": "fhtrust-delay-notice-20260713",
+    "sourceUrl": "https://www.twse.com.tw/zh/ETFortune/announcement?company=A00022&date=20260713&fund=ZZZZ&seq=2&type=all",
+    "announcementDate": "2026-07-13",
+    "issuerPattern": "復華",
+    "tickers": ["00710B", "00711B", "00712", "00929", "00998A"],
+    "exDate": "2026-06-17",
+    "originalPayDate": "2026-07-13",
+    "correctedPayDate": "2026-07-14",
+    "requiredText": ["發放日由115年7月13日", "遞延至115年7月14日"]
+  }
+]

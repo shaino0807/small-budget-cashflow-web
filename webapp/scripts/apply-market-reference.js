@@ -1,5 +1,6 @@
 const {isoDate,trailingYield}=require('../etf-data');
 const u=require('./official-text');
+const {amendExchangePayments}=require('./payout-corrections');
 const validDate=(d,asOf)=>isoDate(d)&&d<=asOf;
 const merge=(old,rows,key)=>[...new Map([...old,...rows].map(r=>[key(r),r])).values()];
 function applyMarketReference(db,{reference,receipts,read},{observedAt=new Date().toISOString()}={}) {
@@ -92,9 +93,29 @@ function applyMarketReference(db,{reference,receipts,read},{observedAt=new Date(
   }
   const h=ref.history;
   // A recent-only exchange response cannot resolve an older recorded conflict.
-  const priorConflicts=db.distributionHistory[etf.ticker]?.conflicts||[];
-  if(h&&ref.payoutCrossCheck?.completeWindow!==true&&priorConflicts.length){
-   h.conflicts=[...new Map([...priorConflicts,...(h.conflicts||[])].map(c=>[c.exDate+':'+(c.reason||'values'),c])).values()];
+  const previousHistory=db.distributionHistory[etf.ticker];
+  // Revalidate recorded resolutions on every refresh. A recent-only response
+  // must neither erase old conflicts nor lose their amendment provenance.
+  const priorConflicts=[...new Map([...(previousHistory?.conflicts||[]),...(previousHistory?.resolvedConflicts||[]).map(r=>r.priorConflict)]
+   .map(c=>[c.exDate+':'+(c.reason||'values'),c])).values()];
+  const resolvedConflicts=[],unresolvedPrior=[];
+  for(const prior of priorConflicts){
+   const old=prior.exchange&&{...prior.exchange,exDate:prior.exDate};
+   const amendment=old&&amendExchangePayments([old],ref,{read,records:()=>receipts},asOf);
+   const changed=amendment?.applied?.[0],matched=changed&&h?.identityVerified===true&&h.rows?.some(r=>r.exDate===prior.exDate&&r.payDate===changed.correctedPayDate&&Math.abs(r.amount-old.amount)<=1e-8&&!r.estimated);
+   if(matched){
+    resolvedConflicts.push({priorConflict:prior,proof:changed});
+    if(ref.payoutCrossCheck&&!ref.payoutCrossCheck.officialCorrections?.some(p=>p.sourceId===changed.sourceId&&p.exDate===changed.exDate)){
+     (ref.payoutCrossCheck.officialCorrections||=[]).push(changed);
+    }
+    if(!sources.some(s=>s.id===changed.sourceId)){
+     const r=receipt.get(changed.sourceId),s={id:r.id,url:r.url,sha256:r.sha256,observedAt:r.retrievedAt,dataDate:changed.announcementDate,dateBasis:'explicit payout amendment resolving a recorded conflict'};
+     sources.push(s);ref.sourceRefs.push(s);
+    }
+   }else unresolvedPrior.push(prior);
+  }
+  if(h&&ref.payoutCrossCheck?.completeWindow!==true&&unresolvedPrior.length){
+   h.conflicts=[...new Map([...unresolvedPrior,...(h.conflicts||[])].map(c=>[c.exDate+':'+(c.reason||'values'),c])).values()];
    h.independentlyReconciled=false;
   }
   const historySource=sources.find(s=>s.id===h?.sourceId)||sources.find(s=>/dividend|history/.test(s.id))||sources.find(s=>/profile|yuanta|sinopac-list|firstgold-catalog/.test(s.id));
@@ -111,7 +132,7 @@ function applyMarketReference(db,{reference,receipts,read},{observedAt=new Date(
     db.distributionHistory[etf.ticker]={complete:true,nonDistributing:!!h.nonDistributing,from:h.windowFrom||'1900-01-01',to:asOf,
       currency:etf.currency,updatedAt:historySource.observedAt||null,sourceUrl:historySource.url,coverageBasis:h.coverageBasis,
       acceptance:h.conflicts?.length?'conflict':h.independentlyReconciled?'independent_window_matched':'single_source',conflicts:h.conflicts||[],
-      independentCrossSourceVerified:!!h.independentlyReconciled};
+      independentCrossSourceVerified:!!h.independentlyReconciled,officialCorrections:ref.payoutCrossCheck?.officialCorrections||[],resolvedConflicts};
    }
   }
   const yieldResult=trailingYield(db,etf.ticker,asOf);

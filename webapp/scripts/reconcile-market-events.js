@@ -1,8 +1,10 @@
 const u=require('./official-text');
 const splitReference=require('./official-split-reference.json');
 const {monthsBefore}=require('../etf-data');
+const {amendExchangePayments,corrections}=require('./payout-corrections');
 async function collectEvents(c,db,asOf){
  await c.get('twse-payout-all-history','https://www.twse.com.tw/zh/ETFortune/dividendList?startDate=2003&endDate='+asOf.slice(0,4));
+ for(const rule of corrections)if(asOf>=rule.announcementDate&&db.etfs.some(e=>rule.tickers.includes(e.ticker)))await c.get(rule.id,rule.sourceUrl);
  await c.get('twse-splits-2024-2026','https://www.twse.com.tw/rwd/zh/split/TWTCAU?startDate=20240101&endDate='+asOf.replaceAll('-','')+'&response=json');
  await c.get('twse-split-notices','https://www.twse.com.tw/rwd/zh/split/TWTC9U?response=json');
  for(const s of splitReference)await c.get('split-proof-'+s.ticker,s.sourceUrl);
@@ -17,8 +19,9 @@ function reconcileEvents(reference,c){
  const allWindow=!!table&&html.includes('Start_Year option[value="2003"]')&&html.includes('End_Year option[value="'+asOf.slice(0,4)+'"]')&&!/[?&](page|PageIndex)=/.test(html);
  for(const ref of reference.items){
   const id=ref.market==='TWSE'?'twse-payout-all-history':'tpex-payout-'+ref.ticker;
-  const records=ref.market==='TWSE'?(table||[]).slice(1).filter(row=>row[0]===ref.ticker).map(row=>({payDate:u.date(row[4]),exDate:u.date(row[2]),amount:u.number(row[5])})):
+  const originalRecords=ref.market==='TWSE'?(table||[]).slice(1).filter(row=>row[0]===ref.ticker).map(row=>({payDate:u.date(row[4]),exDate:u.date(row[2]),amount:u.number(row[5])})):
    (Array.isArray(read(id))?read(id):[]).filter(row=>row.stockNo===ref.ticker).map(row=>({payDate:u.date(row.inDate),exDate:u.date(row.divDate),amount:u.number(row.amount)}));
+  const amendment=amendExchangePayments(originalRecords,ref,c,asOf),records=amendment.rows;
   if(!receipts.get(id)?.path)continue;
   const paid=records.filter(row=>!(row.payDate&&row.payDate>asOf||row.exDate&&row.exDate>asOf));
   const malformed=paid.filter(row=>!row.payDate||!row.exDate||!(row.amount>0)),valid=paid.filter(row=>row.payDate&&row.exDate&&row.amount>0);
@@ -45,7 +48,8 @@ function reconcileEvents(reference,c){
     coverageBasis:'official complete 2003-to-current-year TWSE announcement history; future payments excluded; no pagination'};
   }
   ref.sourceRefs.push({id,dataDate:null,dateBasis:complete?'full announcement history; individual actual pay dates':'recent records only; no completeness claim'});
-  ref.payoutCrossCheck={sourceId:id,completeWindow:complete,paidRecords:valid.length,malformedRecords:malformed.length,issuerIdentityVerified:!!h,conflicts:conflicts.length,independentWindowMatched:!!ref.history?.independentlyReconciled};
+  for(const proof of amendment.applied)ref.sourceRefs.push({id:proof.sourceId,dataDate:proof.announcementDate,dateBasis:'explicit amended payment date; raw aggregate remains unchanged'});
+  ref.payoutCrossCheck={sourceId:id,completeWindow:complete,paidRecords:valid.length,malformedRecords:malformed.length,issuerIdentityVerified:!!h,conflicts:conflicts.length,independentWindowMatched:!!ref.history?.independentlyReconciled,officialCorrections:amendment.applied};
  }
  const actual=read('twse-splits-2024-2026');
  reference.splits=[];
