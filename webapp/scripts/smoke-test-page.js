@@ -761,7 +761,9 @@ async function main() {
       income: Number(document.querySelector("#monthlyIncome")?.value || 0)
     }))()`);
 
-    await send(ws, "Runtime.evaluate", { expression: `window.goTo("dashboardView", "", "overview")` });
+    // Invalidate the old document's ready flag before the second F5, too.
+    // Otherwise the readiness poll can finish before navigation even commits.
+    await send(ws, "Runtime.evaluate", { expression: `window.goTo("dashboardView", "", "overview"); document.body.dataset.appReady = "reloading"` });
     await send(ws, "Page.reload", { ignoreCache: true });
     await waitForPageReady(ws);
     await wait(1000);
