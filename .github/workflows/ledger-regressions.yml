@@ -65,7 +65,7 @@ jobs:
         if: ${{ !inputs.source_diagnostics }}
         run: docker run --rm portfolio-candidate node --test scripts/test-portfolio-demand.js scripts/test-portfolio-first-use.js scripts/test-portfolio-domestic.js scripts/test-portfolio-valuation.js scripts/test-market-reader.js
       - name: Verify real official sources and empty-cache API on Node 24 Alpine
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.runtime_only && !inputs.source_diagnostics }}
+        if: ${{ github.event_name == 'workflow_dispatch' && !inputs.source_diagnostics }}
         run: docker run --rm portfolio-candidate node scripts/verify-portfolio-runtime.js
       - name: Capture bounded redacted issuer diagnostics only
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.source_diagnostics }}

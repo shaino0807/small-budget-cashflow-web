@@ -4415,7 +4415,8 @@ function renderPortfolioAnalysis() {
   const result=portfolioResult(), runtime=portfolioRuntime, running=runtime.status==='running';
   const labels={idle:'尚未送出持有部位',changed:'持有部位已變更',running:'正在核對持有部位',finished:'本次來源核對已結束',partial:'部分來源尚無法核對',timeout:'本次等待已結束',failed:'暫時無法完成核對',empty:'請先輸入持有部位'};
   q('#portfolioProgressTitle').textContent=labels[runtime.status]||labels.idle;
-  q('#portfolioProgressMessage').textContent=runtime.message || (running ? `已結束核對 ${runtime.completed}／${runtime.total} 個標的（${runtime.total?Math.floor(runtime.completed/runtime.total*100):0}%）；沒有可沿用紀錄時，會先取得官方資料。完成數不代表資料完整通過率。` : result.status==='partial' ? '可查看已知股票曝險；資料日期與未拆解部位另列，尚非完整驗收。' : '填入部位後按下分析；只核對相關官方資料。');
+  const pending=Object.values(runtime.data).filter(d=>d.reasonCode==='fund_data_pending_update');
+  q('#portfolioProgressMessage').textContent=runtime.message || (running ? `已處理 ${runtime.completed}／${runtime.total} 個標的（${runtime.total?Math.floor(runtime.completed/runtime.total*100):0}%），含待更新項目；沒有可沿用紀錄時，會先取得官方資料。完成數不代表資料完整通過率。` : pending.length ? `${pending.map(d=>d.ticker).join('、')}：基金資料待更新。${result.rows.length?'其餘已取得資料的部位已列出；整體重疊仍待確認。':'目前無法判定重疊，請待資料更新後再分析。'}` : result.status==='partial' ? '可查看已知股票曝險；資料日期與未拆解部位另列，尚非完整驗收。' : '填入部位後按下分析；只核對相關官方資料。');
   const progress=q('#portfolioProgressBar');progress.hidden=!running;progress.value=runtime.total ? runtime.completed/runtime.total*100 : 0;
   q('#analyzePortfolioBtn').disabled=running;
   q('#analyzePortfolioBtn').textContent=running?'正在核對…':'核對持有部位並分析重疊';
@@ -4423,9 +4424,9 @@ function renderPortfolioAnalysis() {
   q('#portfolioOverlapResult').innerHTML=runtime.signature && !running ? portfolioResultHtml(result) : '';
 }
 function portfolioResultHtml(result) {
-  const valid=result.rows.length>0;
+  const valid=result.rows.length>0, allPending=result.gaps.length>0&&result.gaps.every(g=>g.reason==='基金資料待更新');
   return `<section class="panel" aria-label="持有部位重疊分析結果">
-    <h3>${result.status==='complete'?'已核對的股票曝險':valid?'已知部分的股票曝險':'尚無法判定重疊'}</h3>
+    <h3>${result.status==='complete'?'已核對的股票曝險':valid?'已知部分的股票曝險':allPending?'基金資料待更新':'尚無法判定重疊'}</h3>
     <p>${escapeHtml(result.basis)}。${valid?`股票權重可計算部分占投入金額 ${pct(result.coveragePercent,2)}；這不是資料驗證通過率。`:'資料不足不能解讀為沒有重疊。'}</p>
     ${valid?`<p>${result.repeated.length?`已辨識 ${result.repeated.length} 檔共同持股。`:'已知部分未辨識出共同持股；尚待確認的部分不在此結論內。'}</p>
     <div class="portfolio-result-table" tabindex="0" role="region" aria-label="股票曝險表，可水平捲動"><table><thead><tr><th>股票</th><th>名稱</th><th>加權金額</th><th>占投入比例</th><th>持有來源</th></tr></thead><tbody>${result.rows.slice(0,20).map(r=>`<tr><td>${escapeHtml(r.ticker)}</td><td>${escapeHtml(r.name)}</td><td>${formatMoney(r.amount)}</td><td>${pct(r.share,2)}</td><td>${r.sources.map(s=>escapeHtml(s.ticker)).join('、')}</td></tr>`).join('')}</tbody></table></div><p class="panel-note">畫面顯示前 20 筆；計算包含全部 ${result.rows.length} 筆已識別股票。</p>`:''}

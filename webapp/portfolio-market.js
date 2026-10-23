@@ -5,6 +5,10 @@ const { loadOfficial, scopeFor } = require('./portfolio-official');
 const scope = require('./portfolio-scope.json');
 const { containsCredentials, redactFormState } = require('./scripts/official-source-client');
 const VERSION = 7, TTL = 5 * 60000, JOB_TTL = 10 * 60000;
+// Temporary availability policy approved on 2026-10-23; scope membership is unchanged.
+// Apply before cache reads so old holdings cannot bypass the pending state.
+const PENDING_FUNDS = new Set(['00904','00936','00947','00962','00987A']);
+const pendingFund = ticker => ({ticker,status:'unavailable',reasonCode:'fund_data_pending_update',message:'基金資料待更新'});
 const FUNDS = { '0050': { fundId: '1066', isin: 'TW0000050004' }, '0056': { fundId: '1084', isin: 'TW0000056001' } };
 const FUBON_URL = 'https://websys.fsit.com.tw/FubonETF/Fund/Assets.aspx?stkId=006208';
 const supported = ticker => scopeFor(ticker) === 'domestic_equity' || ticker === '2330';
@@ -152,6 +156,7 @@ function createPortfolioMarket({ cacheDir = path.join(process.env.CUSTOMER_DATA_
     return data;
   }
   async function get(ticker) {
+    if (PENDING_FUNDS.has(ticker)) return pendingFund(ticker);
     if (!supported(ticker)) return scopeFor(ticker)==='outside_scope'
       ? {ticker,status:'unsupported',message:`此 ETF 的官方類型是「${scope.entries[ticker].classification}」。目前僅支援國內一般股票型 ETF（含主動式）；海外、債券、槓桿與反向等類型不支援，等待或重試不會自動補齊`}
       : {ticker,status:'unavailable',message:'此代號尚未完成官方範圍核對，無法判定是否支援；不會推估持股或顯示零重疊'};
@@ -172,14 +177,17 @@ function createPortfolioMarket({ cacheDir = path.join(process.env.CUSTOMER_DATA_
     if(jobs.size>=64) throw Object.assign(Error('分析工作已滿，請稍後重試'),{statusCode:429});
     const unique=[...new Set(tickers)].sort(),job={id:crypto.randomUUID(),createdAt:now(),deadlineAt:now()+deadlineMs,status:'running',tickers:unique,data:{},completed:0,total:unique.length};
     jobs.set(job.id,job);
+    for (const ticker of unique) if (PENDING_FUNDS.has(ticker)) {job.data[ticker]=pendingFund(ticker);job.completed++;}
+    const remaining=unique.filter(t=>!job.data[t]);
+    if (!remaining.length) {job.status='partial';return view(job);}
     const timer=setTimeout(()=>{
       if(job.status!=='running')return;
       unique.filter(t=>!job.data[t]).forEach(t=>{job.data[t]={ticker:t,status:'timeout',message:'核對逾時，尚無法確認最新資料'};});
       job.status='timeout';
     },deadlineMs);timer.unref?.();
     let next=0;
-    Promise.all(Array.from({length:Math.min(maxActive,unique.length)},async()=>{
-      while(next<unique.length&&job.status==='running'){const ticker=unique[next++],data=await get(ticker);if(job.status!=='running')return;job.data[ticker]=data;job.completed++;}
+    Promise.all(Array.from({length:Math.min(maxActive,remaining.length)},async()=>{
+      while(next<remaining.length&&job.status==='running'){const ticker=remaining[next++],data=await get(ticker);if(job.status!=='running')return;job.data[ticker]=data;job.completed++;}
     })).then(()=>{
       clearTimeout(timer);if(job.status!=='running')return;
       job.status=Object.values(job.data).every(d=>['observed','cached'].includes(d.status))?'finished':'partial';
@@ -187,7 +195,7 @@ function createPortfolioMarket({ cacheDir = path.join(process.env.CUSTOMER_DATA_
     return view(job);
   }
   function view(job) {return {id:job.id,status:job.status,tickers:job.tickers,completed:job.completed,total:job.total,
-    progressMeaning:'已結束官方核對的標的數；不代表完整驗證通過率',elapsedMs:Math.max(0,now()-job.createdAt),deadlineMs,data:structuredClone(job.data)};}
+    progressMeaning:'已處理的標的數（含待更新）；不代表完整驗證通過率',elapsedMs:Math.max(0,now()-job.createdAt),deadlineMs,data:structuredClone(job.data)};}
   return {start,status:id=>{clean();const job=jobs.get(id);if(!job)throw Object.assign(Error('工作已過期，請重新分析'),{statusCode:404});return view(job);},get};
 }
 module.exports={createPortfolioMarket,parseYuanta,parseFubon,parsePrice,taiwanDate,date,num};
