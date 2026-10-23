@@ -95,6 +95,48 @@ function hnHoldingsDate(json,ticker,fundId,stocks,asOf){
   matchDatedStocks(stocks,validStocks([{type:'stock',items:(a.StockList||[]).map(r=>({code:r.StockNo,name:r.StockName,quantity:u.number(r.Share),weight:r.Weight==null?null:u.number(r.Weight)*100}))}]));
   return dates[0];
 }
+function taishinProfile(html,ticker) {
+  const table=typeof html==='string'&&u.tables(html).find(t=>t[0]?.[0]==='基金名稱');
+  const fields=Object.fromEntries((table||[]).map(r=>[r[0],r[1]]));
+  if(fields['股票代號']!==ticker||!fields['基金名稱']||!/新台幣|新臺幣|TWD/.test(fields['計價幣別']||''))throw Error('未取得身份相符的完整官方資產表');
+  return fields;
+}
+function parseTaishinCurrent(profile,pcf,history,ticker,asOf) {
+  const fields=taishinProfile(profile,ticker);
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(asOf)||u.date(asOf)!==asOf)throw Error('台新查詢當日日期無效');
+  const input=(html,id)=>{const tags=[...String(html).matchAll(/<input\b[^>]*>/gi)].map(m=>m[0]).filter(s=>new RegExp(`\\bid=["']${id}["']`,'i').test(s));
+    if(tags.length!==1)throw Error('台新當日PCF身份或公告日期未通過');return u.decode(tags[0].match(/\bvalue=["']([^"']*)/i)?.[1]||'');};
+  const heading=[...String(pcf).matchAll(/<h4\b[^>]*>([\s\S]*?)<\/h4>/gi)].map(m=>u.text(m[1]));
+  if(input(pcf,'ETF_ID')!==ticker||input(pcf,'DATA_DATE')!==asOf||input(pcf,'PUB_DATE')!==asOf||!heading.some(s=>s.endsWith(`(${ticker})`)&&s.includes(fields['基金名稱'])))throw Error('台新當日PCF身份或公告日期未通過');
+  // The separately published NAV series establishes the valuation date. Never
+  // choose an older NAV because its value or closing prices fit a PCF better.
+  const frame=String(history).match(/<iframe\b[^>]*\bsrc=["']([^"']+)/i)?.[1];
+  let frameUrl;try{frameUrl=new URL(u.decode(frame||''),'https://www.tsit.com.tw');}catch{}
+  const from=asOf.slice(0,7).replace('-','/')+'/01';
+  if(!frameUrl||frameUrl.origin!=='https://www.tsit.com.tw'||frameUrl.pathname!==`/ETF/Home/TrendChartImage/${ticker}`||frameUrl.searchParams.get('sday')!==from||frameUrl.searchParams.get('eday')!==asOf.replaceAll('-','/'))throw Error('台新官方淨值查詢身份或日期範圍未通過');
+  const navTables=u.tables(String(history)).filter(t=>t[0]?.[0]==='日期'&&t[0]?.[1]==='淨值');
+  if(navTables.length!==1||navTables[0].length<2)throw Error('台新官方最新淨值日期尚未取得');
+  const dates=new Set(),navs=navTables[0].slice(1).map(r=>{const date=u.date(r[0]),value=u.number(r[1]);
+    if(r.length!==navTables[0][0].length||!date||date<asOf.slice(0,7)+'-01'||date>asOf||dates.has(date)||!(value>0))throw Error('台新官方淨值日期或資料列未通過');dates.add(date);return {date,value};});
+  navs.sort((a,b)=>b.date.localeCompare(a.date));const latest=navs[0];
+  const tables=u.tables(String(pcf)),assetTables=tables.filter(t=>t.some(r=>r[0]==='基金淨資產價值(元)'));
+  if(assetTables.length!==1)throw Error('台新當日PCF淨資產表未通過');
+  const asset=Object.fromEntries(assetTables[0].map(r=>[r[0],r[1]])),num=s=>u.number(String(s||'').replace(/^TWD\s*/,''));
+  const aum=num(asset['基金淨資產價值(元)']),nav=num(asset['每受益權單位淨資產價值(元)']);
+  if(!(aum>0)||!(nav>0)||nav!==latest.value)throw Error('台新當日PCF與最新官方淨值未一致');
+  const stockTables=tables.filter(t=>t[0]?.[0]==='代號'&&t[0]?.[1]==='名稱'&&t[0]?.[2]==='股數'&&t[0]?.[3]==='持股權重');
+  if(stockTables.length!==1)throw Error('台新當日PCF完整股票表未通過');
+  const stocksTable=stockTables[0],totals=stocksTable.slice(1).filter(r=>/^(股票)?合計$/.test(r[0])),rows=stocksTable.slice(1).filter(r=>!/^(股票)?合計$/.test(r[0]));
+  if(totals.length!==1||rows.some(r=>r.length!==4||u.number(r[2])==null||u.number(r[2])<0))throw Error('台新當日PCF股票列或總計未通過');
+  const summaryWeight=u.number(totals[0].at(-1));
+  if(summaryWeight==null)throw Error('台新當日PCF股票總計未通過');
+  const stocks=validStocks([{type:'stock',summaryWeight,items:rows.map(r=>({code:r[0],name:r[1],quantity:u.number(r[2]),weight:u.number(r[3])}))}]);
+  const otherGroups=tables.filter(t=>t[0]?.some(s=>/持股權重/.test(s))&&!stockTables.includes(t)).map(t=>({kind:t[0].some(s=>/契約年月/.test(s))?'future':'other',rows:t.length-1,items:t.slice(1).filter(r=>!/合計|總計/.test(r[0])).map(r=>({code:r[0],name:r[1]||r[0],quantity:u.number(r.at(-2)),weight:u.number(r.at(-1))}))}));
+  return {ticker,kind:'etf',name:scope.entries[ticker]?.name||fields['基金名稱'],identityVerified:true,stocks,stockWeight:stocks.reduce((s,r)=>s+r.weight,0),holdingsDate:null,
+    holdingsDateEvidence:'not_disclosed_current_official_PCF_and_latest_official_NAV_are_separate',complete:false,
+    valuationBasis:{date:latest.date,netAssets:aum,method:'round4'},nav:latest,otherGroups,
+    issues:['官方未明示實際持股基準日；當日申購買回清單與最新官方淨值已分別核對，仍須逐列估值核對','股票以外資產未穿透至底層股票；已知股票資料不代表完整金融曝險']};
+}
 async function loadOfficialOnce(ticker, {source, signal, asOf, etf}) {
   if(scopeFor(ticker)!=='domestic_equity') throw Error('尚未確認為支援的國內股票型 ETF');
   const entry=scope.entries[ticker], issuer=entry.issuer, values=new Map(), receipts=[], failures=[];
@@ -145,7 +187,19 @@ async function loadOfficialOnce(ticker, {source, signal, asOf, etf}) {
     await Promise.all(['basic','detail','portfolio'].map(k=>runId(`capital-${k}-${ticker}`)));
   } else if(/凱基/.test(issuer)) {
     await Promise.all(['detail','portfolio'].map(k=>runId(`kgi-${k}-${ticker}`)));
-  } else if(/台新/.test(issuer)) await runId('taishin-detail-'+ticker);
+  } else if(/台新/.test(issuer)) {
+    const profile=await runId('taishin-detail-'+ticker);
+    taishinProfile(profile,ticker);
+    // The public default product page can have DATA_DATE empty and NAV_DATE=0001.
+    // Use the issuer's actual Pcf.js date selection for TODAY only, never scan
+    // backwards until a historical portfolio happens to pass.
+    const pcfUrl=`https://www.tsit.com.tw/ETF/Home/Pcf/${ticker}?FundType=ALL&DataDate=${asOf}`;
+    const pcf=await get('taishin-current-pcf-'+ticker,pcfUrl);
+    const nav=await get('taishin-current-nav-'+ticker,'https://www.tsit.com.tw/ETF/Home/PartialHistoryFundNav',{
+      method:'POST',body:new URLSearchParams({equal:'0',id:ticker,sday:asOf.slice(0,7).replace('-','/')+'/01',eday:asOf.replaceAll('-','/')}).toString()
+    });
+    return {...parseTaishinCurrent(profile,pcf,nav,ticker,asOf),sourceUrl:pcfUrl,receipts};
+  }
   else if(/玉山/.test(issuer)) await Promise.all(['profile','assets'].map(k=>runId(`esun-${k}-${ticker}`)));
   else if(/永豐/.test(issuer)) await get('sinopac-pcf-'+ticker,'https://sitc.sinopac.com/SinopacEtfs/Etfs/Pcf/'+ticker);
   else if(/野村/.test(issuer)) {
@@ -253,4 +307,4 @@ async function loadOfficial(ticker,options){
   }
   });
 }
-module.exports={loadOfficial,scopeFor,validStocks,parseCtbcPage,parseJpmProduct,kgiHoldingsDate,allianzHoldingsDate,hnHoldingsDate};
+module.exports={loadOfficial,scopeFor,validStocks,parseCtbcPage,parseJpmProduct,kgiHoldingsDate,allianzHoldingsDate,hnHoldingsDate,parseTaishinCurrent};
