@@ -95,7 +95,7 @@ function hnHoldingsDate(json,ticker,fundId,stocks,asOf){
   matchDatedStocks(stocks,validStocks([{type:'stock',items:(a.StockList||[]).map(r=>({code:r.StockNo,name:r.StockName,quantity:u.number(r.Share),weight:r.Weight==null?null:u.number(r.Weight)*100}))}]));
   return dates[0];
 }
-async function loadOfficial(ticker, {source, signal, asOf, etf}) {
+async function loadOfficialOnce(ticker, {source, signal, asOf, etf}) {
   if(scopeFor(ticker)!=='domestic_equity') throw Error('尚未確認為支援的國內股票型 ETF');
   const entry=scope.entries[ticker], issuer=entry.issuer, values=new Map(), receipts=[], failures=[];
   const records=[];
@@ -221,5 +221,23 @@ async function loadOfficial(ticker, {source, signal, asOf, etf}) {
     nav:a.nav>0&&u.date(a.navDate)?{value:a.nav,date:u.date(a.navDate)}:null,
     otherGroups:(a.groups||[]).filter(g=>g.type!=='stock').map(g=>({kind:g.type,rows:g.items.length,items:g.items.map(r=>({code:r.code,name:r.name,weight:r.weight,quantity:r.quantity}))})),
     issues:[...(!holdingsDate?['官方未明示可獨立核對的持股日期；公告日或淨值日不當成持股日']:[]),...failures,'股票以外資產未穿透至底層股票；已知股票資料不代表完整金融曝險']};
+}
+async function loadOfficial(ticker,options){
+  if(!/台新/.test(scope.entries[ticker]?.issuer||''))return loadOfficialOnce(ticker,options);
+  let blocked=false;
+  const source=async(...args)=>{const result=await options.source(...args);blocked=/captcha|cf-chl-|access denied|request rejected|機器人驗證|存取遭拒/i.test(result.text||'');return result;};
+  for(let attempt=0;attempt<2;attempt++){
+    try{
+      const data=await loadOfficialOnce(ticker,{...options,source});
+      if(attempt){data.officialAttempts=2;data.issues.unshift('官方來源首次讀取未通過；已重新讀取並通過本次身份與完整股票表核對');}
+      return data;
+    }catch(error){
+      const retryable=/timeout|timed out|aborted|fetch failed|ECONNRESET|ETIMEDOUT|ECONNREFUSED|EAI_AGAIN|UND_ERR_|HTTP 50[234]|^未取得身份相符的完整官方資產表$/i.test(error.message||'');
+      // One identical public read only. Never retry access denial, a challenge, malformed weights or an expired customer job.
+      if(attempt||blocked||options.signal.aborted||!retryable)throw error;
+      await new Promise(resolve=>setTimeout(resolve,250));
+      if(options.signal.aborted)throw error;
+    }
+  }
 }
 module.exports={loadOfficial,scopeFor,validStocks,parseCtbcPage,parseJpmProduct,kgiHoldingsDate,allianzHoldingsDate,hnHoldingsDate};
