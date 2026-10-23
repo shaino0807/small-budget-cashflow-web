@@ -137,3 +137,11 @@ test('Taishin actual source requests query TODAY only and bind latest NAV histor
  const requests=[];await loadOfficial('00936',{asOf:'2026-10-23',signal:new AbortController().signal,source:async(url,signal,options)=>{requests.push({url,options});return {text:syntheticTaishin(),receipt:{url,sha256:'synthetic'}};}});
  assert.equal(requests.length,3);assert.match(requests[1].url,/Pcf\/00936\?FundType=ALL&DataDate=2026-10-23$/);assert.equal(requests[2].options.method,'POST');assert.equal(new URLSearchParams(requests[2].options.body).get('eday'),'2026/10/23');assert.equal(new URLSearchParams(requests[2].options.body).get('id'),'00936');
 });
+test('Taishin generic HTTP200 server Error template retries once; denied or wrong-identity responses do not',async()=>{
+ const temporary='<title>Error</title><h2>Sorry, an error occurred while processing your request.</h2>';
+ for(const denied of [false,true]){let calls=0;const source=async url=>{calls++;return {text:calls===2?temporary+(denied?' Access denied':'' ):syntheticTaishin(),receipt:{url,sha256:'synthetic'}};};
+  if(denied){await assert.rejects(loadOfficial('00936',{asOf:'2026-10-23',signal:new AbortController().signal,source}));assert.equal(calls,3);}
+  else{const d=await loadOfficial('00936',{asOf:'2026-10-23',signal:new AbortController().signal,source});assert.equal(d.officialAttempts,2);assert.equal(calls,5);}
+ }
+ let calls=0;await assert.rejects(loadOfficial('00936',{asOf:'2026-10-23',signal:new AbortController().signal,source:async url=>{calls++;return {text:temporary,receipt:{url,sha256:'synthetic'}};}}));assert.equal(calls,2);
+});

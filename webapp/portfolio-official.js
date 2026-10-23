@@ -276,7 +276,7 @@ async function loadOfficialOnce(ticker, {source, signal, asOf, etf}) {
     otherGroups:(a.groups||[]).filter(g=>g.type!=='stock').map(g=>({kind:g.type,rows:g.items.length,items:g.items.map(r=>({code:r.code,name:r.name,weight:r.weight,quantity:r.quantity}))})),
     issues:[...(!holdingsDate?['官方未明示可獨立核對的持股日期；公告日或淨值日不當成持股日']:[]),...failures,'股票以外資產未穿透至底層股票；已知股票資料不代表完整金融曝險']};
 }
-let taishinTail=Promise.resolve(),taishinPending=0;
+let taishinTail=Promise.resolve(),taishinPending=0,taishinLastRead=0;
 async function withTaishinTurn(signal,task){
   if(signal.aborted)throw Error('官方資料核對已逾時');
   if(taishinPending>=32)throw Error('官方來源核對佇列已滿，請稍後重試');
@@ -291,14 +291,25 @@ async function loadOfficial(ticker,options){
   if(!/台新/.test(scope.entries[ticker]?.issuer||''))return loadOfficialOnce(ticker,options);
   return withTaishinTurn(options.signal,async()=>{
   let blocked=false;
-  const source=async(...args)=>{const result=await options.source(...args);blocked=/captcha|cf-chl-|access denied|request rejected|機器人驗證|存取遭拒/i.test(result.text||'');return result;};
+  const source=async(...args)=>{
+    const pause=400-(Date.now()-taishinLastRead);
+    if(pause>0)await new Promise(resolve=>setTimeout(resolve,pause));
+    if(options.signal.aborted)throw Error('官方資料核對已逾時');
+    taishinLastRead=Date.now();
+    const result=await options.source(...args),html=result.text||'';
+    blocked=/captcha|cf-chl-|access denied|request rejected|機器人驗證|存取遭拒|unauthorized|forbidden|permission denied/i.test(html);
+    // ASP.NET can return its generic temporary error template with HTTP200.
+    // Do not classify a wrong fund, empty portfolio, denial or challenge as it.
+    if(!blocked&&Buffer.byteLength(html)<2048&&/^\s*Error\s*$/i.test(u.text(html.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i)?.[1]||''))&&/an error occurred while processing your request/i.test(u.text(html)))throw Error('台新官方暫時錯誤頁');
+    return result;
+  };
   for(let attempt=0;attempt<2;attempt++){
     try{
       const data=await loadOfficialOnce(ticker,{...options,source});
       if(attempt){data.officialAttempts=2;data.issues.unshift('官方來源首次讀取未通過；已重新讀取並通過本次身份與完整股票表核對');}
       return data;
     }catch(error){
-      const retryable=/timeout|timed out|aborted|fetch failed|ECONNRESET|ETIMEDOUT|ECONNREFUSED|EAI_AGAIN|UND_ERR_|HTTP 50[234]|^未取得身份相符的完整官方資產表$/i.test(error.message||'');
+      const retryable=/timeout|timed out|aborted|fetch failed|ECONNRESET|ETIMEDOUT|ECONNREFUSED|EAI_AGAIN|UND_ERR_|HTTP 50[234]|^未取得身份相符的完整官方資產表$|^台新官方暫時錯誤頁$/i.test(error.message||'');
       // One identical public read only. Never retry access denial, a challenge, malformed weights or an expired customer job.
       if(attempt||blocked||options.signal.aborted||!retryable)throw error;
       await new Promise(resolve=>setTimeout(resolve,250));
