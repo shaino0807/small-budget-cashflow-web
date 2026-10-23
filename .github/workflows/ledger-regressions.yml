@@ -8,6 +8,10 @@ on:
         description: 'Only verify the production Node 24 Alpine container, including real official first use'
         type: boolean
         default: false
+      source_diagnostics:
+        description: 'Only capture redacted public issuer diagnostics; not a release or financial acceptance test'
+        type: boolean
+        default: false
   pull_request:
     paths:
       - 'webapp/**'
@@ -19,7 +23,7 @@ permissions:
 
 jobs:
   ledger:
-    if: ${{ github.event_name != 'workflow_dispatch' || !inputs.runtime_only }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (!inputs.runtime_only && !inputs.source_diagnostics) }}
     runs-on: windows-latest
     timeout-minutes: 15
     steps:
@@ -58,7 +62,11 @@ jobs:
       - name: Build the production Dockerfile without production credentials
         run: docker build -t portfolio-candidate ./webapp
       - name: Verify calculations, cache, parsing and error guards on Node 24 Alpine
+        if: ${{ !inputs.source_diagnostics }}
         run: docker run --rm portfolio-candidate node --test scripts/test-portfolio-demand.js scripts/test-portfolio-first-use.js scripts/test-portfolio-domestic.js scripts/test-portfolio-valuation.js scripts/test-market-reader.js
       - name: Verify real official sources and empty-cache API on Node 24 Alpine
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.runtime_only }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.runtime_only && !inputs.source_diagnostics }}
         run: docker run --rm portfolio-candidate node scripts/verify-portfolio-runtime.js
+      - name: Capture bounded redacted issuer diagnostics only
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.source_diagnostics }}
+        run: docker run --rm portfolio-candidate node scripts/diagnose-taishin-source.js
