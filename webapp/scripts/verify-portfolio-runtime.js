@@ -21,4 +21,16 @@ async function main(){
   const repeated=await fetch(target+'/api/market/portfolio',{method:'POST',headers:{'Content-Type':'application/json',Origin:target},body:JSON.stringify({tickers})});let cached=(await repeated.json()).job;for(let i=0;i<20;i++){cached=(await(await fetch(target+'/api/market/portfolio/'+cached.id)).json()).job;if(cached.status!=='running')break;await wait(50);}assert(Object.values(cached.data).every(d=>d.status==='cached'));result.tests.push('successful evidence persists and reuses within the same-day five-minute limit');
   for(const file of ['/portfolio-market.js','/portfolio-official.js','/portfolio-valuation.js','/portfolio-transport.js','/certificates/chunghwa-gcc-r46-ov-tls-2025.pem'])assert.equal((await fetch(target+file)).status,404);result.tests.push('backend source and certificate are not served publicly');result.pass=true;
 }
-main().catch(e=>{result.pass=false;result.error=e.stack;process.exitCode=1;}).finally(()=>{server?.kill();const output=process.argv[2];if(output)fs.writeFileSync(output,JSON.stringify(result,null,2));console.log(JSON.stringify(result,null,2));});
+main().catch(e=>{result.pass=false;result.error=e.stack;process.exitCode=1;}).finally(()=>{
+  server?.kill();
+  const sources=path.join(dir,'portfolio-market','sources');
+  result.sourceDiagnostics=[];
+  if(fs.existsSync(sources))for(const file of fs.readdirSync(sources).filter(f=>/^[a-f0-9]{64}\.json$/.test(f))){
+    const receipt=JSON.parse(fs.readFileSync(path.join(sources,file)));if(!receipt.url.includes('tsit.com.tw'))continue;
+    const body=fs.readFileSync(path.join(sources,file.replace('.json','.raw')),'utf8');
+    result.sourceDiagnostics.push({url:receipt.url,status:receipt.httpStatus,sha256:receipt.sha256,bytes:Buffer.byteLength(body),
+      title:body.match(/<title[^>]*>([^<]*)/i)?.[1]?.slice(0,150),
+      selectedCodesPresent:tickers.filter(t=>body.includes(t)),challengeDetected:/captcha|cf-chl-|access denied|request rejected|機器人驗證/i.test(body)});
+  }
+  const output=process.argv[2];if(output)fs.writeFileSync(output,JSON.stringify(result,null,2));console.log(JSON.stringify(result,null,2));
+});
