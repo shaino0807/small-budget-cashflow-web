@@ -32,6 +32,12 @@ async function main(){
    await key('Tab');item.firstTab=await evaluate('document.activeElement.id');assert.equal(item.firstTab,'reloadDataBtn');
    item.focusOutline=await evaluate('getComputedStyle(document.activeElement).outlineStyle');assert.notEqual(item.focusOutline,'none');
    await key('Tab');assert.equal(await evaluate('document.activeElement.id'),'priceChartSearch');
+   // Enter before the demand-loaded catalog has necessarily resolved; the intent must survive.
+   item.catalogPendingAtEarlyInput=await evaluate('!etfDatabase');
+   await send('Input.insertText',{text:'0050'});await key('Enter','Enter',13);
+   for(let i=0;i<120;i++){if(await evaluate('priceChartTickers.includes("0050")'))break;await sleep(100);}
+   assert(await evaluate('priceChartTickers.includes("0050")'),'early input retained until catalog resolves');
+   await evaluate('document.querySelector("[data-remove-chart=\\"0050\\"]").click()');
    await send('Input.insertText',{text:'不存在的 ETF'});await key('Enter','Enter',13);
    item.invalidInput=await evaluate('document.querySelector("#priceChartSearch").getAttribute("aria-invalid")');assert.equal(item.invalidInput,'true');
    for(const text of ['0050','元大高股息']){

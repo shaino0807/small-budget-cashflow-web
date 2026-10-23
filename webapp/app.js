@@ -3686,8 +3686,10 @@ function renderPriceChartControls() {
 }
 
 function bindEtfChartControls() {
-  q("#addPriceChartEtf").addEventListener("click", () => {
-    const etf = etfData.resolveEtf(etfDatabase, q("#priceChartSearch").value);
+  q("#addPriceChartEtf").addEventListener("click", async () => {
+    const entered = q("#priceChartSearch").value;
+    if(!etfDatabase){q("#priceChartStatus").textContent="正在載入 ETF 清單，完成後會加入剛才輸入的標的…";await ensurePortfolioCatalog();}
+    const etf = etfData.resolveEtf(etfDatabase, entered);
     if (!etf) { q("#priceChartStatus").textContent = "請從搜尋建議選擇正確 ETF 代號；有多筆結果時不會自動猜選。"; q("#priceChartSearch").setAttribute("aria-invalid", "true"); q("#priceChartSearch").focus(); return; }
     q("#priceChartSearch").removeAttribute("aria-invalid");
     priceChartTickers = [...new Set([...priceChartTickers, etf.ticker])];
