@@ -222,8 +222,20 @@ async function loadOfficialOnce(ticker, {source, signal, asOf, etf}) {
     otherGroups:(a.groups||[]).filter(g=>g.type!=='stock').map(g=>({kind:g.type,rows:g.items.length,items:g.items.map(r=>({code:r.code,name:r.name,weight:r.weight,quantity:r.quantity}))})),
     issues:[...(!holdingsDate?['官方未明示可獨立核對的持股日期；公告日或淨值日不當成持股日']:[]),...failures,'股票以外資產未穿透至底層股票；已知股票資料不代表完整金融曝險']};
 }
+let taishinTail=Promise.resolve(),taishinPending=0;
+async function withTaishinTurn(signal,task){
+  if(signal.aborted)throw Error('官方資料核對已逾時');
+  if(taishinPending>=32)throw Error('官方來源核對佇列已滿，請稍後重試');
+  taishinPending++;const previous=taishinTail;let release,onAbort;
+  const ticket=new Promise(resolve=>{release=resolve;});taishinTail=previous.then(()=>ticket);
+  try{
+    await Promise.race([previous,new Promise((_,reject)=>{onAbort=()=>reject(Error('官方資料核對已逾時'));signal.addEventListener('abort',onAbort,{once:true});})]);
+    if(signal.aborted)throw Error('官方資料核對已逾時');return await task();
+  }finally{signal.removeEventListener('abort',onAbort);taishinPending--;release();}
+}
 async function loadOfficial(ticker,options){
   if(!/台新/.test(scope.entries[ticker]?.issuer||''))return loadOfficialOnce(ticker,options);
+  return withTaishinTurn(options.signal,async()=>{
   let blocked=false;
   const source=async(...args)=>{const result=await options.source(...args);blocked=/captcha|cf-chl-|access denied|request rejected|機器人驗證|存取遭拒/i.test(result.text||'');return result;};
   for(let attempt=0;attempt<2;attempt++){
@@ -239,5 +251,6 @@ async function loadOfficial(ticker,options){
       if(options.signal.aborted)throw error;
     }
   }
+  });
 }
 module.exports={loadOfficial,scopeFor,validStocks,parseCtbcPage,parseJpmProduct,kgiHoldingsDate,allianzHoldingsDate,hnHoldingsDate};

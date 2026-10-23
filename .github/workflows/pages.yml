@@ -7,6 +7,11 @@ on:
   schedule:
     - cron: "30 0 * * *"
   workflow_dispatch:
+    inputs:
+      refresh_market_data:
+        description: 'Refresh the saved market snapshot before deployment (scheduled runs always refresh)'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -42,6 +47,7 @@ jobs:
           node-version: "22"
 
       - name: Update official ETF database
+        if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.refresh_market_data) }}
         env:
           DATA_BATCH_DIR: webapp/data/batches
         run: node webapp/scripts/refresh-official-database.js
@@ -60,6 +66,7 @@ jobs:
           node webapp/scripts/validate-etf-data.js
 
       - name: Commit refreshed database
+        if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.refresh_market_data) }}
         run: |
           if [ -n "$(git status --porcelain webapp/data/etf-database.json webapp/data/batches)" ]; then
             git config user.name "github-actions[bot]"
