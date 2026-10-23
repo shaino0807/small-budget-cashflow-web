@@ -1,0 +1,3679 @@
+{
+  "version": 1,
+  "observedAt": "2026-10-22T17:00:02.359Z",
+  "basis": "Official TWSE classification and foreign-constituent flag; TPEx fund-specific classification; current listed universe from existing official master. No name-based country inference.",
+  "entries": {
+    "00400A": {
+      "ticker": "00400A",
+      "name": "主動國泰動能高息",
+      "issuer": "國泰證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券主動式交易所交易基金(股票)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00401A": {
+      "ticker": "00401A",
+      "name": "主動摩根台灣鑫收",
+      "issuer": "摩根證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券主動式交易所交易基金(股票)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00402A": {
+      "ticker": "00402A",
+      "name": "主動安聯美國科技",
+      "issuer": "安聯證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券主動式交易所交易基金(股票)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00403A": {
+      "ticker": "00403A",
+      "name": "主動統一升級50",
+      "issuer": "統一證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券主動式交易所交易基金(股票)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00404A": {
+      "ticker": "00404A",
+      "name": "主動聯博動能50",
+      "issuer": "聯博證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券主動式交易所交易基金(股票)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021",
+      "profileEvidence": [
+        {
+          "id": "ab-profile-TW00000404A5",
+          "url": "https://webapi.alliancebernstein.com/v2/funds/tw/zh-tw/investor/TW00000404A5"
+        }
+      ]
+    },
+    "00405A": {
+      "ticker": "00405A",
+      "name": "主動富邦台灣龍耀",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券主動式交易所交易基金(股票)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00406A": {
+      "ticker": "00406A",
+      "name": "主動中信台灣收益",
+      "issuer": "中國信託證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券主動式交易所交易基金(股票)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00407A": {
+      "ticker": "00407A",
+      "name": "主動凱基台灣",
+      "issuer": "凱基證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券主動式交易所交易基金(股票)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00408A": {
+      "ticker": "00408A",
+      "name": "主動第一金優股息",
+      "issuer": "第一金證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券主動式交易所交易基金(股票)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00409A": {
+      "ticker": "00409A",
+      "name": "主動復華全球50",
+      "issuer": "復華證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券主動式交易所交易基金(股票)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00410A": {
+      "ticker": "00410A",
+      "name": "主動永豐科技趨勢",
+      "issuer": "永豐證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券主動式交易所交易基金(股票)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00411A": {
+      "ticker": "00411A",
+      "name": "主動統一前沿科技",
+      "issuer": "統一投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "國外成分股ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00411A",
+      "profileDate": null
+    },
+    "00412A": {
+      "ticker": "00412A",
+      "name": "主動安聯亞半導體",
+      "issuer": "安聯證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券主動式交易所交易基金(股票)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00415A": {
+      "ticker": "00415A",
+      "name": "主動群益核心50",
+      "issuer": "群益證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券主動式交易所交易基金(股票)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "0050": {
+      "ticker": "0050",
+      "name": "元大台灣50",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "0051": {
+      "ticker": "0051",
+      "name": "元大中型100",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "0052": {
+      "ticker": "0052",
+      "name": "富邦科技",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "0053": {
+      "ticker": "0053",
+      "name": "元大科技市值",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "0055": {
+      "ticker": "0055",
+      "name": "元大MSCI金融",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "0056": {
+      "ticker": "0056",
+      "name": "元大高股息",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "0057": {
+      "ticker": "0057",
+      "name": "富邦摩台",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "0061": {
+      "ticker": "0061",
+      "name": "元大寶滬深",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "連結式證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "006201": {
+      "ticker": "006201",
+      "name": "元大富櫃50",
+      "issuer": "元大投信",
+      "market": "TPEx",
+      "scope": "domestic_equity",
+      "classification": "國內成分股ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=006201",
+      "profileDate": null
+    },
+    "006203": {
+      "ticker": "006203",
+      "name": "元大MSCI台灣",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "006204": {
+      "ticker": "006204",
+      "name": "永豐臺灣加權",
+      "issuer": "永豐證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "006205": {
+      "ticker": "006205",
+      "name": "富邦上証(新臺幣)",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "006206": {
+      "ticker": "006206",
+      "name": "元大上證50",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "006207": {
+      "ticker": "006207",
+      "name": "復華滬深(原簡稱:FH滬深)",
+      "issuer": "復華證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "006208": {
+      "ticker": "006208",
+      "name": "富邦台50",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00625K": {
+      "ticker": "00625K",
+      "name": "富邦上証+R(人民幣)",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成份/加掛外幣證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00631L": {
+      "ticker": "00631L",
+      "name": "元大台灣50正2",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00632R": {
+      "ticker": "00632R",
+      "name": "元大台灣50反1",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00633L": {
+      "ticker": "00633L",
+      "name": "富邦上証正2",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00634R": {
+      "ticker": "00634R",
+      "name": "富邦上証反1",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00635U": {
+      "ticker": "00635U",
+      "name": "期元大S&P黃金",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "指數股票型期貨信託基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00636": {
+      "ticker": "00636",
+      "name": "國泰中國A50(新臺幣)",
+      "issuer": "國泰證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00636K": {
+      "ticker": "00636K",
+      "name": "國泰中國A50+U(美元)",
+      "issuer": "國泰證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成份/加掛外幣證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00637L": {
+      "ticker": "00637L",
+      "name": "元大滬深300正2",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00638R": {
+      "ticker": "00638R",
+      "name": "元大滬深300反1",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00639": {
+      "ticker": "00639",
+      "name": "富邦深100",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00640L": {
+      "ticker": "00640L",
+      "name": "富邦日本正2",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00641R": {
+      "ticker": "00641R",
+      "name": "富邦日本反1",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00642U": {
+      "ticker": "00642U",
+      "name": "期元大S&P石油",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "指數股票型期貨信託基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00643": {
+      "ticker": "00643",
+      "name": "群益深証中小(新臺幣)",
+      "issuer": "群益證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00643K": {
+      "ticker": "00643K",
+      "name": "群益深証中小+R(人民幣)",
+      "issuer": "群益證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成份/加掛外幣證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00645": {
+      "ticker": "00645",
+      "name": "富邦日本",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00646": {
+      "ticker": "00646",
+      "name": "元大S&P500",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00647L": {
+      "ticker": "00647L",
+      "name": "元大S&P500正2",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00648R": {
+      "ticker": "00648R",
+      "name": "元大S&P500反1",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00650L": {
+      "ticker": "00650L",
+      "name": "復華香港正2(原簡稱:FH香港正2)",
+      "issuer": "復華證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00651R": {
+      "ticker": "00651R",
+      "name": "復華香港反1(原簡稱:FH香港反1)",
+      "issuer": "復華證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00652": {
+      "ticker": "00652",
+      "name": "富邦印度",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00653L": {
+      "ticker": "00653L",
+      "name": "富邦印度正2",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00654R": {
+      "ticker": "00654R",
+      "name": "富邦印度反1",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00655L": {
+      "ticker": "00655L",
+      "name": "國泰中國A50正2",
+      "issuer": "國泰證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00656R": {
+      "ticker": "00656R",
+      "name": "國泰中國A50反1",
+      "issuer": "國泰證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00657": {
+      "ticker": "00657",
+      "name": "國泰日經225(新臺幣)",
+      "issuer": "國泰證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00657K": {
+      "ticker": "00657K",
+      "name": "國泰日經225+U(美元)",
+      "issuer": "國泰證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成份/加掛外幣證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00660": {
+      "ticker": "00660",
+      "name": "元大歐洲50",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00661": {
+      "ticker": "00661",
+      "name": "元大日經225",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00662": {
+      "ticker": "00662",
+      "name": "富邦NASDAQ",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00663L": {
+      "ticker": "00663L",
+      "name": "國泰臺灣加權正2",
+      "issuer": "國泰證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00664R": {
+      "ticker": "00664R",
+      "name": "國泰臺灣加權反一",
+      "issuer": "國泰證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00665L": {
+      "ticker": "00665L",
+      "name": "富邦恒生國企正2",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00666R": {
+      "ticker": "00666R",
+      "name": "富邦恒生國企反1",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00668": {
+      "ticker": "00668",
+      "name": "國泰美國道瓊(新臺幣)",
+      "issuer": "國泰證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00668K": {
+      "ticker": "00668K",
+      "name": "國泰美國道瓊+U(美元)",
+      "issuer": "國泰證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成份/加掛外幣證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00669R": {
+      "ticker": "00669R",
+      "name": "國泰美國道瓊反1",
+      "issuer": "國泰證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00670L": {
+      "ticker": "00670L",
+      "name": "富邦NASDAQ正2",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00671R": {
+      "ticker": "00671R",
+      "name": "富邦NASDAQ反1",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00673R": {
+      "ticker": "00673R",
+      "name": "期元大S&P原油反1",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00674R": {
+      "ticker": "00674R",
+      "name": "期元大S&P黃金反1",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00675L": {
+      "ticker": "00675L",
+      "name": "富邦臺灣加權正2",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00676R": {
+      "ticker": "00676R",
+      "name": "富邦臺灣加權反1",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00678": {
+      "ticker": "00678",
+      "name": "群益那斯達克生技(原簡稱:群益NBI生技)",
+      "issuer": "群益證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00679B": {
+      "ticker": "00679B",
+      "name": "元大美債20年",
+      "issuer": "元大投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00679B",
+      "profileDate": null
+    },
+    "00680L": {
+      "ticker": "00680L",
+      "name": "元大美債20正2",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00681R": {
+      "ticker": "00681R",
+      "name": "元大美債20反1",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00682U": {
+      "ticker": "00682U",
+      "name": "期元大美元指數",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "指數股票型期貨信託基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00683L": {
+      "ticker": "00683L",
+      "name": "期元大美元指正2",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00684R": {
+      "ticker": "00684R",
+      "name": "期元大美元指反1",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00685L": {
+      "ticker": "00685L",
+      "name": "群益臺灣加權正2",
+      "issuer": "群益證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00686R": {
+      "ticker": "00686R",
+      "name": "群益臺灣加權反1",
+      "issuer": "群益證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00687B": {
+      "ticker": "00687B",
+      "name": "國泰20年美債",
+      "issuer": "國泰投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00687B",
+      "profileDate": null
+    },
+    "00687C": {
+      "ticker": "00687C",
+      "name": "國泰20年美債+櫃U(美元)",
+      "issuer": "國泰投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00687C",
+      "profileDate": null
+    },
+    "00688L": {
+      "ticker": "00688L",
+      "name": "國泰20年美債正2",
+      "issuer": "國泰證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00689R": {
+      "ticker": "00689R",
+      "name": "國泰20年美債反1",
+      "issuer": "國泰證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00690": {
+      "ticker": "00690",
+      "name": "兆豐藍籌30",
+      "issuer": "兆豐國際證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021",
+      "profileEvidence": [
+        {
+          "id": "mega-detail-id-5",
+          "url": "https://www.megafunds.com.tw/MEGA/etf/etf_product.aspx?id=5"
+        }
+      ]
+    },
+    "00692": {
+      "ticker": "00692",
+      "name": "富邦公司治理",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00693U": {
+      "ticker": "00693U",
+      "name": "期街口S&P黃豆",
+      "issuer": "街口證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "指數股票型期貨信託基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00694B": {
+      "ticker": "00694B",
+      "name": "富邦美債1-3",
+      "issuer": "富邦投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00694B",
+      "profileDate": null
+    },
+    "00695B": {
+      "ticker": "00695B",
+      "name": "富邦美債7-10",
+      "issuer": "富邦投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00695B",
+      "profileDate": null
+    },
+    "00696B": {
+      "ticker": "00696B",
+      "name": "富邦美債20年",
+      "issuer": "富邦投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00696B",
+      "profileDate": null
+    },
+    "00697B": {
+      "ticker": "00697B",
+      "name": "元大美債7-10",
+      "issuer": "元大投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00697B",
+      "profileDate": null
+    },
+    "00700": {
+      "ticker": "00700",
+      "name": "富邦恒生國企",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00701": {
+      "ticker": "00701",
+      "name": "國泰股利精選30",
+      "issuer": "國泰證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00702": {
+      "ticker": "00702",
+      "name": "國泰標普低波高息",
+      "issuer": "國泰證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00703": {
+      "ticker": "00703",
+      "name": "台新MSCI中國",
+      "issuer": "台新證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00706L": {
+      "ticker": "00706L",
+      "name": "期元大S&P日圓正2",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00707R": {
+      "ticker": "00707R",
+      "name": "期元大S&P日圓反1",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00708L": {
+      "ticker": "00708L",
+      "name": "期元大S&P黃金正2",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00709": {
+      "ticker": "00709",
+      "name": "富邦歐洲",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00710B": {
+      "ticker": "00710B",
+      "name": "復華彭博非投等債(原簡稱:FH彭博非投等債)",
+      "issuer": "復華證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00711B": {
+      "ticker": "00711B",
+      "name": "復華彭博新興債(原簡稱:FH彭博新興債)",
+      "issuer": "復華證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00712": {
+      "ticker": "00712",
+      "name": "復華富時不動產(原簡稱:FH富時不動產)",
+      "issuer": "復華證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00713": {
+      "ticker": "00713",
+      "name": "元大台灣高息低波",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00714": {
+      "ticker": "00714",
+      "name": "群益道瓊美國地產",
+      "issuer": "群益證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00715L": {
+      "ticker": "00715L",
+      "name": "期街口布蘭特正2",
+      "issuer": "街口證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00717": {
+      "ticker": "00717",
+      "name": "富邦美國特別股",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00719B": {
+      "ticker": "00719B",
+      "name": "元大美債1-3",
+      "issuer": "元大投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00719B",
+      "profileDate": null
+    },
+    "00720B": {
+      "ticker": "00720B",
+      "name": "元大投資級公司債",
+      "issuer": "元大投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00720B",
+      "profileDate": null
+    },
+    "00722B": {
+      "ticker": "00722B",
+      "name": "群益投資級電信債",
+      "issuer": "群益投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00722B",
+      "profileDate": null
+    },
+    "00723B": {
+      "ticker": "00723B",
+      "name": "群益投資級科技債",
+      "issuer": "群益投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00723B",
+      "profileDate": null
+    },
+    "00724B": {
+      "ticker": "00724B",
+      "name": "群益投資級金融債",
+      "issuer": "群益投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00724B",
+      "profileDate": null
+    },
+    "00725B": {
+      "ticker": "00725B",
+      "name": "國泰投資級公司債",
+      "issuer": "國泰投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00725B",
+      "profileDate": null
+    },
+    "00726B": {
+      "ticker": "00726B",
+      "name": "國泰新興投等債",
+      "issuer": "國泰投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00726B",
+      "profileDate": null
+    },
+    "00727B": {
+      "ticker": "00727B",
+      "name": "國泰優選非投等債",
+      "issuer": "國泰投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00727B",
+      "profileDate": null
+    },
+    "00728": {
+      "ticker": "00728",
+      "name": "第一金工業30",
+      "issuer": "第一金證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00730": {
+      "ticker": "00730",
+      "name": "富邦臺灣優質高息",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00731": {
+      "ticker": "00731",
+      "name": "復華富時高息低波(原簡稱:FH富時高息低波)",
+      "issuer": "復華證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00733": {
+      "ticker": "00733",
+      "name": "富邦臺灣中小",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00734B": {
+      "ticker": "00734B",
+      "name": "台新JPM新興債",
+      "issuer": "台新投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00734B",
+      "profileDate": null
+    },
+    "00735": {
+      "ticker": "00735",
+      "name": "國泰臺韓科技",
+      "issuer": "國泰證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00736": {
+      "ticker": "00736",
+      "name": "國泰新興市場",
+      "issuer": "國泰證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00737": {
+      "ticker": "00737",
+      "name": "國泰AI機器人",
+      "issuer": "國泰證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00738U": {
+      "ticker": "00738U",
+      "name": "期元大道瓊白銀",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "指數股票型期貨信託基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00739": {
+      "ticker": "00739",
+      "name": "元大MSCI A股",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00740B": {
+      "ticker": "00740B",
+      "name": "富邦全球投等債",
+      "issuer": "富邦投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00740B",
+      "profileDate": null
+    },
+    "00741B": {
+      "ticker": "00741B",
+      "name": "富邦全球非投等債",
+      "issuer": "富邦投信",
+      "market": "TPEx",
+      "scope": "unverified",
+      "classification": null,
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": null
+    },
+    "00746B": {
+      "ticker": "00746B",
+      "name": "富邦A級公司債",
+      "issuer": "富邦投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00746B",
+      "profileDate": null
+    },
+    "00749B": {
+      "ticker": "00749B",
+      "name": "凱基新興債10+",
+      "issuer": "凱基投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00749B",
+      "profileDate": null
+    },
+    "00750B": {
+      "ticker": "00750B",
+      "name": "凱基科技債10+",
+      "issuer": "凱基投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00750B",
+      "profileDate": null
+    },
+    "00751B": {
+      "ticker": "00751B",
+      "name": "元大AAA至A公司債",
+      "issuer": "元大投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00751B",
+      "profileDate": null
+    },
+    "00752": {
+      "ticker": "00752",
+      "name": "中信中國50",
+      "issuer": "中國信託證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00753L": {
+      "ticker": "00753L",
+      "name": "中信中國50正2",
+      "issuer": "中國信託證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00754B": {
+      "ticker": "00754B",
+      "name": "群益AAA-AA公司債",
+      "issuer": "群益投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00754B",
+      "profileDate": null
+    },
+    "00755B": {
+      "ticker": "00755B",
+      "name": "群益投資級公用債",
+      "issuer": "群益投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00755B",
+      "profileDate": null
+    },
+    "00756B": {
+      "ticker": "00756B",
+      "name": "群益投等新興公債",
+      "issuer": "群益投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00756B",
+      "profileDate": null
+    },
+    "00757": {
+      "ticker": "00757",
+      "name": "統一FANG+",
+      "issuer": "統一證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00758B": {
+      "ticker": "00758B",
+      "name": "復華能源債",
+      "issuer": "復華投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00758B",
+      "profileDate": null
+    },
+    "00759B": {
+      "ticker": "00759B",
+      "name": "復華製藥債",
+      "issuer": "復華投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00759B",
+      "profileDate": null
+    },
+    "00760B": {
+      "ticker": "00760B",
+      "name": "復華新興企業債",
+      "issuer": "復華投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00760B",
+      "profileDate": null
+    },
+    "00761B": {
+      "ticker": "00761B",
+      "name": "國泰A級公司債",
+      "issuer": "國泰投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00761B",
+      "profileDate": null
+    },
+    "00762": {
+      "ticker": "00762",
+      "name": "元大全球AI",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00763U": {
+      "ticker": "00763U",
+      "name": "期街口道瓊銅",
+      "issuer": "街口證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "指數股票型期貨信託基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00764B": {
+      "ticker": "00764B",
+      "name": "群益25年美債",
+      "issuer": "群益投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00764B",
+      "profileDate": null
+    },
+    "00768B": {
+      "ticker": "00768B",
+      "name": "復華20年美債",
+      "issuer": "復華投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00768B",
+      "profileDate": null
+    },
+    "00770": {
+      "ticker": "00770",
+      "name": "國泰北美科技",
+      "issuer": "國泰證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00771": {
+      "ticker": "00771",
+      "name": "元大US高息特別股",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00772B": {
+      "ticker": "00772B",
+      "name": "中信高評級公司債",
+      "issuer": "中信投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00772B",
+      "profileDate": null
+    },
+    "00773B": {
+      "ticker": "00773B",
+      "name": "中信優先金融債",
+      "issuer": "中信投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00773B",
+      "profileDate": null
+    },
+    "00775B": {
+      "ticker": "00775B",
+      "name": "台新投等債15+",
+      "issuer": "台新證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00777B": {
+      "ticker": "00777B",
+      "name": "凱基AAA至A公司債",
+      "issuer": "凱基投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00777B",
+      "profileDate": null
+    },
+    "00778B": {
+      "ticker": "00778B",
+      "name": "凱基金融債20+",
+      "issuer": "凱基投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00778B",
+      "profileDate": null
+    },
+    "00779B": {
+      "ticker": "00779B",
+      "name": "凱基美債25+",
+      "issuer": "凱基投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00779B",
+      "profileDate": null
+    },
+    "00780B": {
+      "ticker": "00780B",
+      "name": "國泰A級金融債",
+      "issuer": "國泰投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00780B",
+      "profileDate": null
+    },
+    "00781B": {
+      "ticker": "00781B",
+      "name": "國泰A級科技債",
+      "issuer": "國泰投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00781B",
+      "profileDate": null
+    },
+    "00782B": {
+      "ticker": "00782B",
+      "name": "國泰A級公用債",
+      "issuer": "國泰投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00782B",
+      "profileDate": null
+    },
+    "00783": {
+      "ticker": "00783",
+      "name": "富邦中証500",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00785B": {
+      "ticker": "00785B",
+      "name": "富邦金融投等債",
+      "issuer": "富邦投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00785B",
+      "profileDate": null
+    },
+    "00786B": {
+      "ticker": "00786B",
+      "name": "元大10年IG銀行債",
+      "issuer": "元大投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00786B",
+      "profileDate": null
+    },
+    "00787B": {
+      "ticker": "00787B",
+      "name": "元大10年IG醫療債",
+      "issuer": "元大投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00787B",
+      "profileDate": null
+    },
+    "00788B": {
+      "ticker": "00788B",
+      "name": "元大10年IG電能債",
+      "issuer": "元大投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00788B",
+      "profileDate": null
+    },
+    "00789B": {
+      "ticker": "00789B",
+      "name": "復華公司債A3",
+      "issuer": "復華投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00789B",
+      "profileDate": null
+    },
+    "00791B": {
+      "ticker": "00791B",
+      "name": "復華信用債1-5Y",
+      "issuer": "復華投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00791B",
+      "profileDate": null
+    },
+    "00792B": {
+      "ticker": "00792B",
+      "name": "群益A級公司債",
+      "issuer": "群益投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00792B",
+      "profileDate": null
+    },
+    "00795B": {
+      "ticker": "00795B",
+      "name": "中信美國公債20年",
+      "issuer": "中信投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00795B",
+      "profileDate": null
+    },
+    "00799B": {
+      "ticker": "00799B",
+      "name": "國泰A級醫療債",
+      "issuer": "國泰投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00799B",
+      "profileDate": null
+    },
+    "00830": {
+      "ticker": "00830",
+      "name": "國泰費城半導體",
+      "issuer": "國泰證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00834B": {
+      "ticker": "00834B",
+      "name": "第一金金融債10+",
+      "issuer": "第一金投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00834B",
+      "profileDate": null
+    },
+    "00836B": {
+      "ticker": "00836B",
+      "name": "永豐10年A公司債",
+      "issuer": "永豐投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00836B",
+      "profileDate": null
+    },
+    "00840B": {
+      "ticker": "00840B",
+      "name": "凱基IG精選15+",
+      "issuer": "凱基投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00840B",
+      "profileDate": null
+    },
+    "00841B": {
+      "ticker": "00841B",
+      "name": "凱基AAA-AA公司債",
+      "issuer": "凱基投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00841B",
+      "profileDate": null
+    },
+    "00842B": {
+      "ticker": "00842B",
+      "name": "台新美元銀行債",
+      "issuer": "台新投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00842B",
+      "profileDate": null
+    },
+    "00844B": {
+      "ticker": "00844B",
+      "name": "台新15年IG金融債",
+      "issuer": "台新投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00844B",
+      "profileDate": null
+    },
+    "00845B": {
+      "ticker": "00845B",
+      "name": "富邦新興投等債",
+      "issuer": "富邦投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00845B",
+      "profileDate": null
+    },
+    "00846B": {
+      "ticker": "00846B",
+      "name": "富邦歐洲銀行債",
+      "issuer": "富邦投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00846B",
+      "profileDate": null
+    },
+    "00848B": {
+      "ticker": "00848B",
+      "name": "中信新興亞洲債",
+      "issuer": "中信投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00848B",
+      "profileDate": null
+    },
+    "00849B": {
+      "ticker": "00849B",
+      "name": "中信EM主權債0-5",
+      "issuer": "中信投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00849B",
+      "profileDate": null
+    },
+    "00850": {
+      "ticker": "00850",
+      "name": "元大臺灣ESG永續",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00851": {
+      "ticker": "00851",
+      "name": "台新全球AI",
+      "issuer": "台新證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00852L": {
+      "ticker": "00852L",
+      "name": "國泰美國道瓊正2",
+      "issuer": "國泰證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "槓桿/反向指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00853B": {
+      "ticker": "00853B",
+      "name": "統一美債10年Aa-A",
+      "issuer": "統一投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00853B",
+      "profileDate": null
+    },
+    "00856B": {
+      "ticker": "00856B",
+      "name": "永豐1-3年美公債",
+      "issuer": "永豐投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00856B",
+      "profileDate": null
+    },
+    "00857B": {
+      "ticker": "00857B",
+      "name": "永豐20年美公債",
+      "issuer": "永豐投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00857B",
+      "profileDate": null
+    },
+    "00858": {
+      "ticker": "00858",
+      "name": "永豐美國500大",
+      "issuer": "永豐投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "國外成分股ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00858",
+      "profileDate": null
+    },
+    "00859B": {
+      "ticker": "00859B",
+      "name": "群益0-1年美債",
+      "issuer": "群益投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00859B",
+      "profileDate": null
+    },
+    "00860B": {
+      "ticker": "00860B",
+      "name": "群益1-5Y投資級債",
+      "issuer": "群益投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00860B",
+      "profileDate": null
+    },
+    "00861": {
+      "ticker": "00861",
+      "name": "元大全球未來通訊",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00862B": {
+      "ticker": "00862B",
+      "name": "中信投資級公司債",
+      "issuer": "中信投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00862B",
+      "profileDate": null
+    },
+    "00863B": {
+      "ticker": "00863B",
+      "name": "中信全球電信債",
+      "issuer": "中信投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00863B",
+      "profileDate": null
+    },
+    "00864B": {
+      "ticker": "00864B",
+      "name": "中信美國公債0-1",
+      "issuer": "中信投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00864B",
+      "profileDate": null
+    },
+    "00865B": {
+      "ticker": "00865B",
+      "name": "國泰US短期公債",
+      "issuer": "國泰證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00867B": {
+      "ticker": "00867B",
+      "name": "台新A-BBB電信債",
+      "issuer": "台新投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00867B",
+      "profileDate": null
+    },
+    "00870B": {
+      "ticker": "00870B",
+      "name": "元大15年EM主權債",
+      "issuer": "元大投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00870B",
+      "profileDate": null
+    },
+    "00875": {
+      "ticker": "00875",
+      "name": "國泰網路資安",
+      "issuer": "國泰證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00876": {
+      "ticker": "00876",
+      "name": "元大全球5G",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00877": {
+      "ticker": "00877",
+      "name": "復華中國5G",
+      "issuer": "復華投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "國外成分股ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00877",
+      "profileDate": null
+    },
+    "00878": {
+      "ticker": "00878",
+      "name": "國泰永續高股息",
+      "issuer": "國泰證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00881": {
+      "ticker": "00881",
+      "name": "國泰台灣科技龍頭",
+      "issuer": "國泰證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00882": {
+      "ticker": "00882",
+      "name": "中信中國高股息",
+      "issuer": "中國信託證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00884B": {
+      "ticker": "00884B",
+      "name": "中信低碳新興債",
+      "issuer": "中信投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00884B",
+      "profileDate": null
+    },
+    "00885": {
+      "ticker": "00885",
+      "name": "富邦越南",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00886": {
+      "ticker": "00886",
+      "name": "永豐美國科技",
+      "issuer": "永豐投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "國外成分股ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00886",
+      "profileDate": null
+    },
+    "00887": {
+      "ticker": "00887",
+      "name": "永豐中國科技50大",
+      "issuer": "永豐投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "國外成分股ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00887",
+      "profileDate": null
+    },
+    "00888": {
+      "ticker": "00888",
+      "name": "永豐台灣ESG",
+      "issuer": "永豐投信",
+      "market": "TPEx",
+      "scope": "domestic_equity",
+      "classification": "國內成分股ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00888",
+      "profileDate": null
+    },
+    "00890B": {
+      "ticker": "00890B",
+      "name": "凱基ESG BBB債15+",
+      "issuer": "凱基投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00890B",
+      "profileDate": null
+    },
+    "00891": {
+      "ticker": "00891",
+      "name": "中信關鍵半導體",
+      "issuer": "中國信託證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00892": {
+      "ticker": "00892",
+      "name": "富邦台灣半導體",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00893": {
+      "ticker": "00893",
+      "name": "國泰智能電動車",
+      "issuer": "國泰證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00894": {
+      "ticker": "00894",
+      "name": "中信小資高價30",
+      "issuer": "中國信託證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00895": {
+      "ticker": "00895",
+      "name": "富邦未來車",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00896": {
+      "ticker": "00896",
+      "name": "中信綠能及電動車",
+      "issuer": "中國信託證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00897": {
+      "ticker": "00897",
+      "name": "富邦基因免疫生技",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00898": {
+      "ticker": "00898",
+      "name": "國泰基因免疫革命",
+      "issuer": "國泰證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00899": {
+      "ticker": "00899",
+      "name": "FT潔淨能源",
+      "issuer": "富蘭克林華美證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00900": {
+      "ticker": "00900",
+      "name": "富邦特選高股息30",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00901": {
+      "ticker": "00901",
+      "name": "永豐智能車供應鏈",
+      "issuer": "永豐證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00902": {
+      "ticker": "00902",
+      "name": "中信電池及儲能",
+      "issuer": "中國信託證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00903": {
+      "ticker": "00903",
+      "name": "富邦元宇宙",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00904": {
+      "ticker": "00904",
+      "name": "台新臺灣半導體30",
+      "issuer": "台新證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00905": {
+      "ticker": "00905",
+      "name": "FT臺灣Smart",
+      "issuer": "富蘭克林華美證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00907": {
+      "ticker": "00907",
+      "name": "永豐優息存股",
+      "issuer": "永豐證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00908": {
+      "ticker": "00908",
+      "name": "富邦入息REITs+",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00909": {
+      "ticker": "00909",
+      "name": "國泰數位支付服務",
+      "issuer": "國泰證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00910": {
+      "ticker": "00910",
+      "name": "第一金太空衛星",
+      "issuer": "第一金證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00911": {
+      "ticker": "00911",
+      "name": "兆豐洲際半導體",
+      "issuer": "兆豐國際證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021",
+      "profileEvidence": [
+        {
+          "id": "mega-detail-id-16",
+          "url": "https://www.megafunds.com.tw/MEGA/etf/etf_product.aspx?id=16"
+        }
+      ]
+    },
+    "00912": {
+      "ticker": "00912",
+      "name": "中信臺灣智慧 50",
+      "issuer": "中國信託證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00913": {
+      "ticker": "00913",
+      "name": "兆豐台灣晶圓製造",
+      "issuer": "兆豐國際證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021",
+      "profileEvidence": [
+        {
+          "id": "mega-detail-id-17",
+          "url": "https://www.megafunds.com.tw/MEGA/etf/etf_product.aspx?id=17"
+        }
+      ]
+    },
+    "00915": {
+      "ticker": "00915",
+      "name": "凱基優選高股息30",
+      "issuer": "凱基證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00916": {
+      "ticker": "00916",
+      "name": "國泰全球品牌50",
+      "issuer": "國泰證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00917": {
+      "ticker": "00917",
+      "name": "中信特選金融",
+      "issuer": "中國信託證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00918": {
+      "ticker": "00918",
+      "name": "大華優利高填息30",
+      "issuer": "大華銀證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00919": {
+      "ticker": "00919",
+      "name": "群益台灣精選高息",
+      "issuer": "群益證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00920": {
+      "ticker": "00920",
+      "name": "富邦ESG綠色電力",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00921": {
+      "ticker": "00921",
+      "name": "兆豐龍頭等權重",
+      "issuer": "兆豐國際證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021",
+      "profileEvidence": [
+        {
+          "id": "mega-detail-id-18",
+          "url": "https://www.megafunds.com.tw/MEGA/etf/etf_product.aspx?id=18"
+        }
+      ]
+    },
+    "00922": {
+      "ticker": "00922",
+      "name": "國泰台灣領袖50",
+      "issuer": "國泰證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00923": {
+      "ticker": "00923",
+      "name": "群益台ESG低碳50(原簡稱:群益台灣ESG低碳)",
+      "issuer": "群益證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00924": {
+      "ticker": "00924",
+      "name": "復華S&P500成長",
+      "issuer": "復華證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00926": {
+      "ticker": "00926",
+      "name": "凱基全球菁英55",
+      "issuer": "凱基證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00927": {
+      "ticker": "00927",
+      "name": "群益半導體收益",
+      "issuer": "群益證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00928": {
+      "ticker": "00928",
+      "name": "中信上櫃ESG30",
+      "issuer": "中信投信",
+      "market": "TPEx",
+      "scope": "domestic_equity",
+      "classification": "國內成分股ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00928",
+      "profileDate": null
+    },
+    "00929": {
+      "ticker": "00929",
+      "name": "復華台灣科技優息",
+      "issuer": "復華證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00930": {
+      "ticker": "00930",
+      "name": "永豐ESG低碳高息",
+      "issuer": "永豐證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00931B": {
+      "ticker": "00931B",
+      "name": "統一美債20年",
+      "issuer": "統一投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00931B",
+      "profileDate": null
+    },
+    "00932": {
+      "ticker": "00932",
+      "name": "兆豐永續高息等權",
+      "issuer": "兆豐國際證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021",
+      "profileEvidence": [
+        {
+          "id": "mega-detail-id-19",
+          "url": "https://www.megafunds.com.tw/MEGA/etf/etf_product.aspx?id=19"
+        }
+      ]
+    },
+    "00933B": {
+      "ticker": "00933B",
+      "name": "國泰10Y+金融債",
+      "issuer": "國泰投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00933B",
+      "profileDate": null
+    },
+    "00934": {
+      "ticker": "00934",
+      "name": "中信成長高股息",
+      "issuer": "中國信託證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00935": {
+      "ticker": "00935",
+      "name": "野村臺灣新科技50",
+      "issuer": "野村證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00936": {
+      "ticker": "00936",
+      "name": "台新永續高息中小",
+      "issuer": "台新證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00937B": {
+      "ticker": "00937B",
+      "name": "群益ESG投等債20+",
+      "issuer": "群益投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00937B",
+      "profileDate": null
+    },
+    "00938": {
+      "ticker": "00938",
+      "name": "凱基優選30",
+      "issuer": "凱基證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00939": {
+      "ticker": "00939",
+      "name": "統一台灣高息動能",
+      "issuer": "統一證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00940": {
+      "ticker": "00940",
+      "name": "元大台灣價值高息",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00941": {
+      "ticker": "00941",
+      "name": "中信上游半導體",
+      "issuer": "中國信託證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00942B": {
+      "ticker": "00942B",
+      "name": "台新美A公司債20+",
+      "issuer": "台新投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00942B",
+      "profileDate": null
+    },
+    "00943": {
+      "ticker": "00943",
+      "name": "兆豐電子高息等權",
+      "issuer": "兆豐國際證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021",
+      "profileEvidence": [
+        {
+          "id": "mega-detail-id-20",
+          "url": "https://www.megafunds.com.tw/MEGA/etf/etf_product.aspx?id=20"
+        }
+      ]
+    },
+    "00944": {
+      "ticker": "00944",
+      "name": "野村趨勢動能高息",
+      "issuer": "野村證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00945B": {
+      "ticker": "00945B",
+      "name": "凱基美國非投等債",
+      "issuer": "凱基證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00946": {
+      "ticker": "00946",
+      "name": "群益科技高息成長",
+      "issuer": "群益證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00947": {
+      "ticker": "00947",
+      "name": "台新臺灣IC設計",
+      "issuer": "台新證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00948B": {
+      "ticker": "00948B",
+      "name": "中信優息投資級債",
+      "issuer": "中信投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00948B",
+      "profileDate": null
+    },
+    "00949": {
+      "ticker": "00949",
+      "name": "復華日本龍頭",
+      "issuer": "復華證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00950B": {
+      "ticker": "00950B",
+      "name": "凱基A級公司債",
+      "issuer": "凱基投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00950B",
+      "profileDate": null
+    },
+    "00951": {
+      "ticker": "00951",
+      "name": "台新日本半導體",
+      "issuer": "台新證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00952": {
+      "ticker": "00952",
+      "name": "凱基台灣AI 50",
+      "issuer": "凱基證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00953B": {
+      "ticker": "00953B",
+      "name": "群益優選非投等債",
+      "issuer": "群益證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00954": {
+      "ticker": "00954",
+      "name": "中信日本半導體",
+      "issuer": "中國信託證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00955": {
+      "ticker": "00955",
+      "name": "中信日本商社",
+      "issuer": "中信投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "國外成分股ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00955",
+      "profileDate": null
+    },
+    "00956": {
+      "ticker": "00956",
+      "name": "中信日經高股息",
+      "issuer": "中國信託證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00957B": {
+      "ticker": "00957B",
+      "name": "兆豐US優選投等債",
+      "issuer": "兆豐投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00957B",
+      "profileDate": null,
+      "profileEvidence": [
+        {
+          "id": "mega-detail-id-21",
+          "url": "https://www.megafunds.com.tw/MEGA/etf/etf_product.aspx?id=21"
+        }
+      ]
+    },
+    "00958B": {
+      "ticker": "00958B",
+      "name": "永豐ESG銀行債15+",
+      "issuer": "永豐投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00958B",
+      "profileDate": null
+    },
+    "00959B": {
+      "ticker": "00959B",
+      "name": "大華投等美債15Y+",
+      "issuer": "大華銀投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00959B",
+      "profileDate": null
+    },
+    "00960": {
+      "ticker": "00960",
+      "name": "野村全球航運龍頭",
+      "issuer": "野村證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00961": {
+      "ticker": "00961",
+      "name": "FT臺灣永續高息",
+      "issuer": "富蘭克林華美證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00962": {
+      "ticker": "00962",
+      "name": "台新AI優息動能",
+      "issuer": "台新證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00963": {
+      "ticker": "00963",
+      "name": "中信全球高股息",
+      "issuer": "中國信託證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00964": {
+      "ticker": "00964",
+      "name": "中信亞太高股息",
+      "issuer": "中國信託證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00965": {
+      "ticker": "00965",
+      "name": "元大航太防衛科技",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00966B": {
+      "ticker": "00966B",
+      "name": "統一ESG投等債15+",
+      "issuer": "統一投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00966B",
+      "profileDate": null
+    },
+    "00967B": {
+      "ticker": "00967B",
+      "name": "元大優息美債",
+      "issuer": "元大投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00967B",
+      "profileDate": null
+    },
+    "00968B": {
+      "ticker": "00968B",
+      "name": "元大優息投等債",
+      "issuer": "元大投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00968B",
+      "profileDate": null
+    },
+    "00969B": {
+      "ticker": "00969B",
+      "name": "元大零息超長美債",
+      "issuer": "元大投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00969B",
+      "profileDate": null
+    },
+    "00970B": {
+      "ticker": "00970B",
+      "name": "台新BBB投等債20+",
+      "issuer": "台新投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00970B",
+      "profileDate": null
+    },
+    "00971": {
+      "ticker": "00971",
+      "name": "野村美國研發龍頭",
+      "issuer": "野村證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00972": {
+      "ticker": "00972",
+      "name": "野村日本動能高息",
+      "issuer": "野村證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "009800": {
+      "ticker": "009800",
+      "name": "中信NASDAQ",
+      "issuer": "中國信託證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "009801": {
+      "ticker": "009801",
+      "name": "中信美國創新科技",
+      "issuer": "中國信託證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "009802": {
+      "ticker": "009802",
+      "name": "富邦旗艦50",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "009803": {
+      "ticker": "009803",
+      "name": "玉山市值動能50",
+      "issuer": "玉山證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "009804": {
+      "ticker": "009804",
+      "name": "聯邦台精彩50",
+      "issuer": "聯邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "009805": {
+      "ticker": "009805",
+      "name": "台新美國電力基建",
+      "issuer": "台新證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "009806": {
+      "ticker": "009806",
+      "name": "台新標普500",
+      "issuer": "台新投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "國外成分股ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=009806",
+      "profileDate": null
+    },
+    "009807": {
+      "ticker": "009807",
+      "name": "台新標普科技精選",
+      "issuer": "台新投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "國外成分股ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=009807",
+      "profileDate": null
+    },
+    "009808": {
+      "ticker": "009808",
+      "name": "華南永昌優選50",
+      "issuer": "華南永昌證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "009809": {
+      "ticker": "009809",
+      "name": "富邦淨零ESG50",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00980A": {
+      "ticker": "00980A",
+      "name": "主動野村臺灣優選",
+      "issuer": "野村證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券主動式交易所交易基金(股票)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00980B": {
+      "ticker": "00980B",
+      "name": "台新特選IG債10+",
+      "issuer": "台新投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00980B",
+      "profileDate": null
+    },
+    "00980D": {
+      "ticker": "00980D",
+      "name": "主動聯博投等入息",
+      "issuer": "聯博投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00980D",
+      "profileDate": null,
+      "profileEvidence": [
+        {
+          "id": "ab-profile-TW00000980D8",
+          "url": "https://webapi.alliancebernstein.com/v2/funds/tw/zh-tw/investor/TW00000980D8"
+        }
+      ]
+    },
+    "00980T": {
+      "ticker": "00980T",
+      "name": "平衡凱基美國TOP",
+      "issuer": "凱基投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "多資產ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00980T",
+      "profileDate": null
+    },
+    "009810": {
+      "ticker": "009810",
+      "name": "玉山全球藍籌100",
+      "issuer": "玉山證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "009811": {
+      "ticker": "009811",
+      "name": "統一美國50",
+      "issuer": "統一證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "009812": {
+      "ticker": "009812",
+      "name": "野村日本東證",
+      "issuer": "野村證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "連結式證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "009813": {
+      "ticker": "009813",
+      "name": "貝萊德標普卓越50",
+      "issuer": "貝萊德證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "009814": {
+      "ticker": "009814",
+      "name": "富邦標普500",
+      "issuer": "富邦投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "國外成分股ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=009814",
+      "profileDate": null
+    },
+    "009815": {
+      "ticker": "009815",
+      "name": "大華美國MAG7+",
+      "issuer": "大華銀投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "國外成分股ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=009815",
+      "profileDate": null
+    },
+    "009816": {
+      "ticker": "009816",
+      "name": "凱基台灣TOP50",
+      "issuer": "凱基證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "009817": {
+      "ticker": "009817",
+      "name": "國泰日本不動產",
+      "issuer": "國泰證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "連結式證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "009818": {
+      "ticker": "009818",
+      "name": "華南永昌NASDAQxT",
+      "issuer": "華南永昌證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "009819": {
+      "ticker": "009819",
+      "name": "中信數據及電力",
+      "issuer": "中國信託證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00981A": {
+      "ticker": "00981A",
+      "name": "主動統一台股增長",
+      "issuer": "統一證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券主動式交易所交易基金(股票)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00981B": {
+      "ticker": "00981B",
+      "name": "第一金優選非投債",
+      "issuer": "第一金投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00981B",
+      "profileDate": null
+    },
+    "00981D": {
+      "ticker": "00981D",
+      "name": "主動中信非投等債",
+      "issuer": "中信投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00981D",
+      "profileDate": null
+    },
+    "00981T": {
+      "ticker": "00981T",
+      "name": "平衡凱基雙核收息",
+      "issuer": "凱基證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券平衡型指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "009820": {
+      "ticker": "009820",
+      "name": "元大納斯達克精選",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "009821": {
+      "ticker": "009821",
+      "name": "野村稀土關鍵資源",
+      "issuer": "野村證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "009822": {
+      "ticker": "009822",
+      "name": "華南永昌未來金融",
+      "issuer": "華南永昌投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "國外成分股ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=009822",
+      "profileDate": null
+    },
+    "009823": {
+      "ticker": "009823",
+      "name": "群益 S&P500",
+      "issuer": "群益投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "國外成分股ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=009823",
+      "profileDate": null
+    },
+    "009824": {
+      "ticker": "009824",
+      "name": "群益美國科技巨頭",
+      "issuer": "群益證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "009825": {
+      "ticker": "009825",
+      "name": "聯邦美國金融創新",
+      "issuer": "聯邦投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "國外成分股ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=009825",
+      "profileDate": null
+    },
+    "009826": {
+      "ticker": "009826",
+      "name": "貝萊德世界股票",
+      "issuer": "貝萊德證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "009827": {
+      "ticker": "009827",
+      "name": "玉山未來全球算力",
+      "issuer": "玉山證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "009828": {
+      "ticker": "009828",
+      "name": "中信台日韓PCB",
+      "issuer": "中國信託證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "009829": {
+      "ticker": "009829",
+      "name": "大華韓國KOSPI50",
+      "issuer": "大華銀證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00982A": {
+      "ticker": "00982A",
+      "name": "主動群益台灣強棒",
+      "issuer": "群益證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券主動式交易所交易基金(股票)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00982B": {
+      "ticker": "00982B",
+      "name": "FT投資級債20+",
+      "issuer": "富蘭克林華美",
+      "market": "TPEx",
+      "scope": "unverified",
+      "classification": null,
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": null
+    },
+    "00982D": {
+      "ticker": "00982D",
+      "name": "主動富邦動態入息",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券主動式交易所交易基金(債券)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00982T": {
+      "ticker": "00982T",
+      "name": "平衡兆豐台美動能",
+      "issuer": "兆豐國際證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券平衡型指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021",
+      "profileEvidence": [
+        {
+          "id": "mega-detail-id-22",
+          "url": "https://www.megafunds.com.tw/MEGA/etf/etf_product.aspx?id=22"
+        }
+      ]
+    },
+    "00983A": {
+      "ticker": "00983A",
+      "name": "主動中信ARK創新",
+      "issuer": "中國信託證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券主動式交易所交易基金(股票)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00983B": {
+      "ticker": "00983B",
+      "name": "大華優利美公債20",
+      "issuer": "大華銀投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00983B",
+      "profileDate": null
+    },
+    "00983D": {
+      "ticker": "00983D",
+      "name": "主動富邦複合收益",
+      "issuer": "富邦證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券主動式交易所交易基金(債券)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00984A": {
+      "ticker": "00984A",
+      "name": "主動安聯台灣高息",
+      "issuer": "安聯證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券主動式交易所交易基金(股票)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00984B": {
+      "ticker": "00984B",
+      "name": "大華優利美A債15",
+      "issuer": "大華銀投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00984B",
+      "profileDate": null
+    },
+    "00984D": {
+      "ticker": "00984D",
+      "name": "主動聯博全球非投",
+      "issuer": "聯博證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券主動式交易所交易基金(債券)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021",
+      "profileEvidence": [
+        {
+          "id": "ab-profile-TW00000984D0",
+          "url": "https://webapi.alliancebernstein.com/v2/funds/tw/zh-tw/investor/TW00000984D0"
+        }
+      ]
+    },
+    "00985A": {
+      "ticker": "00985A",
+      "name": "主動野村台灣50",
+      "issuer": "野村證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券主動式交易所交易基金(股票)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00985B": {
+      "ticker": "00985B",
+      "name": "群益ESG投等債0-5",
+      "issuer": "群益證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00985D": {
+      "ticker": "00985D",
+      "name": "主動貝萊德優投等",
+      "issuer": "貝萊德投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00985D",
+      "profileDate": null
+    },
+    "00986A": {
+      "ticker": "00986A",
+      "name": "主動台新龍頭成長",
+      "issuer": "台新證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券主動式交易所交易基金(股票)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00986B": {
+      "ticker": "00986B",
+      "name": "FT金融債10+",
+      "issuer": "富蘭克林華美",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00986B",
+      "profileDate": null
+    },
+    "00986D": {
+      "ticker": "00986D",
+      "name": "主動復華金融債息",
+      "issuer": "復華投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00986D",
+      "profileDate": null
+    },
+    "00987A": {
+      "ticker": "00987A",
+      "name": "主動台新優勢成長",
+      "issuer": "台新證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券主動式交易所交易基金(股票)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00987B": {
+      "ticker": "00987B",
+      "name": "野村10+澳洲公債",
+      "issuer": "野村投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00987B",
+      "profileDate": null
+    },
+    "00987D": {
+      "ticker": "00987D",
+      "name": "主動統一美債量化",
+      "issuer": "統一投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00987D",
+      "profileDate": null
+    },
+    "00988A": {
+      "ticker": "00988A",
+      "name": "主動統一全球創新",
+      "issuer": "統一證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券主動式交易所交易基金(股票)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00988B": {
+      "ticker": "00988B",
+      "name": "玉山嚴選非投債",
+      "issuer": "玉山投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00988B",
+      "profileDate": null
+    },
+    "00989A": {
+      "ticker": "00989A",
+      "name": "主動摩根美國科技",
+      "issuer": "摩根證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券主動式交易所交易基金(股票)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00989B": {
+      "ticker": "00989B",
+      "name": "台新美國非投等債",
+      "issuer": "台新投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00989B",
+      "profileDate": null
+    },
+    "00990A": {
+      "ticker": "00990A",
+      "name": "主動元大AI新經濟",
+      "issuer": "元大證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券主動式交易所交易基金(股票)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00990B": {
+      "ticker": "00990B",
+      "name": "國泰收益非投等債",
+      "issuer": "國泰投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00990B",
+      "profileDate": null
+    },
+    "00991A": {
+      "ticker": "00991A",
+      "name": "主動復華未來50",
+      "issuer": "復華證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券主動式交易所交易基金(股票)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00991B": {
+      "ticker": "00991B",
+      "name": "貝萊德A級公司債",
+      "issuer": "貝萊德證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券指數股票型基金",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00992A": {
+      "ticker": "00992A",
+      "name": "主動群益科技創新",
+      "issuer": "群益證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券主動式交易所交易基金(股票)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00992B": {
+      "ticker": "00992B",
+      "name": "街口優息非投債",
+      "issuer": "街口投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "債券及固定收益ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00992B",
+      "profileDate": null
+    },
+    "00993A": {
+      "ticker": "00993A",
+      "name": "主動安聯台灣",
+      "issuer": "安聯證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券主動式交易所交易基金(股票)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00994A": {
+      "ticker": "00994A",
+      "name": "主動第一金台股優",
+      "issuer": "第一金證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券主動式交易所交易基金(股票)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00995A": {
+      "ticker": "00995A",
+      "name": "主動中信台灣卓越",
+      "issuer": "中國信託證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券主動式交易所交易基金(股票)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00996A": {
+      "ticker": "00996A",
+      "name": "主動兆豐台灣豐收",
+      "issuer": "兆豐國際證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券主動式交易所交易基金(股票)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021",
+      "profileEvidence": [
+        {
+          "id": "mega-detail-id-23",
+          "url": "https://www.megafunds.com.tw/MEGA/etf/etf_product.aspx?id=23"
+        }
+      ]
+    },
+    "00997A": {
+      "ticker": "00997A",
+      "name": "主動群益美國增長",
+      "issuer": "群益證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "outside_scope",
+      "classification": "國外成分證券主動式交易所交易基金(股票)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    },
+    "00998A": {
+      "ticker": "00998A",
+      "name": "主動復華金融股息",
+      "issuer": "復華投信",
+      "market": "TPEx",
+      "scope": "outside_scope",
+      "classification": "國外成分股ETF",
+      "sourceUrl": "https://info.tpex.org.tw/api/etfProduct?lang=zh-tw&query=00998A",
+      "profileDate": null
+    },
+    "00999A": {
+      "ticker": "00999A",
+      "name": "主動野村臺灣高息",
+      "issuer": "野村證券投資信託股份有限公司",
+      "market": "TWSE",
+      "scope": "domestic_equity",
+      "classification": "國內成分證券主動式交易所交易基金(股票)",
+      "sourceUrl": "https://openapi.twse.com.tw/v1/opendata/t187ap47_L",
+      "profileDate": "1151021"
+    }
+  }
+}

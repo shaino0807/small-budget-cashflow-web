@@ -1,4 +1,4 @@
-const cacheName = "cashflow-map-v32";
+const cacheName = "cashflow-map-v35-portfolio-valuation";
 const assets = [
   "./",
   "./index.html",
@@ -6,9 +6,9 @@ const assets = [
   "./journal.css",
   "./cashflow-visual.js",
   "./etf-data.js",
+  "./portfolio-overlap.js",
   "./app.js",
   "./runtime-config.js",
-  "./data/etf-database.json",
   "./manifest.webmanifest",
   "./icon.svg"
 ];

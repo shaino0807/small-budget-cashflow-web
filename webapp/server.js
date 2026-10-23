@@ -5,6 +5,8 @@ const fs = require("fs");
 const path = require("path");
 const { isPublicFile } = require("./public-files");
 const { createEtfMarketService } = require("./etf-market");
+const { createPortfolioMarket } = require("./portfolio-market");
+const portfolioMarket = createPortfolioMarket();
 const { createMarketSnapshot } = require("./market-snapshot");
 const marketSnapshot = createMarketSnapshot({
   bundledPath: path.join(__dirname, "data", "etf-database.json"),
@@ -893,8 +895,23 @@ const server = http.createServer(async (req, res) => {
       .catch((error) => sendJson(res, error.statusCode || 500, { ok: false, error: error.statusCode ? error.message : "官方資料暫時無法讀取，請稍後重試" }));
     return;
   }
+  if (urlPath === "/api/market/portfolio" && req.method === "POST") {
+    if (!rateLimit(req, 12)) return sendJson(res, 429, { ok: false, error: "分析次數過多，請稍後重試" });
+    try {
+      const body = await readJson(req, 3000);
+      if (!body || Object.keys(body).some(key => key !== "tickers")) return sendJson(res, 400, { ok: false, error: "此端點只接受持有代號，不接受金額或個人資料" });
+      return sendJson(res, 202, { ok: true, job: portfolioMarket.start(body.tickers) });
+    } catch (error) { return sendJson(res, error.statusCode || 400, { ok: false, error: error.statusCode ? error.message : "持有部位格式不正確" }); }
+  }
+  if (urlPath.startsWith("/api/market/portfolio/") && req.method === "GET") {
+    if (!rateLimit(req, 240)) return sendJson(res, 429, { ok: false, error: "進度查詢次數過多" });
+    const id = urlPath.slice("/api/market/portfolio/".length);
+    if (!/^[0-9a-f-]{36}$/.test(id)) return sendJson(res, 400, { ok: false, error: "工作代號格式不正確" });
+    try { return sendJson(res, 200, { ok: true, job: portfolioMarket.status(id) }); }
+    catch (error) { return sendJson(res, error.statusCode || 500, { ok: false, error: error.message }); }
+  }
   if ((urlPath === "/api/market/catalog" || urlPath === "/data/etf-catalog.json") && req.method === "GET") {
-    marketSnapshot.requestSync();
+    // Identity suggestions use the saved catalog; opening an input form never refreshes the market.
     const current = marketSnapshot.current();
     const date = new Date().toLocaleDateString("en-CA",{timeZone:"Asia/Taipei"});
     if (catalogCache.key !== current.db || catalogCache.date !== date) catalogCache = {key:current.db,date,body:JSON.stringify(require("./market-view").marketCatalog(current.db))};

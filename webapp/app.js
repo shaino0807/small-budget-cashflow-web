@@ -176,6 +176,9 @@ let authState = {
 let etfDatabase = null;
 let snapshotNotice = "";
 const etfData = window.CashflowEtfData;
+let portfolioRuntime = {generation:0,status:'idle',signature:null,data:{},completed:0,total:0,elapsedMs:0};
+let catalogPromise = null;
+function ensurePortfolioCatalog() { if(etfDatabase)return Promise.resolve(); return catalogPromise ||= loadEtfDatabase().finally(()=>{catalogPromise=null;}); }
 let priceChartTickers = [];
 let priceChartMonths = 1;
 let priceSelectionInitialized = false;
@@ -228,8 +231,9 @@ function heldEtfTickers() { return etfData.heldTickers(etfDatabase, state.holdin
 
 function yieldText(holding) {
   if (holding.yieldSource !== "official_ttm") return findEtf(holding.ticker) ? "配息資料待補" : "殖利率待確認";
-  if (holding.yieldStatus === "non_distributing") return "官方確認不配息 · 0%";
-  return `近12個月配息殖利率 ${pct(holding.dividendYield, 2)}${holding.yieldStatus === "short_history" ? "（上市未滿一年）" : ""}`;
+  const savedDate = `保存資料截至 ${holding.yieldAsOf || "日期待確認"}`;
+  if (holding.yieldStatus === "non_distributing") return `${savedDate} · 官方確認不配息 · 0%`;
+  return `${savedDate} · 近12個月配息殖利率 ${pct(holding.dividendYield, 2)}${holding.yieldStatus === "short_history" ? "（上市未滿一年）" : ""} · 收盤日 ${holding.yieldPriceDate || "待確認"}`;
 }
 
 function yieldCoverageNote(holdings = state.holdings) {
@@ -451,7 +455,6 @@ function applyMemberBootstrap(bootstrap) {
   syncQuizInputs();
   renderMonthlyCashflows();
   enrichHoldingsFromDatabase();
-  for (const ticker of heldEtfTickers()) queueEtfData(ticker);
   renderHoldings();
   persist();
   refreshReports();
@@ -743,7 +746,6 @@ async function loadEtfDatabase() {
     enrichHoldingsFromDatabase();
     q("#etfSearchOptions").innerHTML = etfDatabase.etfs.map((etf) => `<option value="${escapeHtml(etf.ticker + " " + etf.shortName)}"></option>`).join("");
     etfRequestStates.clear();
-    for (const ticker of heldEtfTickers()) queueEtfData(ticker);
   } catch (error) {
     etfDatabase = null;
     state.holdings = state.holdings.map((holding) => isEtfHolding(holding) ? { ...holding, dividendYield: null, yieldSource: "pending_official" } : holding);
@@ -1099,88 +1101,7 @@ function highDividendDependency(holdings) {
   return highDividend / total * 100;
 }
 
-function buildStockExposure(holdings) {
-  const total = totalInvested(holdings);
-  const rowsByTicker = new Map();
-  const unresolved = [];
-  let coveredAmount = 0;
-
-  function addExposure(ticker, name, sector, amount, sourceTicker, sourceName) {
-    if (!ticker || amount <= 0) return;
-    const candidate = findStock(ticker);
-    const matchedName = candidate && [candidate.shortName,candidate.name].filter(Boolean).some(value => value.replace(/臺/g,"台") === String(name||"").replace(/臺/g,"台"));
-    const stock = sourceTicker === ticker || matchedName ? candidate : null;
-    const key = stock ? String(ticker).trim() : `${String(ticker).trim()}:${name||""}`;
-    const current = rowsByTicker.get(key) || {
-      ticker: String(ticker).trim(),
-      name: stock?.shortName || stock?.name || name || key,
-      sector: stockThemeGroup(stock?.industry || sector),
-      industry: industryDisplayName(stock?.industry || sector),
-      amount: 0,
-      share: 0,
-      sources: []
-    };
-    current.amount += amount;
-    current.sources.push({ ticker: sourceTicker, name: sourceName, amount });
-    rowsByTicker.set(key, current);
-  }
-
-  holdings.forEach((holding) => {
-    const amount = holdingAmount(holding);
-    if (!amount) return;
-    const ticker = String(holding.ticker || "").trim();
-    const etf = findEtf(ticker);
-    const stock = findStock(ticker);
-
-    if (etf) {
-      const constituents = (etfDatabase?.holdings?.items || []).filter((row) => row.ticker === ticker && (!row.assetType || row.assetType === "stock") && Number(row.weight) > 0);
-      const weightSum = constituents.reduce((sum, row) => sum + Number(row.weight || 0), 0);
-      constituents.forEach((row) => {
-        const exposureAmount = amount * Number(row.weight || 0) / 100;
-        coveredAmount += exposureAmount;
-        addExposure(row.holdingTicker, row.holdingName, row.sector, exposureAmount, ticker, etf.shortName);
-      });
-      if (weightSum < 99) {
-        unresolved.push({
-          ticker,
-          name: etf.shortName,
-          reason: constituents.length ? `ETF 成分股只覆蓋 ${pct(weightSum)}` : "ETF 成分股尚未接上官方資料",
-          amount: amount * Math.max(0, 100 - weightSum) / 100
-        });
-      }
-      return;
-    }
-
-    coveredAmount += amount;
-    addExposure(ticker, stock?.shortName || stock?.name || holding.name, stock?.industry || holding.sector, amount, ticker, holding.name);
-    if (!stock) {
-      unresolved.push({
-        ticker,
-        name: holding.name || ticker,
-        reason: "直接股票尚未對應官方股票主檔",
-        amount
-      });
-    }
-  });
-
-  const rows = [...rowsByTicker.values()]
-    .map((row) => ({ ...row, share: total ? row.amount / total * 100 : 0 }))
-    .sort((a, b) => b.amount - a.amount);
-
-  const bySector = rows.reduce((acc, row) => {
-    acc[row.sector] = (acc[row.sector] || 0) + row.amount;
-    return acc;
-  }, {});
-
-  return {
-    rows,
-    bySector,
-    topStock: rows[0] || { ticker: "無", name: "無", sector: "無", amount: 0, share: 0, sources: [] },
-    repeatedStocks: rows.filter((row) => new Set(row.sources.map((source) => source.ticker)).size > 1),
-    unresolved,
-    coverageRate: total ? clamp(coveredAmount / total * 100, 0, 100) : 0
-  };
-}
+function buildStockExposure(holdings) { return demandStockExposure(holdings); }
 
 function overlapReport(holdings) {
   const total = totalInvested(holdings);
@@ -1197,14 +1118,14 @@ function overlapReport(holdings) {
   };
   const repeatedPenalty = Math.min(18, stockExposure.repeatedStocks.length * 4);
   const coveragePenalty = Math.max(0, 100 - stockExposure.coverageRate) * 0.18;
-  const score = clamp(Math.max(topStock.share, topSector.share, topType.share) + repeatedPenalty + coveragePenalty, 0, 100);
+  const score = stockExposure.status === "complete" ? clamp(Math.max(topStock.share, topSector.share, topType.share) + repeatedPenalty + coveragePenalty, 0, 100) : null;
   return {
     score,
     topType,
     topSector,
     topStock,
     stockExposure,
-    message: score >= 70
+    message: score === null ? "資料尚未完整核對，僅呈現已知股票曝險；無法判定完整重疊風險。" : score >= 70
       ? "底層股票或產業集中度偏高，可能同時透過 ETF 與直接股票買到相同曝險。"
       : "目前底層股票分散度尚可，但仍需補齊 ETF 成分股資料並定期檢查。"
   };
@@ -1918,7 +1839,6 @@ function renderHoldings() {
         enrichHoldingsFromDatabase();
         if (mergeDuplicateHoldings()) showToast("已合併相同代號的持股");
         renderHoldings();
-        queueEtfData(String(event.target.value).trim());
       }
       if (field === "type") state.holdings[index].sector = defaultSector(event.target.value);
       refreshReports();
@@ -1941,7 +1861,6 @@ function renderHoldings() {
       if (mergeDuplicateHoldings()) showToast("已合併相同代號的持股");
       renderHoldings();
       refreshReports();
-      if (selected) queueEtfData(selected.ticker);
     });
   });
 
@@ -2028,6 +1947,8 @@ function escapeHtml(value) {
 }
 
 function refreshReports() {
+  invalidatePortfolioIfChanged();
+  renderPortfolioAnalysis();
   latestReport = buildReport();
   renderHeader();
   renderQuickResult();
@@ -2741,12 +2662,12 @@ function stockExposureHtml(report) {
     <section class="panel">
       <h3>整體股票重疊度</h3>
       <div class="metrics">
-        <div class="metric"><span>重疊風險</span><strong>${Math.round(report.overlap.score)}</strong></div>
+        <div class="metric"><span>重疊風險</span><strong>${report.overlap.score === null ? "待確認" : Math.round(report.overlap.score)}</strong></div>
         <div class="metric"><span>最大股票曝險</span><strong>${report.overlap.topStock.ticker}</strong></div>
-        <div class="metric"><span>最大占比</span><strong>${pct(report.overlap.topStock.share)}</strong></div>
+        <div class="metric"><span>最大占比</span><strong>${report.overlap.stockExposure.rows.length ? pct(report.overlap.topStock.share) : "待確認"}</strong></div>
         <div class="metric"><span>穿透覆蓋率</span><strong>${pct(exposure.coverageRate)}</strong></div>
       </div>
-      <p>${report.overlap.message}</p>
+      <p>${report.overlap.message}</p>${portfolioResultHtml(report.overlap.stockExposure.result)}
       <div class="inline-table">
         <div class="table-title">
           <h3>股票族群總佔比</h3>
@@ -2795,7 +2716,7 @@ function stockExposureHtml(report) {
           ${exposure.unresolved.slice(0, 4).map((item) => `
             <article class="risk-card">
               <h4>${item.ticker} ${item.name}</h4>
-              <p>${item.reason}，未穿透金額約 ${formatMoney(item.amount)}。</p>
+              <p>${item.reason}，${item.amount === null ? "金額無法單獨判定" : `未穿透金額約 ${formatMoney(item.amount)}`}。</p>
             </article>
           `).join("")}
         </div>
@@ -3193,7 +3114,6 @@ function applyLineSummaryToState(summary) {
   renderMonthlyCashflows();
   state.reportMeta.lineAppliedAt = new Date().toISOString();
   enrichHoldingsFromDatabase();
-  for (const ticker of heldEtfTickers()) queueEtfData(ticker);
   renderHoldings();
   return true;
 }
@@ -4218,6 +4138,7 @@ function scrollToWorkspaceSection(sectionId) {
 }
 
 function goTo(viewId, sectionId = "", memberNav = "", options = {}) {
+  if (["inputView", "databaseView"].includes(viewId)) void ensurePortfolioCatalog().then(()=>{renderHoldings();refreshReports();});
   const isCompletedMember = authState.authenticated && authState.user?.onboardingCompleted;
   if (viewId === "landingView" && isCompletedMember && !options.allowMemberOnboarding) {
     viewId = "dashboardView";
@@ -4391,6 +4312,7 @@ function bindEvents() {
     const errors = detailedValidationErrors();
     showValidationErrors("#profileValidationErrors", errors);
     if (errors.length) return;
+    await analyzePortfolio();
     refreshReports();
     persist();
     goTo("freeReportView");
@@ -4407,6 +4329,7 @@ function bindEvents() {
     persist();
     showToast("已套用範例資料");
   });
+  q("#analyzePortfolioBtn").addEventListener("click", analyzePortfolio);
   q("#addHoldingBtn").addEventListener("click", () => {
     state.holdings.push({ ticker: "", name: "", type: "ETF", amount: 0, lots: [{ price: 0, amount: 0 }], dividendYield: null, expenseRatio: 0, sector: "未分類ETF" });
     renderHoldings();
@@ -4472,6 +4395,89 @@ function configureConsultationLinks() {
   }
 }
 
+function portfolioPositions() {
+  return state.holdings.map(h => ({ ticker: String(h.ticker || '').trim().toUpperCase(), amount: holdingAmount(h) })).filter(h => h.ticker && h.amount > 0);
+}
+function portfolioSignature() { return JSON.stringify(portfolioPositions().sort((a,b) => a.ticker.localeCompare(b.ticker))); }
+function portfolioResult() {
+  return window.CashflowPortfolioOverlap.calculate(portfolioPositions(), portfolioRuntime.signature === portfolioSignature() ? portfolioRuntime.data : {});
+}
+function invalidatePortfolioIfChanged() {
+  if (portfolioRuntime.signature && portfolioRuntime.signature !== portfolioSignature()) {
+    portfolioRuntime.controller?.abort();
+    portfolioRuntime = { ...portfolioRuntime, generation:portfolioRuntime.generation+1, status:'changed', signature:null, data:{}, completed:0, total:0 };
+  }
+}
+function renderPortfolioAnalysis() {
+  const panel=q('#portfolioProgress'); if(!panel)return;
+  const result=portfolioResult(), runtime=portfolioRuntime, running=runtime.status==='running';
+  const labels={idle:'尚未送出持有部位',changed:'持有部位已變更',running:'正在核對持有部位',finished:'本次來源核對已結束',partial:'部分來源尚無法核對',timeout:'本次等待已結束',failed:'暫時無法完成核對',empty:'請先輸入持有部位'};
+  q('#portfolioProgressTitle').textContent=labels[runtime.status]||labels.idle;
+  q('#portfolioProgressMessage').textContent=runtime.message || (running ? `已結束核對 ${runtime.completed}／${runtime.total} 個標的（${runtime.total?Math.floor(runtime.completed/runtime.total*100):0}%）；沒有可沿用紀錄時，會先取得官方資料。完成數不代表資料完整通過率。` : result.status==='partial' ? '可查看已知股票曝險；資料日期與未拆解部位另列，尚非完整驗收。' : '填入部位後按下分析；只核對相關官方資料。');
+  const progress=q('#portfolioProgressBar');progress.hidden=!running;progress.value=runtime.total ? runtime.completed/runtime.total*100 : 0;
+  q('#analyzePortfolioBtn').disabled=running;
+  q('#analyzePortfolioBtn').textContent=running?'正在核對…':'核對持有部位並分析重疊';
+  q('#portfolioElapsed').textContent=running ? `已等待 ${Math.floor(runtime.elapsedMs/1000)} 秒；最多等待 60 秒，這是等待上限，不是預估完成時間。` : runtime.elapsedMs ? `本次等待 ${(runtime.elapsedMs/1000).toFixed(1)} 秒` : '';
+  q('#portfolioOverlapResult').innerHTML=runtime.signature && !running ? portfolioResultHtml(result) : '';
+}
+function portfolioResultHtml(result) {
+  const valid=result.rows.length>0;
+  return `<section class="panel" aria-label="持有部位重疊分析結果">
+    <h3>${result.status==='complete'?'已核對的股票曝險':valid?'已知部分的股票曝險':'尚無法判定重疊'}</h3>
+    <p>${escapeHtml(result.basis)}。${valid?`股票權重可計算部分占投入金額 ${pct(result.coveragePercent,2)}；這不是資料驗證通過率。`:'資料不足不能解讀為沒有重疊。'}</p>
+    ${valid?`<p>${result.repeated.length?`已辨識 ${result.repeated.length} 檔共同持股。`:'已知部分未辨識出共同持股；尚待確認的部分不在此結論內。'}</p>
+    <div class="portfolio-result-table" tabindex="0" role="region" aria-label="股票曝險表，可水平捲動"><table><thead><tr><th>股票</th><th>名稱</th><th>加權金額</th><th>占投入比例</th><th>持有來源</th></tr></thead><tbody>${result.rows.slice(0,20).map(r=>`<tr><td>${escapeHtml(r.ticker)}</td><td>${escapeHtml(r.name)}</td><td>${formatMoney(r.amount)}</td><td>${pct(r.share,2)}</td><td>${r.sources.map(s=>escapeHtml(s.ticker)).join('、')}</td></tr>`).join('')}</tbody></table></div><p class="panel-note">畫面顯示前 20 筆；計算包含全部 ${result.rows.length} 筆已識別股票。</p>`:''}
+    ${result.gaps.length?`<div class="portfolio-warning"><strong>尚待確認</strong><ul>${result.gaps.map(g=>`<li>${escapeHtml(g.ticker)} ${escapeHtml(g.reason)}${g.amount===null?'':`（投入金額約 ${formatMoney(g.amount)}）`}</li>`).join('')}</ul></div>`:''}
+    <ul class="portfolio-source-list">${result.sources.map(s=>`<li><strong>${escapeHtml(s.ticker)}</strong>：實際持股基準日 ${escapeHtml(s.kind==='stock'?'個股不適用':s.holdingsDate||(s.valuationVerification?.status==='verified'?'未公開':'尚未獨立確認'))}${s.valuationVerification?.status==='verified'?`；官方估值日 ${escapeHtml(s.valuationVerification.date)}（已逐列核對 ${s.valuationVerification.matchedRows}／${s.valuationVerification.totalRows} 筆；不等於實際持股日）`:''}；收盤日 ${escapeHtml(s.priceDate||'未取得')}；淨值日 ${escapeHtml(s.navDate||'不適用或未取得')}。核對時間 ${escapeHtml(s.observedAt)}${s.reused?'（沿用 5 分鐘內同日核對紀錄）':''}。<a href="${escapeHtml(s.sourceUrl)}" target="_blank" rel="noopener noreferrer">官方來源</a>${s.otherGroups.flatMap(g=>g.items||[]).length?`<p>官方另列、未納入股票重疊的部位：${s.otherGroups.flatMap(g=>g.items||[]).map(r=>`${escapeHtml(r.code)} ${escapeHtml(r.name)}（官方權重 ${r.weight===null?'未提供':pct(r.weight,4)}）`).join('；')}。這些權重不代表已換算的底層股票曝險。</p>`:''}</li>`).join('')}</ul>
+  </section>`;
+}
+async function analyzePortfolio() {
+  if(portfolioRuntime.status==='running')return;
+  const positions=portfolioPositions(),tickers=[...new Set(positions.map(p=>p.ticker))];
+  if(!tickers.length){portfolioRuntime={...portfolioRuntime,status:'empty',message:'請先填入代號與大於零的投入金額。',data:{},signature:null};renderPortfolioAnalysis();return;}
+  const generation=portfolioRuntime.generation+1,signature=portfolioSignature(),controller=new AbortController(),started=performance.now();
+  portfolioRuntime={generation,signature,controller,status:'running',message:'',data:{},completed:0,total:tickers.length,elapsedMs:0};
+  renderPortfolioAnalysis();
+  // Keep elapsed time and progress visible after a customer starts analysis.
+  q('#portfolioProgress').scrollIntoView({block:'center',behavior:'auto'});
+  const deadline=setTimeout(()=>controller.abort('deadline'),60000);
+  const clock=setInterval(()=>{if(portfolioRuntime.generation===generation)q('#portfolioElapsed').textContent=`已等待 ${Math.floor((performance.now()-started)/1000)} 秒；最多等待 60 秒。`;},1000);
+  const current=()=>portfolioRuntime.generation===generation && signature===portfolioSignature();
+  try {
+    if(!backendAvailable())throw Error('尚未連接官方核對服務；無法確認最新資料。');
+    const request=async(url,options={})=>{
+      const response=await fetch(apiUrl(url),{...options,signal:controller.signal,cache:'no-store',headers:{'Content-Type':'application/json'}});
+      const payload=await response.json();if(!response.ok||!payload.ok)throw Error(payload.error||'官方核對服務暫時無法回覆');return payload.job;
+    };
+    let job=await request('/api/market/portfolio',{method:'POST',body:JSON.stringify({tickers})});
+    while(current()){
+      portfolioRuntime={...portfolioRuntime,status:job.status==='running'?'running':job.status,completed:job.completed,total:job.total,data:job.data,elapsedMs:performance.now()-started};
+      renderPortfolioAnalysis();
+      if(job.status!=='running')break;
+      await new Promise((resolve,reject)=>{
+        const onAbort=()=>{clearTimeout(timer);reject(Error('等待已結束'));};
+        const timer=setTimeout(()=>{controller.signal.removeEventListener('abort',onAbort);resolve();},1000);
+        if(controller.signal.aborted){clearTimeout(timer);reject(Error('等待已結束'));return;}
+        controller.signal.addEventListener('abort',onAbort,{once:true});
+      });
+      job=await request(`/api/market/portfolio/${encodeURIComponent(job.id)}`);
+    }
+  }catch(error){
+    if(current())portfolioRuntime={...portfolioRuntime,status:controller.signal.aborted?'timeout':'failed',message:controller.signal.aborted?'已達等待上限，尚未核對的資料保留未知；可稍後重試。':error.message,elapsedMs:performance.now()-started};
+  }finally{
+    clearTimeout(deadline);clearInterval(clock);
+    if(current()){portfolioRuntime.elapsedMs=performance.now()-started;renderPortfolioAnalysis();refreshReports();}
+  }
+}
+function demandStockExposure(holdings) {
+  const result=window.CashflowPortfolioOverlap.calculate(holdings.map(h=>({ticker:h.ticker,amount:holdingAmount(h)})),portfolioRuntime.signature===portfolioSignature()?portfolioRuntime.data:{});
+  const rows=result.rows.map(row=>{const stock=findStock(row.ticker);return {...row,sector:stockThemeGroup(stock?.industry),industry:industryDisplayName(stock?.industry)};});
+  return {rows,bySector:rows.reduce((a,r)=>{a[r.sector]=(a[r.sector]||0)+r.amount;return a;},{}),
+    topStock:rows[0]||{ticker:'待確認',name:'待確認',amount:0,share:0,sources:[]},
+    repeatedStocks:rows.filter(row=>new Set(row.sources.map(s=>s.ticker)).size>1),
+    unresolved:result.gaps.map(g=>({...g,name:'',amount:g.amount})),coverageRate:result.coveragePercent||0,status:result.status,result};
+}
+
 async function init() {
   if (new URLSearchParams(location.search).get("admin") === "1") {
     q(".admin-tab").hidden = false;
@@ -4480,7 +4486,6 @@ async function init() {
   initScrollAnimations();
   initStickyNav();
   loadBrandFonts();
-  await loadEtfDatabase();
   syncInputs();
   bindEvents();
   await initializeMemberAuth();

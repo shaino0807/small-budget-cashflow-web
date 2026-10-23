@@ -395,12 +395,21 @@
             <div class="panel-head">
               <div>
                 <h3>ETF 與個股持股</h3>
-                <p class="panel-note">輸入代號與目前投入金額，名稱、類型與殖利率會由資料庫自動帶入。</p>
+                <p class="panel-note">輸入持有代號與投入金額，再核對相關官方資料並分析共同持股。計算以投入金額加權，並非即時市值。</p>
               </div>
               <button class="secondary-button" id="addHoldingBtn" type="button">＋ 新增部位</button>
               <button class="secondary-button" data-goto="databaseView" type="button">查看持有 ETF 官方資料與走勢</button>
             </div>
             <div class="holding-editor" id="holdingEditor"></div>
+            <button class="primary-button" id="analyzePortfolioBtn" type="button">核對持有部位並分析重疊</button>
+            <section class="portfolio-progress" id="portfolioProgress" aria-labelledby="portfolioProgressTitle">
+              <h4 id="portfolioProgressTitle">尚未送出持有部位</h4>
+              <p>支援範圍：國內一般股票型 ETF（含主動式）。海外、債券、槓桿與反向型不支援；官方資料缺漏會另外列明。</p>
+              <p id="portfolioProgressMessage" role="status" aria-live="polite" aria-atomic="true">填入部位後才核對相關官方資料。</p>
+              <progress id="portfolioProgressBar" max="100" value="0" aria-label="持有標的核對進度" hidden></progress>
+              <p id="portfolioElapsed" class="panel-note"></p>
+            </section>
+            <div id="portfolioOverlapResult"></div>
           </section>
         </div>
         <div class="validation-errors" id="profileValidationErrors" role="alert" hidden></div>
@@ -569,6 +578,7 @@
     <script src="./cashflow-visual.js"></script>
     <datalist id="etfSearchOptions"></datalist>
     <script src="./etf-data.js"></script>
+    <script src="./portfolio-overlap.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>

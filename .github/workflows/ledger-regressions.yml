@@ -3,6 +3,11 @@ name: Ledger regression checks
 on:
   workflow_call:
   workflow_dispatch:
+    inputs:
+      runtime_only:
+        description: 'Only verify the production Node 24 Alpine container, including real official first use'
+        type: boolean
+        default: false
   pull_request:
     paths:
       - 'webapp/**'
@@ -14,6 +19,7 @@ permissions:
 
 jobs:
   ledger:
+    if: ${{ github.event_name != 'workflow_dispatch' || !inputs.runtime_only }}
     runs-on: windows-latest
     timeout-minutes: 15
     steps:
@@ -25,6 +31,8 @@ jobs:
         run: node webapp/scripts/run-ledger-regressions.js --browser
       - name: Verify updater preservation and candidate rejection
         run: node --test webapp/scripts/test-updater-guards.js webapp/scripts/test-data-batch.js webapp/scripts/test-market-snapshot.js webapp/scripts/test-market-reader.js webapp/scripts/test-payout-reconciliation.js
+      - name: Verify selected holdings and empty-cache first use
+        run: node --test webapp/scripts/test-portfolio-demand.js webapp/scripts/test-portfolio-first-use.js webapp/scripts/test-portfolio-domestic.js webapp/scripts/test-portfolio-valuation.js
       - name: Verify public mobile layout and accessibility
         shell: pwsh
         run: |
@@ -42,3 +50,15 @@ jobs:
           name: public-accessibility
           path: accessibility-evidence
           if-no-files-found: warn
+  portfolio-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the production Dockerfile without production credentials
+        run: docker build -t portfolio-candidate ./webapp
+      - name: Verify calculations, cache, parsing and error guards on Node 24 Alpine
+        run: docker run --rm portfolio-candidate node --test scripts/test-portfolio-demand.js scripts/test-portfolio-first-use.js scripts/test-portfolio-domestic.js scripts/test-portfolio-valuation.js scripts/test-market-reader.js
+      - name: Verify real official sources and empty-cache API on Node 24 Alpine
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.runtime_only }}
+        run: docker run --rm portfolio-candidate node scripts/verify-portfolio-runtime.js
