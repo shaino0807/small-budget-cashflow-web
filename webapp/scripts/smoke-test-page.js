@@ -358,6 +358,11 @@ async function main() {
       })()`
     });
     await wait(300);
+    // The catalog is now demand-loaded; retain early input and wait for its actual UI result.
+    for (let i = 0; i < 100; i += 1) {
+      if (await evalValue(ws, `document.querySelector("#holdingEditor .holding-row:last-child")?.textContent.includes("系統已帶入")`)) break;
+      await wait(100);
+    }
     await send(ws, "Runtime.evaluate", {
       expression: `(() => {
         const amount = document.querySelector("#holdingEditor .holding-row:last-child [data-holding-amount]");
