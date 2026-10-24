@@ -33,6 +33,8 @@ jobs:
           node-version: '22'
       - name: Verify ledger, persistence, image guards and both browser sizes
         run: node webapp/scripts/run-ledger-regressions.js --browser
+      - name: Verify membership API and browser roles
+        run: node webapp/scripts/test-member-access.js --browser
       - name: Verify updater preservation and candidate rejection
         run: node --test webapp/scripts/test-updater-guards.js webapp/scripts/test-data-batch.js webapp/scripts/test-market-snapshot.js webapp/scripts/test-market-reader.js webapp/scripts/test-payout-reconciliation.js
       - name: Verify selected holdings and empty-cache first use
@@ -64,6 +66,12 @@ jobs:
       - name: Verify calculations, cache, parsing and error guards on Node 24 Alpine
         if: ${{ !inputs.source_diagnostics }}
         run: docker run --rm portfolio-candidate node --test scripts/test-portfolio-demand.js scripts/test-portfolio-first-use.js scripts/test-portfolio-domestic.js scripts/test-portfolio-valuation.js scripts/test-market-reader.js
+      - name: Verify membership and authentication on Node 24 Alpine
+        if: ${{ !inputs.source_diagnostics }}
+        run: |
+          docker run --rm portfolio-candidate node scripts/test-member-access.js
+          docker run --rm portfolio-candidate node scripts/test-line-auth.js
+          docker run --rm portfolio-candidate node scripts/test-customer-api.js
       - name: Verify real official sources and empty-cache API on Node 24 Alpine
         if: ${{ github.event_name == 'workflow_dispatch' && !inputs.source_diagnostics }}
         run: docker run --rm portfolio-candidate node scripts/verify-portfolio-runtime.js

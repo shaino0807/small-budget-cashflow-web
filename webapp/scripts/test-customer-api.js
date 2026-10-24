@@ -196,10 +196,18 @@ function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// The member-only API uses real isolated sessions, including distinct non-owner/admin actors.
+for(const key of ['CUSTOMER_DATA_DIR','CUSTOMER_DATA_KEY','ACCESS_CODE_PEPPER','ADMIN_API_KEY'])process.env[key]=env[key];
+const memberStore=require('../customer-store').createStore();
+const fixtureUsers=['1','2','3'].map(n=>memberStore.findOrCreateUserByLineId('U'+n.repeat(32)));
+memberStore.bootstrapAdmin(fixtureUsers[2].id);
+const [memberCookie,otherCookie,adminCookie]=fixtureUsers.map(u=>'__Host-cashflow_session='+memberStore.createUserSession(u.id).token);
+memberStore.close();
+
 async function request(pathname, options = {}) {
   const { headers = {}, ...rest } = options;
   const response = await fetch(`${baseUrl}${pathname}`, {
-    headers: { "Content-Type": "application/json", ...headers },
+    headers: { "Content-Type": "application/json", Cookie: memberCookie, ...headers },
     ...rest
   });
   const body = await response.json();
@@ -209,7 +217,7 @@ async function request(pathname, options = {}) {
 async function requestText(pathname, options = {}) {
   const { headers = {}, ...rest } = options;
   const response = await fetch(`${baseUrl}${pathname}`, {
-    headers: { "Content-Type": "application/json", ...headers },
+    headers: { "Content-Type": "application/json", Cookie: memberCookie, ...headers },
     ...rest
   });
   return { status: response.status, body: await response.text(), headers: response.headers };
@@ -325,11 +333,11 @@ async function main() {
     const report = created.body.report;
 
     const wrongCode = await request(`/api/reports/${report.id}`, {
-      headers: { "X-Report-Access-Code": "wrong-code" }
+      headers: { "X-Report-Access-Code": "wrong-code", Cookie: otherCookie }
     });
     assert(wrongCode.status === 404, "Wrong report access code was accepted");
     const unauthorizedAdmin = await request("/api/admin/reports");
-    assert(unauthorizedAdmin.status === 401, "Admin endpoint accepted missing key");
+    assert(unauthorizedAdmin.status === 403, "Admin endpoint accepted a non-admin member");
     const forbiddenOrigin = await request("/api/reports", {
       method: "POST",
       headers: { Origin: "https://attacker.example" },
@@ -353,7 +361,7 @@ async function main() {
       "Large LINE Pay transaction ID was not preserved as a string"
     );
 
-    const wrongPaymentAccess = await paymentStatus(checkout, report, { "X-Report-Access-Code": "wrong-code" });
+    const wrongPaymentAccess = await paymentStatus(checkout, report, { "X-Report-Access-Code": "wrong-code", Cookie: otherCookie });
     assert(wrongPaymentAccess.status === 404, "Payment status accepted a wrong access code");
     const wrongPaymentToken = await paymentStatus(checkout, report, { "X-Payment-Status-Token": "wrong-token" });
     assert(wrongPaymentToken.status === 404, "Payment status accepted a wrong status token");
@@ -448,7 +456,7 @@ async function main() {
       "Consultation payment did not unlock entitlement"
     );
 
-    const adminHeaders = { Authorization: `Bearer ${adminKey}` };
+    const adminHeaders = { Cookie: adminCookie };
     const adminPayments = await request("/api/admin/payments", { headers: adminHeaders });
     assert(
       adminPayments.status === 200

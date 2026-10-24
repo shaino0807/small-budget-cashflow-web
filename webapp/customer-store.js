@@ -409,6 +409,93 @@ function publicReport(row, entitlements = []) {
 
 function createStore() {
   const db = initialize();
+  db.exec(`CREATE TABLE IF NOT EXISTS member_access (
+    user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    status TEXT NOT NULL CHECK(status IN ('active','revoked')), source TEXT NOT NULL,
+    updated_by TEXT NOT NULL, updated_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS member_access_audit (
+      id INTEGER PRIMARY KEY, user_id TEXT NOT NULL, actor_id TEXT NOT NULL,
+      action TEXT NOT NULL, reason TEXT NOT NULL, created_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS user_roles (
+      user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      role TEXT NOT NULL CHECK(role='admin'), created_at TEXT NOT NULL);`);
+  function migrateMemberAccess() {
+    db.prepare(`INSERT OR IGNORE INTO member_access
+      SELECT DISTINCT r.user_id, 'active', 'legacy_payment', 'migration', ?
+      FROM report_entitlements e JOIN reports r ON r.id=e.report_id
+      JOIN orders o ON o.id=e.source_order_id
+      WHERE r.user_id IS NOT NULL AND e.entitlement='full_report' AND o.status='paid'`)
+      .run(new Date().toISOString());
+  }
+  migrateMemberAccess();
+  function memberAccess(userId) {
+    const role = db.prepare('SELECT role FROM user_roles WHERE user_id=?').get(userId)?.role || 'member';
+    const row = db.prepare('SELECT status, source, updated_at AS updatedAt FROM member_access WHERE user_id=?').get(userId);
+    return { role, fullReport: role==='admin' || row?.status==='active',
+      status: row?.status || 'free', expiresAt: null, source: row?.source || null, updatedAt: row?.updatedAt || null };
+  }
+  function assertMemberAdmin(actorId) {
+    if(memberAccess(actorId).role!=='admin') {const e=Error('需要管理員權限');e.statusCode=403;throw e;}
+  }
+  function bootstrapAdmin(userId) {
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      if(db.prepare('SELECT 1 FROM user_roles LIMIT 1').get()) throw Error('管理員已設定，不能重複初始化');
+      if(!db.prepare('SELECT 1 FROM users WHERE id=?').get(userId)) throw Error('找不到會員');
+      const now=new Date().toISOString();
+      db.prepare("INSERT INTO user_roles VALUES (?, 'admin', ?)").run(userId,now);
+      db.prepare('INSERT INTO member_access_audit(user_id,actor_id,action,reason,created_at) VALUES (?,?,?,?,?)')
+        .run(userId,'local-bootstrap','admin_created','首次管理員設定',now);
+      db.exec('COMMIT');
+    } catch(e) {db.exec('ROLLBACK');throw e;}
+  }
+  function listMembers(actorId, query='') {
+    assertMemberAdmin(actorId);
+    return db.prepare('SELECT id, created_at AS createdAt, last_login_at AS lastLoginAt FROM users WHERE id LIKE ? ORDER BY created_at DESC LIMIT 200')
+      .all('%'+String(query).slice(0,80)+'%').map(row=>({...row,access:memberAccess(row.id)}));
+  }
+  function setMemberAccess(actorId,userId,active,reason) {
+    assertMemberAdmin(actorId);
+    if(typeof active!=='boolean' || typeof reason!=='string' || !reason.trim() || reason.length>300) {const e=Error('請填寫開通或撤銷原因');e.statusCode=400;throw e;}
+    if(!db.prepare('SELECT 1 FROM users WHERE id=?').get(userId)) {const e=Error('找不到會員');e.statusCode=404;throw e;}
+    if(memberAccess(userId).role==='admin') {const e=Error('管理員角色不透過會員開通操作變更');e.statusCode=409;throw e;}
+    const status=active?'active':'revoked', now=new Date().toISOString();
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      const previous=db.prepare('SELECT status FROM member_access WHERE user_id=?').get(userId)?.status;
+      if(previous!==status) {
+        db.prepare(`INSERT INTO member_access VALUES (?,?,'manual',?,?) ON CONFLICT(user_id) DO UPDATE SET
+          status=excluded.status,source=excluded.source,updated_by=excluded.updated_by,updated_at=excluded.updated_at`).run(userId,status,actorId,now);
+        db.prepare('INSERT INTO member_access_audit(user_id,actor_id,action,reason,created_at) VALUES (?,?,?,?,?)')
+          .run(userId,actorId,status,reason.trim(),now);
+      }
+      db.exec('COMMIT');
+    } catch(e) {db.exec('ROLLBACK');throw e;}
+    return memberAccess(userId);
+  }
+  function memberAudit(actorId,userId) {
+    assertMemberAdmin(actorId);
+    return db.prepare('SELECT actor_id AS actorId,action,reason,created_at AS createdAt FROM member_access_audit WHERE user_id=? ORDER BY id DESC LIMIT 200').all(userId);
+  }
+  function reportForMember(row) {
+    const full=row.user_id && memberAccess(row.user_id).fullReport;
+    const entitlements=listEntitlements(row.id).filter(e=>e!=='full_report');
+    if(full)entitlements.push('full_report');
+    const result=publicReport(row,entitlements);
+    if(!full && result.payload.report) {
+      const r=result.payload.report;
+      result.payload.report={reportVersion:r.reportVersion,generatedAt:r.generatedAt,score:r.score,status:r.status,breakdown:r.breakdown};
+    }
+    return result;
+  }
+  function claimLegacyReport(userId,id,code) {
+    const row=assertReportAccess(id,code);
+    if(row.user_id && row.user_id!==userId){const e=Error('報告已歸屬其他會員');e.statusCode=403;throw e;}
+    db.prepare('UPDATE reports SET user_id=? WHERE id=? AND user_id IS NULL').run(userId,id);
+    migrateMemberAccess();
+    return getReportForUser(id,userId);
+  }
+
   db.exec(`CREATE TABLE IF NOT EXISTS line_financial_settings (line_user_hash TEXT PRIMARY KEY, payload_cipher TEXT NOT NULL, updated_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS line_image_preferences (line_user_hash TEXT PRIMARY KEY, enabled INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS line_image_attempts (line_user_hash TEXT NOT NULL, message_id TEXT NOT NULL, day TEXT NOT NULL, PRIMARY KEY(line_user_hash, message_id));`);
@@ -889,6 +976,7 @@ function createStore() {
     if (!row) return null;
     return {
       id: row.id,
+      access: memberAccess(row.id),
       onboardingCompleted: Boolean(row.onboarding_completed_at),
       onboardingCompletedAt: row.onboarding_completed_at || null,
       createdAt: row.created_at,
@@ -933,6 +1021,7 @@ function createStore() {
       db.prepare("UPDATE users SET last_login_at = ? WHERE id = ?").run(now, row.id);
     }
     linkExistingLineData(row.id, lineUserHash);
+    migrateMemberAccess();
     return publicUser(db.prepare("SELECT * FROM users WHERE id = ?").get(row.id));
   }
 
@@ -1043,7 +1132,7 @@ function createStore() {
     const row = db.prepare(`
       SELECT * FROM reports WHERE user_id = ? AND expires_at > ? ORDER BY created_at DESC LIMIT 1
     `).get(userId, new Date().toISOString());
-    return row ? publicReport(row, listEntitlements(row.id)) : null;
+    return row ? reportForMember(row) : null;
   }
 
   function userBootstrap(userId, monthKey = taipeiMonthKey()) {
@@ -1186,7 +1275,7 @@ function createStore() {
       encrypt(body)
     );
     addEvent({ anonymousId, reportId: id, eventType: "report_generated", metadata: { checkType: body.checkType, channel } });
-    return { id, accessCode, anonymousId, createdAt: now.toISOString(), expiresAt: expires.toISOString(), inputVersion, reportVersion, entitlements: [] };
+    return { id, accessCode, anonymousId, createdAt: now.toISOString(), expiresAt: expires.toISOString(), inputVersion, reportVersion, entitlements: userId && memberAccess(userId).fullReport ? ["full_report"] : [] };
   }
 
   function getReport(id, code) {
@@ -1194,14 +1283,14 @@ function createStore() {
     if (!row || !safeEqual(row.access_hash, accessHash(code))) return null;
     if (new Date(row.expires_at) < new Date()) return null;
     addEvent({ anonymousId: row.anonymous_id, reportId: id, eventType: "report_reopened" });
-    return publicReport(row, listEntitlements(id));
+    return reportForMember(row);
   }
 
   function getReportForUser(id, userId) {
     const row = db.prepare("SELECT * FROM reports WHERE id = ? AND user_id = ?").get(id, userId);
     if (!row || new Date(row.expires_at) < new Date()) return null;
     addEvent({ anonymousId: row.anonymous_id, reportId: id, eventType: "report_reopened" });
-    return publicReport(row, listEntitlements(id));
+    return reportForMember(row);
   }
 
   function deleteReport(id, code) {
@@ -2053,6 +2142,7 @@ function createStore() {
       db.exec("ROLLBACK");
       throw error;
     }
+    migrateMemberAccess();
     return {
       ok: true,
       order: providerOrder(orderId, provider),
@@ -2167,6 +2257,7 @@ function createStore() {
   }
 
   return {
+    memberAccess, assertMemberAdmin, bootstrapAdmin, listMembers, setMemberAccess, memberAudit, claimLegacyReport,
     addEvent,
     saveFinancialSettings,
     setLineImageConsent,

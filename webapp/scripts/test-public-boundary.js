@@ -6,6 +6,7 @@ const { buildPublicSite } = require("./build-public-site");
 const root = path.resolve(__dirname, "..");
 const blocked = [".env.local", ".env.example", "server.js", "etf-market.js", "customer-store.js", "statement-reader.js", "public-files.js", "scripts/test-image-privacy.js", "private-data/customers.sqlite", "private-data/market-cache/0050.json", "reports/journal-dashboard-fixture.html", "data/../server.js", "assets/../../.env.local", "Dockerfile"];
 async function main() {
+  blocked.push('member-report.js','scripts/bootstrap-member-admin.js','scripts/test-member-access.js');
   const destination = fs.mkdtempSync(path.join(os.tmpdir(), "cashflow-public-"));
   assert.equal(buildPublicSite(destination), publicFiles.length);
   assert.throws(() => buildPublicSite(destination), /must be empty/);

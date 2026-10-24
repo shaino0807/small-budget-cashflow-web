@@ -165,6 +165,35 @@ let activeWorkspaceSection = sessionStorage.getItem(workspaceSectionSessionKey) 
 let activeMemberNav = memberNavItems.includes(sessionStorage.getItem(memberNavSessionKey)) ? sessionStorage.getItem(memberNavSessionKey) : "overview";
 let selectedCashflowMonth = clamp(Number(sessionStorage.getItem(monthEditorSessionKey)) || new Date().getMonth() + 1, 1, 12);
 let upgradeReturnLocation = { view: "freeReportView", section: activeWorkspaceSection };
+let premiumData=null, premiumSignature='', premiumTimer=null, premiumEpoch=0, premiumBusy=false;
+let memberAccess={role:'member',fullReport:false,status:'free'};
+function clearPremium() {
+  premiumEpoch++;premiumData=null;premiumSignature='';
+  portfolioRuntime?.controller?.abort();
+  if(typeof portfolioRuntime!=='undefined')portfolioRuntime={...portfolioRuntime,data:{},signature:null,status:'idle'};
+}
+async function refreshMemberAccess() {
+  if(!authState.authenticated){memberAccess={role:'member',fullReport:false,status:'free'};applyEntitlements([]);return;}
+  try {const result=await apiRequest('/api/users/me/access');memberAccess=result.access;
+    if(!memberAccess.fullReport)clearPremium();
+    q("#memberIdentity").textContent="會員編號："+authState.user.id+"；"+(memberAccess.role==='admin'?'管理員':memberAccess.fullReport?'完整功能已開通，持續有效至撤銷':'免費會員');
+    applyEntitlements(memberAccess.fullReport?['full_report']:[]);
+    refreshMemberAuthUi();refreshReports();
+  }catch{clearPremium();memberAccess={role:'member',fullReport:false,status:'free'};applyEntitlements([]);refreshReports();}
+}
+function schedulePremium() {
+  clearTimeout(premiumTimer);
+  if(!authState.authenticated||!memberAccess.fullReport)return;
+  const input={profile:state.profile,holdings:state.holdings.filter(h=>h.ticker),monthlyCashflows:state.monthlyCashflows,simulationYears:state.simulationYears};
+  const signature=JSON.stringify(input);if(premiumSignature===signature||premiumBusy)return;
+  premiumData=null;
+  premiumTimer=setTimeout(async()=>{const epoch=premiumEpoch;premiumBusy=true;
+    try{const result=await apiRequest('/api/reports/full',{method:'POST',body:signature});
+      if(epoch===premiumEpoch&&memberAccess.fullReport&&signature===JSON.stringify({profile:state.profile,holdings:state.holdings.filter(h=>h.ticker),monthlyCashflows:state.monthlyCashflows,simulationYears:state.simulationYears})){premiumData=result.report;premiumSignature=signature;refreshReports();}
+    }catch(error){if(epoch===premiumEpoch){clearPremium();memberAccess.fullReport=false;applyEntitlements([]);showToast(error.message);refreshReports();}}
+    finally{premiumBusy=false;if(memberAccess.fullReport&&!premiumData)schedulePremium();}
+  },350);
+}
 let authState = {
   configured: false,
   checked: false,
@@ -461,7 +490,8 @@ function applyMemberBootstrap(bootstrap) {
 }
 
 function refreshMemberAuthUi() {
-  const loginRequired = authState.configured && !authState.authenticated;
+  q('#legacyClaimPanel').hidden=!authState.authenticated;
+  const loginRequired = !authState.authenticated;
   const onboardingRequired = authState.configured && authState.authenticated && !authState.user?.onboardingCompleted;
   q("#memberAuthGate").hidden = !loginRequired;
   q("#lineLoginBtn").hidden = !loginRequired;
@@ -473,7 +503,7 @@ function refreshMemberAuthUi() {
   q("#saveFinancialDataBtn").hidden = loginRequired;
   document.querySelectorAll(".app-tabs .tab").forEach((tab) => {
     if (tab.dataset.view === "landingView") return;
-    if (tab.classList.contains("admin-tab") && new URLSearchParams(location.search).get("admin") === "1") return;
+    if (tab.classList.contains('admin-tab')) {tab.hidden=memberAccess.role!=='admin';return;}
     tab.hidden = loginRequired || onboardingRequired;
   });
   document.body.dataset.memberAuth = !authState.configured
@@ -527,6 +557,7 @@ async function initializeMemberAuth() {
     if (authState.authenticated) {
       const bootstrap = await apiRequest("/api/users/me/bootstrap");
       authState.user = bootstrap.user;
+      memberAccess=bootstrap.user.access;
       applyMemberBootstrap(bootstrap);
       const requested = new URLSearchParams(location.search).get("view");
       activeView = availableViews.includes(requested) ? requested : activeView;
@@ -585,7 +616,8 @@ function hasEntitlement(entitlement) {
 }
 
 function applyEntitlements(entitlements = []) {
-  const unique = Array.from(new Set(entitlements.filter(Boolean)));
+  const unique = Array.from(new Set(entitlements.filter(Boolean).filter(e=>e!=='full_report')));
+  if(authState.authenticated && memberAccess.fullReport)unique.push('full_report');
   if (!state.reportMeta) state.reportMeta = {};
   state.reportMeta.entitlements = unique;
   state.paidUnlocked = unique.includes("full_report");
@@ -1173,20 +1205,7 @@ function groupExposureRows(rows, total) {
     .sort((a, b) => b.amount - a.amount);
 }
 
-function dividendStress(profile, holdings) {
-  const annual = annualDividend(holdings);
-  const monthlyDividend = annual / 12;
-  const baseSurplus = investableCashflow(profile) + monthlyDividend;
-  const cut30 = baseSurplus - monthlyDividend * 0.3;
-  const cut50 = baseSurplus - monthlyDividend * 0.5;
-  return {
-    monthlyDividend,
-    baseSurplus,
-    cut30,
-    cut50,
-    status: cut50 < 0 ? "壓力偏高" : cut30 < 0 ? "需要觀察" : "可承受"
-  };
-}
+function dividendStress() { return premiumData?.stress || {monthlyDividend:null,cut30:null,cut50:null,status:'尚未開通或等待計算'}; }
 
 function retirementGap(profile, simulation) {
   const last = simulation[simulation.length - 1];
@@ -1198,28 +1217,7 @@ function retirementGap(profile, simulation) {
   };
 }
 
-function buildSimulation(profile, holdings) {
-  const annualContribution = Number(profile.monthlyInvestment || 0) * 12;
-  const total = totalInvested(holdings);
-  const averageYield = total
-    ? holdings.reduce((sum, item) => sum + holdingAmount(item) * Number(item.dividendYield || 0), 0) / total
-    : 3;
-  const growthRate = clamp(averageYield * 0.35 + 2.2, 2.5, 6.5) / 100;
-  let asset = totalInvested(holdings) + Number(profile.cashSavings || 0) * 0.25;
-  let contributed = totalInvested(holdings);
-  return Array.from({ length: state.simulationYears }, (_, index) => {
-    contributed += annualContribution;
-    asset = asset * (1 + growthRate) + annualContribution;
-    const yearlyDividend = asset * averageYield / 100;
-    return {
-      year: index + 1,
-      asset,
-      contributed,
-      yearlyDividend,
-      gapDirection: yearlyDividend / 12 >= Number(profile.retirementMonthlyNeed || 0) * 0.3 ? "接近" : "不足"
-    };
-  });
-}
+function buildSimulation() { return premiumData?.simulation || [{year:1,asset:0,contributed:0,yearlyDividend:0,gapDirection:"待計算"}]; }
 
 function hasMonthlyInput(row) {
   return monthFields.some((field) => row?.[field] !== "" && row?.[field] !== undefined && row?.[field] !== null);
@@ -1272,41 +1270,7 @@ function dividendEventsForMonth(holdings, year, monthNumber) {
     .filter(Boolean);
 }
 
-function buildCalendar(profile, holdings) {
-  const year = new Date().getFullYear();
-  return monthLabels.map((month, index) => {
-    const monthNumber = index + 1;
-    const hasInput = hasMonthlyInput(state.monthlyCashflows?.[monthNumber]);
-    const monthly = monthlyProfile(monthNumber);
-    const dividendEvents = dividendEventsForMonth(holdings, year, monthNumber);
-    const dividend = dividendEvents.reduce((sum, row) => sum + row.amount, 0);
-    if (!hasInput) {
-      return {
-        month,
-        income: null,
-        expenses: null,
-        dividend,
-        investable: null,
-        status: "pending",
-        dividendEvents,
-        reminder: dividendEvents.length ? "本月有官方配息紀錄；收入支出尚未輸入。" : "本月尚未輸入現金流。"
-      };
-    }
-    const expenses = monthlyTotalExpense(monthly);
-    const investable = Number(monthly.monthlyIncome) - expenses - Number(monthly.monthlyInvestment) + dividend;
-    const status = investable < 0 ? "stress" : investable < Number(monthly.monthlyIncome) * 0.08 ? "watch" : "safe";
-    return {
-      month,
-      income: Number(monthly.monthlyIncome),
-      expenses,
-      dividend,
-      investable,
-      status,
-      dividendEvents,
-      reminder: status === "stress" ? "先補現金流缺口，再談加碼。" : status === "watch" ? "支出接近警戒線，保留現金。" : "現金流穩定，可檢查配置。"
-    };
-  });
-}
+function buildCalendar() { return premiumData?.calendar || []; }
 
 function buildRisks(profile, holdings, breakdown) {
   const risks = [];
@@ -1374,44 +1338,9 @@ function buildRisks(profile, holdings, breakdown) {
   return risks.sort((a, b) => order[a.level] - order[b.level]).slice(0, 3);
 }
 
-function allocationRecommendations(report) {
-  const total = Math.max(1, totalInvested(state.holdings));
-  const emergencyReady = report.breakdown.emergency >= 80;
-  const base = [
-    {
-      name: "保守",
-      target: emergencyReady ? "現金 25% / 市值型 45% / 債券或貨幣 20% / 高股息 10%" : "先補預備金，再降低單一 ETF 依賴",
-      note: "適合現金流剛穩定、希望降低波動的人。"
-    },
-    {
-      name: "均衡",
-      target: "市值型 55% / 高股息 25% / 現金 15% / 主題或海外 5%",
-      note: "兼顧長期成長與配息現金流，避免只追高股息。"
-    },
-    {
-      name: "積極",
-      target: "市值型 65% / 海外或主題 15% / 高股息 15% / 現金 5%",
-      note: "適合預備金充足、能承受波動且投資年限較長的人。"
-    }
-  ];
-  if (report.highDividendRatio > 60) {
-    base[1].note = `目前高股息部位約 ${pct(report.highDividendRatio)}，均衡方案應優先把新增資金導向市值型。`;
-  }
-  if (total < 100000) {
-    base[0].target = "先建立 6 個月預備金，再用 1 到 2 檔核心 ETF 開始";
-  }
-  return base;
-}
+function allocationRecommendations() { return premiumData?.allocations || []; }
 
-function personalizedActions(report) {
-  const actions = [];
-  if (report.breakdown.emergency < 80) actions.push("把第一優先放在補足 6 個月緊急預備金。");
-  if (report.highDividendRatio > 55) actions.push("未來 3 個月新增資金先避開高股息 ETF，降低配息依賴。");
-  if (report.overlap.score > 65) actions.push("檢查直接股票與 ETF 底層成分，優先處理重複買到的前幾大股票曝險。");
-  if (report.stress.cut50 < 0) actions.push("用 50% 配息下修情境重排月支出，不要把配息視為固定薪水。");
-  if (actions.length < 3) actions.push("每月固定重算一次現金流月曆，確認投資額沒有壓縮生活安全墊。");
-  return actions.slice(0, 4);
-}
+function personalizedActions() { return premiumData?.actions || []; }
 
 function capacityAmount(capacity) {
   if (capacity === "under5000") return 4000;
@@ -1947,6 +1876,7 @@ function escapeHtml(value) {
 }
 
 function refreshReports() {
+  schedulePremium();
   invalidatePortfolioIfChanged();
   renderPortfolioAnalysis();
   latestReport = buildReport();
@@ -2588,7 +2518,7 @@ function scoreHtml(report) {
         <div class="metric"><span>每月可用現金流</span><strong>${formatMoney(investableCashflow(report.profile))}</strong></div>
         <div class="metric"><span>投資年配息估算（已知部分）</span><strong>${formatMoney(annualDividend(report.holdings))}</strong><small>${escapeHtml(yieldCoverageNote(report.holdings))}</small></div>
         <div class="metric"><span>高股息依賴</span><strong>${pct(report.highDividendRatio)}</strong></div>
-        <div class="metric"><span>退休缺口</span><strong>${formatMoney(report.gap.gap)}</strong></div>
+        <div class="metric"><span>退休缺口</span><strong>${premiumData ? formatMoney(report.gap.gap) : "需完整規劃"}</strong></div>
       </div>
     </section>
   `;
@@ -3328,8 +3258,10 @@ async function deleteAllLineData() {
 }
 
 function downloadCurrentReport() {
-  if (!state.reportMeta) return;
-  const blob = new Blob([JSON.stringify(reportSubmission(), null, 2)], { type: "application/json" });
+  if (!authState.authenticated || !state.reportMeta) return;
+  const submission=reportSubmission();
+  if(!state.paidUnlocked)submission.report={score:latestReport.score,status:latestReport.status,breakdown:latestReport.breakdown};
+  const blob = new Blob([JSON.stringify(submission, null, 2)], { type: "application/json" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
   link.download = `cashflow-report-${state.reportMeta.generatedAt.slice(0, 10)}.json`;
@@ -3415,7 +3347,7 @@ function renderFreeReport() {
       ${trustSourceHtml()}
       <section class="panel">
         <h3>退休缺口方向</h3>
-        <p>${state.simulationYears} 年後推估資產 ${formatMoney(report.gap.projected)}，距離目標仍差 ${formatMoney(report.gap.gap)}。</p>
+        <p>${premiumData ? `${state.simulationYears} 年後推估資產 ${formatMoney(report.gap.projected)}，距離目標仍差 ${formatMoney(report.gap.gap)}。` : "退休缺口與長期資產規劃需開通完整功能後試算。"}</p>
       </section>
       <section class="panel locked">
         <h3>現金流預覽</h3>
@@ -3445,16 +3377,16 @@ function renderUpgrade() {
   if (upgradeIntro) {
     upgradeIntro.textContent = `完整報告 ${formatTwd(fullReportPriceTwd)}；一對一諮詢總費用 ${formatTwd(consultationFeeTwd)}，訂金 ${formatTwd(consultationDepositTwd)} 已包含在總費用內。`;
   }
-  const paymentAvailable = paymentRuntime.provider === "linepay" && paymentRuntime.configured;
+  const paymentAvailable = false;
   const plans = [
     { name: "免費報告", price: "NT$0", status: "目前方案", key: "free", features: ["財務體質分數", "現金流摘要", "3 個優先風險"] },
-    { name: "完整報告", price: formatTwd(fullReportPriceTwd), action: state.paidUnlocked ? "已解鎖" : paymentAvailable ? "使用 LINE Pay 付款" : "LINE Pay 申請中", key: "paid", disabled: !paymentAvailable && !state.paidUnlocked, highlight: true, features: ["整體股票重疊度分析", "高股息依賴與壓力測試", "資產模擬與月份月曆", "PDF/列印匯出"] },
-    { name: "一對一現金流諮詢", price: formatTwd(consultationFeeTwd), priceNote: "總費用", action: state.consultingUnlocked ? "訂金已支付" : paymentAvailable ? `使用 LINE Pay 支付 ${formatTwd(consultationDepositTwd)} 訂金` : "LINE Pay 申請中", key: "consulting", disabled: !paymentAvailable && !state.consultingUnlocked, features: [`訂金 ${formatTwd(consultationDepositTwd)} 已包含在總費用內`, `預約確認後再支付尾款 ${formatTwd(consultationBalanceTwd)}`, "人工檢視 ETF、股票與現金流"] }
+    { name: "完整報告", price: formatTwd(fullReportPriceTwd), action: state.paidUnlocked ? "已解鎖" : paymentAvailable ? "使用 LINE Pay 付款" : "聯絡管理員開通", key: "paid", disabled: false, highlight: true, features: ["整體股票重疊度分析", "高股息依賴與壓力測試", "資產模擬與月份月曆", "PDF/列印匯出"] },
+    { name: "一對一現金流諮詢", price: formatTwd(consultationFeeTwd), priceNote: "總費用", action: state.consultingUnlocked ? "訂金已支付" : paymentAvailable ? `使用 LINE Pay 支付 ${formatTwd(consultationDepositTwd)} 訂金` : "聯絡管理員開通", key: "consulting", disabled: !paymentAvailable && !state.consultingUnlocked, features: [`訂金 ${formatTwd(consultationDepositTwd)} 已包含在總費用內`, `預約確認後再支付尾款 ${formatTwd(consultationBalanceTwd)}`, "人工檢視 ETF、股票與現金流"] }
   ];
   const providerNotice = !paymentAvailable ? `
     <section class="panel payment-status-panel" role="status">
       <span class="badge">LINE Pay</span>
-      <p>LINE Pay 商店資料申請中，正式付款功能尚未開放。目前不會建立訂單或收取款項。</p>
+      <p>完整功能採會員手動開通，持續有效至撤銷；本網站暫不提供線上付款。</p>
     </section>
   ` : paymentRuntime.environment !== "production" ? `
     <section class="panel payment-status-panel" role="status">
@@ -3498,7 +3430,7 @@ function renderUpgrade() {
     button.addEventListener("click", async () => {
       if (button.dataset.plan === "paid") {
         if (state.paidUnlocked) return goTo("paidReportView");
-        await startCheckout("full_report");
+        showToast("請聯絡管理員，核對會員編號後手動開通完整功能。");
       }
       if (button.dataset.plan === "consulting") {
         if (state.consultingUnlocked) return showToast("諮詢訂金已付款，可用下方 IG 或 LINE 預約。");
@@ -3844,13 +3776,13 @@ function renderPriceChartSummary(normalized) {
 
 function renderPaidReport() {
   const report = latestReport;
-  if (!state.paidUnlocked) {
+  if (!state.paidUnlocked || !premiumData) {
     q("#paidReport").innerHTML = `
       <section class="panel">
         <h3>完整報告尚未解鎖</h3>
-        <p>請先完成完整報告付款。付款成功後，系統會向後端確認入帳，再開啟完整報告。</p>
+        <p>完整功能由管理員手動開通，持續有效至撤銷。已開通時，請等待規劃資料載入。</p>
         ${state.payment?.message ? `<p class="panel-note">${escapeHtml(state.payment.message)}</p>` : ""}
-        <button class="primary-button" data-goto="upgradeView" type="button">前往付款</button>
+        <button class="primary-button" data-goto="upgradeView" type="button">查看開通方式</button>
       </section>
     `;
     bindGotoButtons();
@@ -3858,6 +3790,7 @@ function renderPaidReport() {
   }
   q("#paidReport").innerHTML = `
     ${scoreHtml(report)}
+    <p class="panel-note">${premiumData.assumptions.map(escapeHtml).join("；")}</p>
     <div class="stack">
       ${breakdownHtml(report)}
       ${risksHtml(report, true)}
@@ -3868,8 +3801,8 @@ function renderPaidReport() {
         <p class="panel-note">${escapeHtml(yieldCoverageNote(report.holdings))}</p>
         <div class="metrics">
           <div class="metric"><span>月配息估算</span><strong>${formatMoney(report.stress.monthlyDividend)}</strong></div>
-          <div class="metric"><span>下修 30%</span><strong>${formatMoney(report.stress.cut30)}</strong></div>
-          <div class="metric"><span>下修 50%</span><strong>${formatMoney(report.stress.cut50)}</strong></div>
+          <div class="metric"><span>配息下修 30% 後月現金流</span><strong>${formatMoney(report.stress.cut30)}</strong></div>
+          <div class="metric"><span>配息下修 50% 後月現金流</span><strong>${formatMoney(report.stress.cut50)}</strong></div>
           <div class="metric"><span>狀態</span><strong>${report.stress.status}</strong></div>
         </div>
       </section>
@@ -3900,6 +3833,7 @@ function renderPaidReport() {
 }
 
 function renderSimulation() {
+  if(!state.paidUnlocked||!premiumData){q('#simulationTable').textContent='完整功能需開通，或正在取得規劃資料。';const canvas=q('#simulationChart');canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);return;}
   drawSimulationChart(latestReport.simulation);
   q("#simulationTable").innerHTML = `
     <div class="table-title">
@@ -3979,6 +3913,7 @@ function drawSimulationChart(rows) {
 }
 
 function renderCalendar() {
+  if(!state.paidUnlocked||!premiumData){q('#cashflowCalendar').textContent='完整功能需開通，或正在取得規劃資料。';return;}
   q("#cashflowCalendar").innerHTML = latestReport.calendar.map((month) => `
     <article class="calendar-card ${month.status}">
       <div class="panel-head">
@@ -3998,7 +3933,9 @@ function renderCalendar() {
 }
 
 async function loadAdminDashboard() {
-  const key = q("#adminApiKey").value;
+  if(memberAccess.role!=='admin')return showToast('需要管理員權限');
+  await loadMemberAdmin();
+  const key = "";
   const status = q("#adminStatus");
   status.textContent = "正在載入客戶資料";
   try {
@@ -4140,6 +4077,9 @@ function scrollToWorkspaceSection(sectionId) {
 }
 
 function goTo(viewId, sectionId = "", memberNav = "", options = {}) {
+  if(viewId==='adminView'&&memberAccess.role!=='admin'){showToast('需要管理員權限');return;}
+  if(viewId!=='landingView'&&!authState.authenticated){showToast('請先使用 LINE 登入');viewId='landingView';}
+  if(['paidReportView','simulationView','calendarView'].includes(viewId))void refreshMemberAccess();
   if (["inputView", "databaseView"].includes(viewId)) void ensurePortfolioCatalog().then(()=>{renderHoldings();refreshReports();});
   const isCompletedMember = authState.authenticated && authState.user?.onboardingCompleted;
   if (viewId === "landingView" && isCompletedMember && !options.allowMemberOnboarding) {
@@ -4351,7 +4291,8 @@ function bindEvents() {
     renderHoldings(); refreshReports();
     showToast("已重新讀取保存資料，資料日期依各欄標示");
   });
-  q("#printBtn").addEventListener("click", () => {
+  q("#printBtn").addEventListener("click", async () => {
+    await refreshMemberAccess();
     if (!state.paidUnlocked) return goTo("upgradeView");
     window.print();
   });
@@ -4402,6 +4343,7 @@ function portfolioPositions() {
 }
 function portfolioSignature() { return JSON.stringify(portfolioPositions().sort((a,b) => a.ticker.localeCompare(b.ticker))); }
 function portfolioResult() {
+  if(!memberAccess.fullReport)return {total:0,rows:[],repeated:[],sources:[],gaps:[],coveragePercent:null,status:'unavailable'};
   return window.CashflowPortfolioOverlap.calculate(portfolioPositions(), portfolioRuntime.signature === portfolioSignature() ? portfolioRuntime.data : {});
 }
 function invalidatePortfolioIfChanged() {
@@ -4435,6 +4377,8 @@ function portfolioResultHtml(result) {
   </section>`;
 }
 async function analyzePortfolio() {
+  await refreshMemberAccess();
+  if(!state.paidUnlocked){showToast('詳細穿透需先開通完整功能');return;}
   if(portfolioRuntime.status==='running')return;
   const positions=portfolioPositions(),tickers=[...new Set(positions.map(p=>p.ticker))];
   if(!tickers.length){portfolioRuntime={...portfolioRuntime,status:'empty',message:'請先填入代號與大於零的投入金額。',data:{},signature:null};renderPortfolioAnalysis();return;}
@@ -4449,7 +4393,7 @@ async function analyzePortfolio() {
   try {
     if(!backendAvailable())throw Error('尚未連接官方核對服務；無法確認最新資料。');
     const request=async(url,options={})=>{
-      const response=await fetch(apiUrl(url),{...options,signal:controller.signal,cache:'no-store',headers:{'Content-Type':'application/json'}});
+      const response=await fetch(apiUrl(url),{...options,signal:controller.signal,cache:'no-store',credentials:'include',headers:{'Content-Type':'application/json'}});
       const payload=await response.json();if(!response.ok||!payload.ok)throw Error(payload.error||'官方核對服務暫時無法回覆');return payload.job;
     };
     let job=await request('/api/market/portfolio',{method:'POST',body:JSON.stringify({tickers})});
@@ -4473,6 +4417,7 @@ async function analyzePortfolio() {
   }
 }
 function demandStockExposure(holdings) {
+  if(!memberAccess.fullReport)return {rows:[],bySector:{},topStock:{ticker:'待開通',name:'待開通',amount:0,share:0,sources:[]},repeatedStocks:[],unresolved:[],coverageRate:0,status:'unavailable',result:portfolioResult()};
   const result=window.CashflowPortfolioOverlap.calculate(holdings.map(h=>({ticker:h.ticker,amount:holdingAmount(h)})),portfolioRuntime.signature===portfolioSignature()?portfolioRuntime.data:{});
   const rows=result.rows.map(row=>{const stock=findStock(row.ticker);return {...row,sector:stockThemeGroup(stock?.industry),industry:industryDisplayName(stock?.industry)};});
   return {rows,bySector:rows.reduce((a,r)=>{a[r.sector]=(a[r.sector]||0)+r.amount;return a;},{}),
@@ -4482,16 +4427,44 @@ function demandStockExposure(holdings) {
 }
 
 async function init() {
-  if (new URLSearchParams(location.search).get("admin") === "1") {
+  window.addEventListener('focus',()=>{clearPremium();void refreshMemberAccess();});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden){clearPremium();void refreshMemberAccess();}});
+  setInterval(()=>{if(authState.authenticated&&!document.hidden)void refreshMemberAccess();},30000);
+  if (memberAccess.role === "admin") {
     q(".admin-tab").hidden = false;
   }
   if (q("#journalExampleBar")) q("#journalExampleBar").innerHTML = cashflowCompositionHtml({ income: 42000, expense: 33000 }, "每月收支示範");
   initScrollAnimations();
   initStickyNav();
   loadBrandFonts();
+  q('#exampleReportBtn').onclick=async()=>{
+    try {
+      const {report:r,label}=await apiRequest('/api/report-example');
+      q('#exampleReportBody').innerHTML=`<p>${escapeHtml(label)}</p><div class="metrics">
+        <div class="metric"><span>範例月收入</span><strong>${formatMoney(r.profile.monthlyIncome)}</strong></div>
+        <div class="metric"><span>範例月支出</span><strong>${formatMoney(30000)}</strong></div>
+        <div class="metric"><span>估算月配息</span><strong>${formatMoney(r.stress.monthlyDividend)}</strong></div>
+      </div><h3>配息下修後，還剩多少現金流？</h3>
+      <p>配息下修 30%：${formatMoney(r.stress.cut30)}／月；下修 50%：${formatMoney(r.stress.cut50)}／月。</p>
+      <h3>範例調整方向</h3><ul>${r.actions.map(a=>`<li>${escapeHtml(a)}</li>`).join('')}</ul>
+      <h3>試算依據</h3><ul>${r.assumptions.map(a=>`<li>${escapeHtml(a)}</li>`).join('')}</ul>`;
+      q('#exampleReportDialog').showModal();q('#exampleReportTitle').focus();q('#exampleReportDialog').scrollTop=0;
+    }catch(e){showToast(e.message);}
+  };
+  q('#closeExampleReportBtn').onclick=()=>q('#exampleReportDialog').close();
+  q('#claimLegacyBtn').onclick=async()=>{
+    try {
+      const result=await apiRequest('/api/reports/claim',{method:'POST',body:JSON.stringify({reportId:q('#legacyReportId').value.trim(),accessCode:q('#legacyAccessCode').value.trim()})});
+      applyMemberReport(result.report);q('#legacyAccessCode').value='';
+      const onboarding=await apiRequest('/api/users/me/onboarding/complete',{method:'POST',body:JSON.stringify({reportId:result.report.id})});
+      authState.user=onboarding.user;await refreshMemberAccess();
+      renderHoldings();updateProfileInputs();refreshReports();showToast('舊報告已歸戶到你的會員帳號');
+    }catch(e){showToast(e.message);}
+  };
   syncInputs();
   bindEvents();
   await initializeMemberAuth();
+  await refreshMemberAccess();
   await loadPaymentReadiness();
   if (q(`#${activeView}`)) goTo(activeView, "", activeMemberNav);
   document.body.dataset.appReady = "true";
@@ -4505,3 +4478,13 @@ async function init() {
 }
 
 init();
+
+async function loadMemberAdmin() {
+  const root=q('#memberAdminList'),query=q('#memberSearch').value.trim();
+  try {const result=await apiRequest('/api/admin/members?q='+encodeURIComponent(query));
+    root.innerHTML=result.members.map(m=>`<article class="panel"><p>會員編號：<strong>${escapeHtml(m.id)}</strong></p><p>${m.access.role==='admin'?'管理員':m.access.fullReport?'完整功能已開通，持續有效至撤銷':'免費會員'}</p>${m.access.role==='admin'?'':`<button type="button" class="secondary-button" data-member-id="${m.id}" data-active="${!m.access.fullReport}">${m.access.fullReport?'撤銷完整功能':'開通完整功能'}</button>`} <button type="button" class="secondary-button" data-audit-id="${m.id}">查看操作紀錄</button></article>`).join('')||'<p>找不到會員。</p>';
+    root.querySelectorAll('[data-member-id]').forEach(button=>button.onclick=async()=>{const reason=q("#memberAccessReason").value;if(!reason.trim()){showToast("請填寫操作原因");q("#memberAccessReason").focus();return;}
+      button.disabled=true;try{await apiRequest('/api/admin/members/'+button.dataset.memberId+'/access',{method:'PATCH',body:JSON.stringify({active:button.dataset.active==='true',reason})});await loadMemberAdmin();}catch(e){showToast(e.message);button.disabled=false;}});
+    root.querySelectorAll('[data-audit-id]').forEach(button=>button.onclick=async()=>{try{const r=await apiRequest('/api/admin/members/'+button.dataset.auditId+'/access');q('#memberAudit').textContent=JSON.stringify(r.audit,null,2);}catch(e){showToast(e.message);}});
+  }catch(e){root.textContent=e.message;}
+}

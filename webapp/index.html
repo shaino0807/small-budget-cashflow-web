@@ -531,13 +531,11 @@
         <div class="section-title">
           <div>
             <h2 id="adminTitle">客戶健檢後台</h2>
-            <p>管理金鑰只送到後臺 API，不會寫入瀏覽器儲存空間。</p>
+            <p>使用管理員 LINE 帳號登入後，可管理會員完整功能與查看操作紀錄。</p>
           </div>
         </div>
         <section class="panel admin-login-panel">
-          <label>管理金鑰
-            <input id="adminApiKey" type="password" autocomplete="off" />
-          </label>
+          <label>會員編號查詢<input id="memberSearch" type="search" autocomplete="off" /></label><label>操作原因<input id="memberAccessReason" type="text" maxlength="300" required placeholder="人工核款、試用或取消" /></label><div id="memberAdminList" aria-live="polite"></div><pre id="memberAudit" aria-live="polite"></pre>
           <button class="primary-button" id="loadAdminBtn" type="button">載入客戶資料</button>
           <p class="panel-note" id="adminStatus">尚未連線後臺。</p>
         </section>
@@ -570,6 +568,15 @@
       </button>
     </nav>
 
+    <p id="memberIdentity" class="panel-note" aria-live="polite"></p>
+    <section id="legacyClaimPanel" class="panel" hidden aria-labelledby="legacyClaimTitle">
+      <h2 id="legacyClaimTitle">匯入舊報告</h2><p>登入後，可用原有報告編號與存取碼歸戶；已屬於其他會員的報告無法匯入。</p>
+      <label>舊報告編號<input id="legacyReportId" type="text" autocomplete="off" /></label>
+      <label>原有存取碼<input id="legacyAccessCode" type="password" autocomplete="off" /></label>
+      <button id="claimLegacyBtn" class="secondary-button" type="button">歸戶到我的會員帳號</button>
+    </section>
+    <button id="exampleReportBtn" type="button" class="secondary-button">查看虛構範例報告</button>
+    <dialog id="exampleReportDialog" aria-labelledby="exampleReportTitle"><h2 id="exampleReportTitle" tabindex="-1">虛構範例報告</h2><p>此範例不會開通帳號，也不會覆寫你的資料。完整報告另包含有來源依據的持股穿透、月份規劃與資產模擬；本範例未取得市場資料。</p><div id="exampleReportBody"></div><button id="closeExampleReportBtn" class="primary-button" type="button">關閉範例</button></dialog>
     <footer class="disclaimer">
       本網站僅供教育與財務規劃參考，不構成任何投資建議、買賣建議或保證報酬。所有投資皆有風險，使用者應自行判斷並承擔投資結果。
       <a href="./privacy.html">隱私權與語音／圖片記帳說明</a>

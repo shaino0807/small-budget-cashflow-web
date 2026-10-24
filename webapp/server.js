@@ -250,8 +250,16 @@ function readForm(req, maxBytes = 200000) {
 }
 
 function adminKey(req) {
-  return String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
+  const member=memberSession(req,{required:true});
+  getCustomerStore().assertMemberAdmin(member.user.id);
+  return process.env.ADMIN_API_KEY || '';
 }
+function requireFullReport(req) {
+  const member=memberSession(req,{required:true});
+  if(!getCustomerStore().memberAccess(member.user.id).fullReport) {const e=Error('完整功能尚未開通');e.statusCode=403;throw e;}
+  return member;
+}
+const portfolioOwners=new Map();
 
 function accessCode(req, url) {
   return String(req.headers["x-report-access-code"] || url.searchParams.get("accessCode") || "");
@@ -516,6 +524,41 @@ const server = http.createServer(async (req, res) => {
   }
   const url = new URL(req.url, `http://localhost:${port}`);
   const urlPath = decodeURIComponent(url.pathname);
+  if(urlPath==='/api/report-example' && req.method==='GET') {
+    const profile={monthlyIncome:50000,fixedExpense:25000,insuranceExpense:2000,loanExpense:3000,monthlyInvestment:5000,cashSavings:120000,age:35,retirementMonthlyNeed:30000};
+    return sendJson(res,200,{ok:true,label:'虛構範例，非你的報告、非即時市場資料',report:require('./member-report').calculate({profile,holdings:[{ticker:'DEMO',amount:100000,dividendYield:4,type:'範例'}],monthlyCashflows:{1:profile},simulationYears:20},{})});
+  }
+  // Reject before reading bodies or dispatching legacy access-code paths.
+  const personal = /^\/api\/(reports(?:\/|$)|users\/me(?:\/|$)|ledger(?:\/|$)|financial-settings$|profile$|holdings$|line\/(bindings|summary)$|payments\/checkout$)/.test(urlPath);
+  try {
+    if(personal) memberSession(req,{required:true});
+    if(urlPath.startsWith('/api/admin/')) {const m=memberSession(req,{required:true});getCustomerStore().assertMemberAdmin(m.user.id);}
+    if(urlPath.startsWith('/api/market/portfolio')) requireFullReport(req);
+  } catch(e) {return sendJson(res,e.statusCode||403,{ok:false,error:publicStoreError(e)});}
+  if(urlPath==='/api/users/me/access' && req.method==='GET') {
+    const m=memberSession(req,{required:true});return sendJson(res,200,{ok:true,access:getCustomerStore().memberAccess(m.user.id)});
+  }
+  if(urlPath==='/api/reports/claim' && req.method==='POST') {
+    try {const m=memberSession(req,{required:true}), b=await readJson(req,3000);
+      return sendJson(res,200,{ok:true,report:getCustomerStore().claimLegacyReport(m.user.id,b.reportId,b.accessCode)});
+    } catch(e){return sendJson(res,e.statusCode||400,{ok:false,error:publicStoreError(e)});}
+  }
+  if(urlPath==='/api/admin/members' && req.method==='GET') {
+    const m=memberSession(req,{required:true});return sendJson(res,200,{ok:true,members:getCustomerStore().listMembers(m.user.id,url.searchParams.get('q')||'')});
+  }
+  const memberAccessMatch=urlPath.match(/^\/api\/admin\/members\/([0-9a-f-]{36})\/access$/i);
+  if(memberAccessMatch) {
+    try {const m=memberSession(req,{required:true}),id=memberAccessMatch[1];
+      if(req.method==='GET')return sendJson(res,200,{ok:true,audit:getCustomerStore().memberAudit(m.user.id,id)});
+      if(req.method==='PATCH'){const b=await readJson(req,3000);return sendJson(res,200,{ok:true,access:getCustomerStore().setMemberAccess(m.user.id,id,b.active,b.reason)});}
+    } catch(e){return sendJson(res,e.statusCode||400,{ok:false,error:publicStoreError(e)});}
+  }
+  if(urlPath==='/api/reports/full' && req.method==='POST') {
+    try {requireFullReport(req);const b=await readJson(req,100000);
+      const result=require('./member-report').calculate(b,marketSnapshot.current().db);
+      return sendJson(res,200,{ok:true,report:result});
+    }catch(e){return sendJson(res,e.statusCode||400,{ok:false,error:publicStoreError(e)});}
+  }
   if (urlPath === "/api/database-status") {
     sendJson(res, 200, { ok: true, updateRunning: Boolean(updatePromise), freshness: databaseFreshness() });
     return;
@@ -691,10 +734,12 @@ const server = http.createServer(async (req, res) => {
   if (urlPath === "/api/line/bindings" && req.method === "POST") {
     if (!rateLimit(req, 8, 60000)) return sendJson(res, 429, { ok: false, error: "LINE 綁定碼建立次數過多，請稍後再試" });
     readJson(req, 10000)
-      .then((body) => sendJson(res, 201, { ok: true, binding: getCustomerStore().createLineReportBinding({
+      .then((body) => {
+        if(!getCustomerStore().getReportForUser(body.reportId,memberSession(req,{required:true}).user.id)) {const e=Error('找不到會員報告');e.statusCode=404;throw e;}
+        return sendJson(res, 201, { ok: true, binding: getCustomerStore().createLineReportBinding({
         reportId: body.reportId,
         accessCode: body.accessCode
-      }) }))
+      }) });})
       .catch((error) => sendJson(res, error.statusCode || 400, { ok: false, error: publicStoreError(error) }));
     return;
   }
@@ -900,13 +945,19 @@ const server = http.createServer(async (req, res) => {
     try {
       const body = await readJson(req, 3000);
       if (!body || Object.keys(body).some(key => key !== "tickers")) return sendJson(res, 400, { ok: false, error: "此端點只接受持有代號，不接受金額或個人資料" });
-      return sendJson(res, 202, { ok: true, job: portfolioMarket.start(body.tickers) });
+      const job=portfolioMarket.start(body.tickers);
+      // TTL and cap keep this ownership index bounded; an evicted job requires a new request.
+      for(const [key,value] of portfolioOwners) if(value.expires<Date.now())portfolioOwners.delete(key);
+      if(portfolioOwners.size>=1000)portfolioOwners.delete(portfolioOwners.keys().next().value);
+      portfolioOwners.set(job.id,{userId:memberSession(req,{required:true}).user.id,expires:Date.now()+10*60000});
+      return sendJson(res, 202, { ok: true, job });
     } catch (error) { return sendJson(res, error.statusCode || 400, { ok: false, error: error.statusCode ? error.message : "持有部位格式不正確" }); }
   }
   if (urlPath.startsWith("/api/market/portfolio/") && req.method === "GET") {
     if (!rateLimit(req, 240)) return sendJson(res, 429, { ok: false, error: "進度查詢次數過多" });
     const id = urlPath.slice("/api/market/portfolio/".length);
     if (!/^[0-9a-f-]{36}$/.test(id)) return sendJson(res, 400, { ok: false, error: "工作代號格式不正確" });
+    if(portfolioOwners.get(id)?.userId!==memberSession(req,{required:true}).user.id)return sendJson(res,404,{ok:false,error:'找不到分析工作'});
     try { return sendJson(res, 200, { ok: true, job: portfolioMarket.status(id) }); }
     catch (error) { return sendJson(res, error.statusCode || 500, { ok: false, error: error.message }); }
   }
