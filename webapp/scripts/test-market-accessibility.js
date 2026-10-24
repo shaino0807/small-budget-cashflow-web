@@ -1,7 +1,8 @@
 // Real Chromium layout and keyboard checks; public pages only, no customer writes.
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),assert=require('node:assert/strict');
 const {spawn}=require('node:child_process');
-const target=process.argv[2]||'http://127.0.0.1:5188/';
+const isolated=process.argv[2]==='--serve';
+const target=isolated?'http://127.0.0.1:5188/':process.argv[2]||'http://127.0.0.1:5188/';
 const output=path.resolve(process.argv[3]||'accessibility-evidence');
 const chrome=process.env.CHROME_PATH||['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find(fs.existsSync);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -9,7 +10,14 @@ async function main(){
  fs.mkdirSync(output,{recursive:true});
  const profile=fs.mkdtempSync(path.join(os.tmpdir(),'market-a11y-')),port=9500+Math.floor(Math.random()*300);
  const browser=spawn(chrome,['--headless=new',`--remote-debugging-port=${port}`,`--user-data-dir=${profile}`,'--disable-gpu','--no-sandbox','about:blank'],{windowsHide:true,stdio:'ignore'});
- let ws;
+ let ws,server,session;
+ if(isolated){
+  const crypto=require("crypto"),dataDir=fs.mkdtempSync(path.join(os.tmpdir(),"market-a11y-data-"));
+  Object.assign(process.env,{SMOKE_TEST:"1",PORT:"5188",CUSTOMER_DATA_DIR:dataDir,CUSTOMER_DATA_KEY:crypto.randomBytes(32).toString("base64"),ACCESS_CODE_PEPPER:crypto.randomBytes(32).toString("hex"),ADMIN_API_KEY:crypto.randomBytes(32).toString("hex"),LINE_LOGIN_CHANNEL_ID:"isolated-a11y",LINE_LOGIN_CHANNEL_SECRET:crypto.randomBytes(24).toString("hex"),API_PUBLIC_BASE_URL:target,SITE_PUBLIC_BASE_URL:target,LINE_REPLY_DISABLED:"1",LINE_RICH_MENU_AUTO_DEPLOY:"0"});
+  const store=require("../customer-store").createStore(),user=store.findOrCreateUserByLineId("Ua11y-member");session=store.createUserSession(user.id).token;store.close();
+  server=spawn(process.execPath,[path.join(__dirname,"../server.js")],{env:process.env,windowsHide:true,stdio:"ignore"});
+  for(let i=0;i<100;i++){try{if((await fetch(target+"api/health")).ok)break;}catch{}await sleep(100);}
+ }
  const results={target,checkedAt:new Date().toISOString(),viewports:[],runtimeErrors:[],limitations:['Chromium emulation, not physical iOS/Android','No human screen-reader or LINE login acceptance']};
  try{
   let tabs;for(let i=0;i<80;i++){try{tabs=await(await fetch(`http://127.0.0.1:${port}/json/list`)).json();break;}catch{await sleep(250);}}
@@ -22,6 +30,7 @@ async function main(){
   await send('Page.enable');await send('Runtime.enable');await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
   for(const width of [320,390,1440]){
    await send('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:width<640});
+   if(session)await send('Network.setCookie',{name:'__Host-cashflow_session',value:session,url:target,secure:true,httpOnly:true,sameSite:'Lax',path:'/'});
    await send('Page.navigate',{url:target});
    for(let i=0;i<120;i++){if(await evaluate('document.body?.dataset.appReady === "true"'))break;await sleep(250);}
    assert.equal(await evaluate('document.body.dataset.appReady'),'true');
@@ -69,7 +78,7 @@ async function main(){
   const ax=await send('Accessibility.getFullAXTree');fs.writeFileSync(path.join(output,'accessibility-tree.json'),JSON.stringify(ax,null,2));
   assert.equal(results.runtimeErrors.length,0);results.passed=true;
  }catch(error){results.passed=false;results.error=error.stack;throw error;}
- finally{fs.writeFileSync(path.join(output,'accessibility.json'),JSON.stringify(results,null,2));ws?.close();browser.kill();}
+ finally{fs.writeFileSync(path.join(output,'accessibility.json'),JSON.stringify(results,null,2));ws?.close();browser.kill();server?.kill();}
  console.log(JSON.stringify(results,null,2));
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});

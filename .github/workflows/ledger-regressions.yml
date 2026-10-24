@@ -8,6 +8,10 @@ on:
         description: 'Only verify the production Node 24 Alpine container, including real official first use'
         type: boolean
         default: false
+      jpm_diagnostics:
+        description: "Capture one bounded public JPM request and parsing result only"
+        type: boolean
+        default: false
       source_diagnostics:
         description: 'Only capture redacted public issuer diagnostics; not a release or financial acceptance test'
         type: boolean
@@ -23,7 +27,7 @@ permissions:
 
 jobs:
   ledger:
-    if: ${{ github.event_name != 'workflow_dispatch' || (!inputs.runtime_only && !inputs.source_diagnostics) }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (!inputs.runtime_only && !inputs.source_diagnostics && !inputs.jpm_diagnostics) }}
     runs-on: windows-latest
     timeout-minutes: 15
     steps:
@@ -39,16 +43,8 @@ jobs:
         run: node --test webapp/scripts/test-updater-guards.js webapp/scripts/test-data-batch.js webapp/scripts/test-market-snapshot.js webapp/scripts/test-market-reader.js webapp/scripts/test-payout-reconciliation.js
       - name: Verify selected holdings and empty-cache first use
         run: node --test webapp/scripts/test-portfolio-demand.js webapp/scripts/test-portfolio-first-use.js webapp/scripts/test-portfolio-domestic.js webapp/scripts/test-portfolio-valuation.js
-      - name: Verify public mobile layout and accessibility
-        shell: pwsh
-        run: |
-          $env:SMOKE_TEST = '1'
-          $env:PORT = '5188'
-          $server = Start-Process node -ArgumentList 'webapp/server.js' -WindowStyle Hidden -PassThru
-          try {
-            node webapp/scripts/test-market-accessibility.js http://127.0.0.1:5188/ accessibility-evidence
-            if ($LASTEXITCODE -ne 0) { throw 'Public accessibility checks failed' }
-          } finally { Stop-Process -Id $server.Id -ErrorAction SilentlyContinue }
+      - name: Verify member market mobile layout and accessibility
+        run: node webapp/scripts/test-market-accessibility.js --serve accessibility-evidence
       - name: Save accessibility evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -64,17 +60,20 @@ jobs:
       - name: Build the production Dockerfile without production credentials
         run: docker build -t portfolio-candidate ./webapp
       - name: Verify calculations, cache, parsing and error guards on Node 24 Alpine
-        if: ${{ !inputs.source_diagnostics }}
+        if: ${{ !inputs.source_diagnostics && !inputs.jpm_diagnostics }}
         run: docker run --rm portfolio-candidate node --test scripts/test-portfolio-demand.js scripts/test-portfolio-first-use.js scripts/test-portfolio-domestic.js scripts/test-portfolio-valuation.js scripts/test-market-reader.js
       - name: Verify membership and authentication on Node 24 Alpine
-        if: ${{ !inputs.source_diagnostics }}
+        if: ${{ !inputs.source_diagnostics && !inputs.jpm_diagnostics }}
         run: |
           docker run --rm portfolio-candidate node scripts/test-member-access.js
           docker run --rm portfolio-candidate node scripts/test-line-auth.js
           docker run --rm portfolio-candidate node scripts/test-customer-api.js
       - name: Verify real official sources and empty-cache API on Node 24 Alpine
-        if: ${{ github.event_name == 'workflow_dispatch' && !inputs.source_diagnostics }}
+        if: ${{ github.event_name == 'workflow_dispatch' && !inputs.source_diagnostics && !inputs.jpm_diagnostics }}
         run: docker run --rm portfolio-candidate node scripts/verify-portfolio-runtime.js
+      - name: Capture bounded JPM diagnostics only
+        if: ${{ inputs.jpm_diagnostics }}
+        run: docker run --rm portfolio-candidate node scripts/diagnose-jpm-source.js
       - name: Capture bounded redacted issuer diagnostics only
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.source_diagnostics }}
         run: docker run --rm portfolio-candidate node scripts/diagnose-taishin-source.js
