@@ -113,6 +113,7 @@ async function main() {
   let serverProcess = null;
   let chromeProcess = null;
   let customerDataDir = null;
+  let memberSessionToken;
   const failures = [];
   const requestUrls = new Map();
   const consoleErrors = [];
@@ -122,9 +123,7 @@ async function main() {
   try {
     if (shouldServe) {
       customerDataDir = fs.mkdtempSync(path.join(os.tmpdir(), "cashflow-smoke-data-"));
-      serverProcess = spawn(process.execPath, [path.join(__dirname, "..", "server.js")], {
-        cwd: path.join(__dirname, "..", ".."),
-        env: {
+      const serverEnv = {
           ...process.env,
           SMOKE_TEST: "1",
           PORT: String(smokeServerPort),
@@ -134,8 +133,19 @@ async function main() {
           ACCESS_CODE_PEPPER: crypto.randomBytes(24).toString("base64url"),
           ADMIN_API_KEY: crypto.randomBytes(24).toString("base64url"),
           GITHUB_ACTIONS_TOKEN: "",
+          LINE_LOGIN_CHANNEL_ID: "isolated-smoke",
+          LINE_LOGIN_CHANNEL_SECRET: crypto.randomBytes(24).toString("hex"),
+          API_PUBLIC_BASE_URL: targetUrl,
+          SITE_PUBLIC_BASE_URL: targetUrl,
           LINE_REPLY_DISABLED: "1"
-        },
+        };
+      Object.assign(process.env,serverEnv);
+      const memberStore=require("../customer-store").createStore();
+      const member=memberStore.findOrCreateUserByLineId("Usmoke-member");
+      memberSessionToken=memberStore.createUserSession(member.id).token;
+      memberStore.close();
+      serverProcess=spawn(process.execPath,[path.join(__dirname,"..","server.js")], {
+        cwd:path.join(__dirname,"..",".."), env:serverEnv,
         windowsHide: true,
         stdio: "ignore"
       });
@@ -246,6 +256,7 @@ async function main() {
       userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
     });
 
+    if(memberSessionToken)await send(ws,"Network.setCookie",{name:"__Host-cashflow_session",value:memberSessionToken,url:targetUrl,secure:true,httpOnly:true,sameSite:"Lax",path:"/"});
     await send(ws, "Page.navigate", { url: targetUrl });
     try { await waitForPageReady(ws); } catch (error) {
       console.error(JSON.stringify({ consoleErrors, runtimeErrors, failedRequests: failures, badResponses,
@@ -515,6 +526,8 @@ async function main() {
       })()`
     });
     await wait(1200);
+    if(await evalValue(ws,`document.querySelector(".view.is-active")?.id`) !== "dashboardView")throw Error("Member onboarding must return to dashboard");
+    await send(ws,"Runtime.evaluate",{expression:`goTo("freeReportView")`});
     const freeReport = await evalValue(ws, `(() => {
       const text = document.querySelector("#freeReport")?.innerText || "";
       const workspaceNav = document.querySelector("#freeReport > .workspace-nav");
@@ -736,8 +749,8 @@ async function main() {
       consultingAction: document.querySelector('#upgradeView [data-plan="consulting"]')?.textContent.trim() || "",
       fullReportAction: document.querySelector('#upgradeView [data-plan="paid"]')?.textContent.trim() || "",
       disabledPaymentButtons: document.querySelectorAll('#upgradeView [data-plan]:disabled').length,
-      hasLinePayPendingNotice: document.querySelector("#upgradeView")?.innerText.includes("LINE Pay 商店資料申請中") || false,
-      hasNoChargeNotice: document.querySelector("#upgradeView")?.innerText.includes("不會建立訂單或收取款項") || false,
+      hasLinePayPendingNotice: document.querySelector("#upgradeView")?.innerText.includes("完整功能採會員手動開通，持續有效至撤銷") || false,
+      hasNoChargeNotice: document.querySelector("#upgradeView")?.innerText.includes("本網站暫不提供線上付款") || false,
       hasDepositInclusion: document.querySelector("#upgradeView")?.innerText.includes("訂金 NT$200 已包含在總費用內") || false,
       hasBalance: document.querySelector("#upgradeView")?.innerText.includes("尾款 NT$1,300") || false,
       hasUnconfiguredLine: document.querySelector("#upgradeView")?.innerText.includes("LINE 尚未設定") || false,
@@ -762,7 +775,7 @@ async function main() {
     const f5Persistence = await evalValue(ws, `(() => ({
       activeView: document.querySelector(".view.is-active")?.id,
       reportId: state.reportMeta?.reportId || null,
-      hasSessionAccess: Boolean(state.reportMeta?.accessCode),
+      hasSessionAccess: Boolean(authState.authenticated && authState.user?.id),
       income: Number(document.querySelector("#monthlyIncome")?.value || 0)
     }))()`);
 
@@ -1007,7 +1020,7 @@ async function main() {
         && landing.hasMotionCards
         && landing.hasAdvancedInputEntry
         && landing.hasIg
-        && landing.headerStatus === "個人現金流管理"
+        && landing.headerStatus === "首次現金流健檢"
         && landing.painKicker === "常見現金流困境"
         && landing.painTitle === "錢的事，一次整理一點就好。"
         && landing.solutionTitle === "從五個小問題，開始認識自己的現金流。"
@@ -1100,7 +1113,7 @@ async function main() {
         && freeReport.hasAvoid
         && freeReport.hasNumbers
         && freeReport.hasLineSyncPanel
-        && freeReport.hasLineBindingAction
+        && !freeReport.hasLineBindingAction
         && !freeReport.hasHeaderSalesButton
         && freeReport.cashflowMetricCount === 4
         && freeReport.upgradeButtonCount === 1
@@ -1177,9 +1190,9 @@ async function main() {
         && !upgradeNavigation.hasFreeActionButton
         && upgradeNavigation.freeStatus === "目前方案"
         && upgradeNavigation.consultingPrice === "NT$1,500"
-        && upgradeNavigation.consultingAction === "LINE Pay 申請中"
-        && upgradeNavigation.fullReportAction === "LINE Pay 申請中"
-        && upgradeNavigation.disabledPaymentButtons === 2
+        && upgradeNavigation.consultingAction === "聯絡管理員開通"
+        && upgradeNavigation.fullReportAction === "聯絡管理員開通"
+        && upgradeNavigation.disabledPaymentButtons === 1
         && upgradeNavigation.hasLinePayPendingNotice
         && upgradeNavigation.hasNoChargeNotice
         && upgradeNavigation.hasDepositInclusion

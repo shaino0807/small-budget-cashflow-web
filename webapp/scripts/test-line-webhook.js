@@ -7,6 +7,7 @@ const path = require("path");
 const { handleLineWebhook, parseIncomingMessage, parseLedgerMessage, parseLedgerMessageWithAi, parseLineCommand } = require("../line-bot");
 
 let baseUrl;
+let memberCookie;
 let serverDiagnostics = "";
 const lineSecret = "test-line-channel-secret-32chars";
 const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "cashflow-line-webhook-"));
@@ -27,6 +28,7 @@ function request(pathname, { method = "POST", body, headers = {}, timeoutMs = 10
       headers: {
         "Content-Type": "application/json",
         "Content-Length": payload.length,
+        ...(memberCookie && pathname !== "/api/line/webhook" ? {Cookie:memberCookie} : {}),
         ...headers
       }
     }, (res) => {
@@ -681,9 +683,7 @@ async function main() {
     global.fetch = originalFetch;
   }
   const voice = await testVoiceWebhook();
-  const server = spawn(process.execPath, [path.join(__dirname, "..", "server.js")], {
-    cwd: path.join(__dirname, "..", ".."),
-    env: {
+  const serverEnv = {
       ...process.env,
       PORT: "0",
       CUSTOMER_DATA_DIR: dataDir,
@@ -693,7 +693,16 @@ async function main() {
       LINE_CHANNEL_SECRET: lineSecret,
       LINE_CHANNEL_ACCESS_TOKEN: "test-line-channel-access-token-32chars",
       LINE_REPLY_DISABLED: "1"
-    },
+    };
+  Object.assign(process.env,serverEnv);
+  delete require.cache[require.resolve("../customer-store")];
+  const memberStore=require("../customer-store").createStore();
+  const member=memberStore.findOrCreateUserByLineId("Utest");
+  memberCookie="__Host-cashflow_session="+memberStore.createUserSession(member.id).token;
+  memberStore.close();
+  const server = spawn(process.execPath, [path.join(__dirname, "..", "server.js")], {
+    cwd: path.join(__dirname,"..",".."),
+    env: serverEnv,
     windowsHide: true,
     stdio: ["ignore", "pipe", "pipe"]
   });
@@ -990,7 +999,7 @@ async function main() {
       holdings: [{ ticker: "0056", type: "高股息", assetKind: "etf", amount: 12000, lots: [{ price: 30, amount: 12000 }] }]
     };
     const saveSettings = (settings, headers = reportAccess) => request("/api/financial-settings", { method: "PATCH", headers, body: JSON.stringify({ reportId, settings }) });
-    if ((await saveSettings(financialSettings, {})).status === 200) throw new Error("Financial settings accepted without access code");
+    if ((await saveSettings(financialSettings, {Cookie:""})).status !== 401) throw new Error("Financial settings accepted without member login");
     if ((await saveSettings(financialSettings)).status !== 200) throw new Error("Financial settings save failed");
     const savedSettings = await request(`/api/users/me/cashflow?reportId=${encodeURIComponent(reportId)}`, { method: "GET", headers: reportAccess });
     if (savedSettings.body.cashflow.holdings[0]?.amount !== 12000 || savedSettings.body.cashflow.financialSettings.monthlyCashflows[12].monthlyIncome !== 72000) throw new Error("Financial settings readback lost ETF subtype or annual months");
@@ -1015,7 +1024,9 @@ async function main() {
     const afterPrivacyDelete = await request(`/api/users/me/cashflow?reportId=${encodeURIComponent(reportId)}`, { method: "GET", headers: reportAccess });
     if (
       afterPrivacyDelete.status !== 200
-      || afterPrivacyDelete.body.cashflow?.linked !== false
+      || afterPrivacyDelete.body.cashflow?.linked !== true
+      || afterPrivacyDelete.body.cashflow?.holdings?.length !== 0
+      || afterPrivacyDelete.body.cashflow?.financialSettings !== null
       || afterPrivacyDelete.body.cashflow?.entries?.length !== 0
     ) {
       throw new Error(`Deleted LINE data remained linked: ${JSON.stringify(afterPrivacyDelete)}`);
