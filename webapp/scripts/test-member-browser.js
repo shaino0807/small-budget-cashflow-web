@@ -11,6 +11,10 @@ module.exports=async function browserCheck({base,sessions,aliceId,store,adminId,
  async function until(expression){for(let i=0;i<100;i++){if(await value(expression))return;await wait(150);}throw Error('瀏覽器等待逾時：'+expression);}
  const evidence=path.resolve(__dirname,'../../../../.agent-system/evidence/member-access-20261024');fs.mkdirSync(evidence,{recursive:true});
  async function shot(name){const r=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});fs.writeFileSync(path.join(evidence,name+'.png'),Buffer.from(r.data,'base64'));}
+ async function assertReachableNavigation(){
+  const buttons=await value(`Array.from(document.querySelectorAll('#memberNavigation button')).filter(e=>!e.hidden).map(e=>{const r=e.getBoundingClientRect();return {text:e.textContent,visible:r.width>0&&r.height>=44&&r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight,hit:e.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2))};})`);
+  assert.ok(buttons.length>=3&&buttons.every(b=>b.visible&&b.hit),JSON.stringify(buttons));checks++;
+ }
  async function open(index,width=1366,height=900){await send('Network.clearBrowserCookies');if(index!=null)await send('Network.setCookie',{name:'__Host-cashflow_session',value:sessions[index].token,url:base,secure:true,httpOnly:true,sameSite:'Lax',path:'/'});await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<640});await send('Page.navigate',{url:base+'/?member-test='+Date.now()});await until('document.body?.dataset.appReady === "true"');}
  try{
   let target;for(let i=0;i<100;i++){try{target=(await (await fetch(`http://127.0.0.1:${debugPort}/json/list`)).json()).find(t=>t.type==='page');if(target)break;}catch{}await wait(150);}assert.ok(target,'Chrome did not start');
@@ -23,6 +27,7 @@ module.exports=async function browserCheck({base,sessions,aliceId,store,adminId,
   await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});await send('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
   assert.equal(await value('document.querySelector("#exampleReportDialog").open'),false);checks++;
   await open(0);await until('authState.authenticated && memberAccess.role === "admin"');
+  await assertReachableNavigation();
   await value('document.querySelector(".admin-tab").click();document.querySelector("#loadAdminBtn").click()');await until('document.querySelectorAll("[data-member-id]").length > 0');
   await value('document.querySelector("#memberAccessReason").value="瀏覽器測試開通";document.querySelector(\'[data-member-id="'+aliceId+'"]\').click()');
   await until('document.querySelector(\'[data-member-id="'+aliceId+'"]\')?.dataset.active === "false"');assert.ok(store.memberAccess(aliceId).fullReport);checks++;await shot('admin-desktop');
@@ -37,8 +42,8 @@ module.exports=async function browserCheck({base,sessions,aliceId,store,adminId,
   assert.ok(contrast.every(c=>c.ratio>=c.threshold),JSON.stringify(contrast));checks++;
   await value('document.querySelector("#memberSearch").focus()');await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Tab',code:'Tab',windowsVirtualKeyCode:9});await send('Input.dispatchKeyEvent',{type:'keyUp',key:'Tab',code:'Tab',windowsVirtualKeyCode:9});
   assert.equal(await value('document.activeElement.id'),'memberAccessReason');assert.notEqual(await value('getComputedStyle(document.activeElement).outlineStyle'),'none');checks++;
-  await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});await shot('admin-mobile');
-  await open(1,390,844);await until('memberAccess.fullReport && premiumData !== null');await value('document.querySelector(\'[data-view="paidReportView"]\').click()');await until('document.querySelector("#paidReport").textContent.includes("配息壓力測試")');checks++;
+  await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});await assertReachableNavigation();await shot('admin-mobile');
+  await open(1,390,844);await until('memberAccess.fullReport && premiumData !== null');await assertReachableNavigation();await value('document.querySelector(\'[data-view="paidReportView"]\').click()');await until('document.querySelector("#paidReportView").classList.contains("is-active") && document.querySelector("#paidReport").textContent.includes("配息壓力測試")');checks++;
   const size=await value('({scroll:document.documentElement.scrollWidth,width:document.documentElement.clientWidth})');assert.ok(size.scroll<=size.width+1,JSON.stringify(size));checks++;await shot('paid-mobile');
   await value('Array.from(document.querySelectorAll("#paidReport h3")).find(e=>e.textContent==="配息壓力測試").scrollIntoView({block:"start"})');await shot('paid-stress-mobile');
   store.setMemberAccess(adminId,aliceId,false,'瀏覽器測試撤銷');await value('refreshMemberAccess()');await until('!memberAccess.fullReport && premiumData === null');assert.ok(!(await value('document.querySelector("#paidReport").textContent')).includes('下修 30%'));checks++;

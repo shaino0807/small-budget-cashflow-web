@@ -41,16 +41,16 @@
       </div>
     </header>
 
-    <nav class="tabbar app-tabs" aria-label="App 功能">
-      <button class="tab is-active" data-view="landingView" type="button">首頁</button>
-      <button class="tab" data-view="inputView" type="button">細填資料</button>
-      <button class="tab" data-view="freeReportView" type="button">免費報告</button>
-      <button class="tab" data-view="upgradeView" type="button">升級</button>
+    <nav class="tabbar app-tabs" id="memberNavigation" aria-label="會員功能" hidden>
+      <button class="tab" data-view="dashboardView" type="button">本月總覽</button>
+      <button class="tab" data-view="freeReportView" type="button">收支摘要</button>
       <button class="tab paid-tab" data-view="paidReportView" type="button">完整報告</button>
-      <button class="tab paid-tab" data-view="simulationView" type="button">資產模擬</button>
-      <button class="tab paid-tab" data-view="calendarView" type="button">月曆</button>
-      <button class="tab admin-tab" data-view="adminView" type="button" hidden>客戶後台</button>
+      <button class="tab admin-tab" data-view="adminView" type="button" hidden>管理員後台</button>
     </nav>
+    <div id="memberAccessNotice" class="member-access-notice" role="status" hidden>
+      <span>暫時無法確認會員權限，請重試。</span>
+      <button id="retryMemberAccessBtn" class="secondary-button mini-button" type="button">重新確認權限</button>
+    </div>
 
     <main class="site-main" id="top">
       <span id="mainContent" tabindex="-1"></span>
@@ -490,6 +490,8 @@
           </div>
           <div class="button-row">
             <button class="primary-button" id="printBtn" type="button">匯出 PDF</button>
+            <button class="secondary-button" data-goto="simulationView" type="button">資產模擬</button>
+            <button class="secondary-button" data-goto="calendarView" type="button">現金流月曆</button>
           </div>
         </div>
         <div id="paidReport" class="report-layout"></div>

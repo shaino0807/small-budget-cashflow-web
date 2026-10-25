@@ -167,32 +167,68 @@ let selectedCashflowMonth = clamp(Number(sessionStorage.getItem(monthEditorSessi
 let upgradeReturnLocation = { view: "freeReportView", section: activeWorkspaceSection };
 let premiumData=null, premiumSignature='', premiumTimer=null, premiumEpoch=0, premiumBusy=false;
 let memberAccess={role:'member',fullReport:false,status:'free'};
+let accessRequest=null, accessUnavailable=false, navigationSequence=0;
+let premiumError='', premiumFailedSignature='';
+const premiumViews=['paidReportView','simulationView','calendarView'];
 function clearPremium() {
   premiumEpoch++;premiumData=null;premiumSignature='';
+  premiumError='';premiumFailedSignature='';
   portfolioRuntime?.controller?.abort();
   if(typeof portfolioRuntime!=='undefined')portfolioRuntime={...portfolioRuntime,data:{},signature:null,status:'idle'};
 }
 async function refreshMemberAccess() {
-  if(!authState.authenticated){memberAccess={role:'member',fullReport:false,status:'free'};applyEntitlements([]);return;}
-  try {const result=await apiRequest('/api/users/me/access');memberAccess=result.access;
-    if(!memberAccess.fullReport)clearPremium();
-    q("#memberIdentity").textContent="會員編號："+authState.user.id+"；"+(memberAccess.role==='admin'?'管理員':memberAccess.fullReport?'完整功能已開通，持續有效至撤銷':'免費會員');
-    applyEntitlements(memberAccess.fullReport?['full_report']:[]);
-    refreshMemberAuthUi();refreshReports();
-  }catch{clearPremium();memberAccess={role:'member',fullReport:false,status:'free'};applyEntitlements([]);refreshReports();}
+  if(!authState.authenticated){memberAccess={role:'member',fullReport:false,status:'free'};applyEntitlements([]);return false;}
+  if(accessRequest)return accessRequest;
+  accessRequest=(async()=>{
+    try {
+      const result=await apiRequest('/api/users/me/access');
+      memberAccess=result.access;accessUnavailable=false;
+      if(!memberAccess.fullReport)clearPremium();
+      q('#memberAccessNotice').hidden=true;
+      q("#memberIdentity").textContent="會員編號："+authState.user.id+"；"+(memberAccess.role==='admin'?'管理員':memberAccess.fullReport?'完整功能已開通，持續有效至撤銷':'免費會員');
+      applyEntitlements(memberAccess.fullReport?['full_report']:[]);
+      refreshMemberAuthUi();refreshReports();
+      return true;
+    }catch(error){
+      clearPremium();accessUnavailable=true;
+      // A transport failure is not evidence that membership was revoked.
+      if(error.status===401||error.status===403){
+        memberAccess={role:'member',fullReport:false,status:'free'};
+        applyEntitlements([]);
+        if(error.status===401){authState.authenticated=false;authState.user=null;}
+      }
+      q('#memberAccessNotice').hidden=false;
+      q('#memberAccessNotice span').textContent=error.status===401?'登入已逾時，請重新使用 LINE 登入。':'暫時無法確認會員權限，請重試。';
+      refreshMemberAuthUi();refreshReports();
+      return false;
+    }finally{accessRequest=null;}
+  })();
+  return accessRequest;
 }
 function schedulePremium() {
   clearTimeout(premiumTimer);
-  if(!authState.authenticated||!memberAccess.fullReport)return;
+  if(!authState.authenticated||!memberAccess.fullReport||accessUnavailable)return;
   const input={profile:state.profile,holdings:state.holdings.filter(h=>h.ticker),monthlyCashflows:state.monthlyCashflows,simulationYears:state.simulationYears};
-  const signature=JSON.stringify(input);if(premiumSignature===signature||premiumBusy)return;
-  premiumData=null;
+  const signature=JSON.stringify(input);if(premiumSignature===signature||premiumFailedSignature===signature||premiumBusy)return;
+  premiumData=null;premiumError='';
   premiumTimer=setTimeout(async()=>{const epoch=premiumEpoch;premiumBusy=true;
     try{const result=await apiRequest('/api/reports/full',{method:'POST',body:signature});
       if(epoch===premiumEpoch&&memberAccess.fullReport&&signature===JSON.stringify({profile:state.profile,holdings:state.holdings.filter(h=>h.ticker),monthlyCashflows:state.monthlyCashflows,simulationYears:state.simulationYears})){premiumData=result.report;premiumSignature=signature;refreshReports();}
-    }catch(error){if(epoch===premiumEpoch){clearPremium();memberAccess.fullReport=false;applyEntitlements([]);showToast(error.message);refreshReports();}}
-    finally{premiumBusy=false;if(memberAccess.fullReport&&!premiumData)schedulePremium();}
+    }catch(error){if(epoch===premiumEpoch){
+      clearPremium();premiumFailedSignature=signature;
+      if(error.status===401||error.status===403){
+        memberAccess.fullReport=false;applyEntitlements([]);
+        await refreshMemberAccess();
+      }else{
+        premiumError='完整報告暫時無法載入，請重試。你的開通狀態未變更。';
+      }
+      refreshReports();
+    }}
+    finally{premiumBusy=false;if(memberAccess.fullReport&&!premiumData&&premiumFailedSignature!==signature)schedulePremium();}
   },350);
+}
+async function retryPremium() {
+  if(await refreshMemberAccess()){clearPremium();refreshReports();}
 }
 let authState = {
   configured: false,
@@ -420,7 +456,11 @@ async function apiRequest(pathname, options = {}) {
     ...rest
   });
   const payload = await response.json().catch(() => ({ ok: false, error: `HTTP ${response.status}` }));
-  if (!response.ok || payload.ok === false) throw new Error(payload.error || `HTTP ${response.status}`);
+  if (!response.ok || payload.ok === false) {
+    const error=new Error(payload.error || `HTTP ${response.status}`);
+    error.status=response.status;
+    throw error;
+  }
   return payload;
 }
 
@@ -493,6 +533,7 @@ function refreshMemberAuthUi() {
   q('#legacyClaimPanel').hidden=!authState.authenticated;
   const loginRequired = !authState.authenticated;
   const onboardingRequired = authState.configured && authState.authenticated && !authState.user?.onboardingCompleted;
+  q('#memberNavigation').hidden=loginRequired||onboardingRequired;
   q("#memberAuthGate").hidden = !loginRequired;
   q("#lineLoginBtn").hidden = !loginRequired;
   q("#memberLineLoginBtn").hidden = !loginRequired;
@@ -503,7 +544,7 @@ function refreshMemberAuthUi() {
   q("#saveFinancialDataBtn").hidden = loginRequired;
   document.querySelectorAll(".app-tabs .tab").forEach((tab) => {
     if (tab.dataset.view === "landingView") return;
-    if (tab.classList.contains('admin-tab')) {tab.hidden=memberAccess.role!=='admin';return;}
+    if (tab.classList.contains('admin-tab')) {tab.hidden=loginRequired||memberAccess.role!=='admin';return;}
     tab.hidden = loginRequired || onboardingRequired;
   });
   document.body.dataset.memberAuth = !authState.configured
@@ -2759,6 +2800,12 @@ function missingHoldingCalloutHtml(report) {
 }
 
 function reportUpgradeCtaHtml() {
+  if(state.paidUnlocked)return `
+    <section class="report-upgrade-cta" id="reportUpgradeCta" data-report-block="upgrade">
+      <div><span class="eyebrow">完整功能已開通</span><h3>查看你的完整財務分析</h3>
+      <p>開啟詳細分析、配息壓力測試與月份規劃。</p></div>
+      <button class="primary-button" data-goto="paidReportView" data-member-nav="report" type="button">開啟完整報告</button>
+    </section>`;
   return `
     <section class="report-upgrade-cta" id="reportUpgradeCta" data-report-block="upgrade">
       <div>
@@ -3774,17 +3821,18 @@ function renderPriceChartSummary(normalized) {
   }).join("");
 }
 
+function premiumPlaceholderHtml() {
+  const canRetry=accessUnavailable||Boolean(premiumError);
+  const title=accessUnavailable?'暫時無法確認會員權限':premiumError?'完整報告暫時無法載入':state.paidUnlocked?'正在載入完整報告':'完整功能尚未開通';
+  const message=accessUnavailable?'請重新確認權限後再開啟報告。':premiumError||(state.paidUnlocked?'正在取得你的規劃資料，請稍候。':'完整功能由管理員手動開通，持續有效至撤銷。');
+  return `<section class="panel" role="status"><h3>${title}</h3><p>${escapeHtml(message)}</p>
+    ${canRetry?'<button class="primary-button" data-retry-premium type="button">重新載入完整報告</button>':!state.paidUnlocked?'<button class="primary-button" data-goto="upgradeView" type="button">查看開通方式</button>':''}</section>`;
+}
+
 function renderPaidReport() {
   const report = latestReport;
   if (!state.paidUnlocked || !premiumData) {
-    q("#paidReport").innerHTML = `
-      <section class="panel">
-        <h3>完整報告尚未解鎖</h3>
-        <p>完整功能由管理員手動開通，持續有效至撤銷。已開通時，請等待規劃資料載入。</p>
-        ${state.payment?.message ? `<p class="panel-note">${escapeHtml(state.payment.message)}</p>` : ""}
-        <button class="primary-button" data-goto="upgradeView" type="button">查看開通方式</button>
-      </section>
-    `;
+    q("#paidReport").innerHTML = premiumPlaceholderHtml();
     bindGotoButtons();
     return;
   }
@@ -3833,7 +3881,7 @@ function renderPaidReport() {
 }
 
 function renderSimulation() {
-  if(!state.paidUnlocked||!premiumData){q('#simulationTable').textContent='完整功能需開通，或正在取得規劃資料。';const canvas=q('#simulationChart');canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);return;}
+  if(!state.paidUnlocked||!premiumData){q('#simulationTable').innerHTML=premiumPlaceholderHtml();bindGotoButtons();const canvas=q('#simulationChart');canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);return;}
   drawSimulationChart(latestReport.simulation);
   q("#simulationTable").innerHTML = `
     <div class="table-title">
@@ -3913,7 +3961,7 @@ function drawSimulationChart(rows) {
 }
 
 function renderCalendar() {
-  if(!state.paidUnlocked||!premiumData){q('#cashflowCalendar').textContent='完整功能需開通，或正在取得規劃資料。';return;}
+  if(!state.paidUnlocked||!premiumData){q('#cashflowCalendar').innerHTML=premiumPlaceholderHtml();bindGotoButtons();return;}
   q("#cashflowCalendar").innerHTML = latestReport.calendar.map((month) => `
     <article class="calendar-card ${month.status}">
       <div class="panel-head">
@@ -4076,10 +4124,31 @@ function scrollToWorkspaceSection(sectionId) {
   }, 180);
 }
 
-function goTo(viewId, sectionId = "", memberNav = "", options = {}) {
-  if(viewId==='adminView'&&memberAccess.role!=='admin'){showToast('需要管理員權限');return;}
+function syncViewUrl(viewId, sectionId, mode='push') {
+  const url=new URL(location.href);
+  url.searchParams.set('view',viewId);
+  if(sectionId)url.searchParams.set('section',sectionId);else url.searchParams.delete('section');
+  url.hash='';
+  if(mode==='replace'||url.href!==location.href)history[mode==='replace'?'replaceState':'pushState'](null,'',url);
+}
+
+async function goTo(viewId, sectionId = "", memberNav = "", options = {}) {
+  const sequence=++navigationSequence;
+  if(!availableViews.includes(viewId))viewId='dashboardView';
   if(viewId!=='landingView'&&!authState.authenticated){showToast('請先使用 LINE 登入');viewId='landingView';}
-  if(['paidReportView','simulationView','calendarView'].includes(viewId))void refreshMemberAccess();
+  if(authState.authenticated&&(viewId==='adminView'||premiumViews.includes(viewId))){
+    const confirmed=await refreshMemberAccess();
+    if(sequence!==navigationSequence)return;
+    if(!confirmed){
+      showToast(authState.authenticated?'暫時無法確認權限，請按「重新確認權限」。':'登入已逾時，請重新登入。');
+      if(authState.authenticated){
+        syncViewUrl(document.querySelector('.view.is-active')?.id||'dashboardView','', 'replace');
+        return;
+      }
+      viewId='landingView';
+    }
+  }
+  if(viewId==='adminView'&&memberAccess.role!=='admin'){showToast('需要管理員權限');viewId='dashboardView';options={...options,historyMode:'replace'};}
   if (["inputView", "databaseView"].includes(viewId)) void ensurePortfolioCatalog().then(()=>{renderHoldings();refreshReports();});
   const isCompletedMember = authState.authenticated && authState.user?.onboardingCompleted;
   if (viewId === "landingView" && isCompletedMember && !options.allowMemberOnboarding) {
@@ -4087,7 +4156,7 @@ function goTo(viewId, sectionId = "", memberNav = "", options = {}) {
     sectionId = "";
     memberNav = "overview";
   }
-  if (["paidReportView", "simulationView", "calendarView"].includes(viewId) && !state.paidUnlocked) {
+  if (premiumViews.includes(viewId) && !state.paidUnlocked) {
     viewId = "upgradeView";
     showToast("完整報告、模擬與月曆需先解鎖");
   }
@@ -4107,7 +4176,12 @@ function goTo(viewId, sectionId = "", memberNav = "", options = {}) {
   activeView = viewId;
   sessionStorage.setItem(viewSessionKey, viewId);
   document.querySelectorAll(".view").forEach((view) => view.classList.toggle("is-active", view.id === viewId));
-  document.querySelectorAll(".tab").forEach((tab) => tab.classList.toggle("is-active", tab.dataset.view === viewId));
+  document.querySelectorAll(".tab").forEach((tab) => {
+    const selected=tab.dataset.view===viewId;
+    tab.classList.toggle("is-active",selected);
+    if(selected)tab.setAttribute('aria-current','page');else tab.removeAttribute('aria-current');
+  });
+  syncViewUrl(viewId,resolvedSection,options.historyMode);
   syncWorkspaceTabs();
   syncMemberBottomNav();
   const heading = document.querySelector(`#${viewId} h2`);
@@ -4127,6 +4201,7 @@ function returnFromUpgrade() {
 }
 
 function bindGotoButtons() {
+  document.querySelectorAll('[data-retry-premium]').forEach(button=>{button.onclick=retryPremium;});
   document.querySelectorAll("[data-goto]").forEach((button) => {
     if (button.dataset.gotoBound === "true") return;
     button.dataset.gotoBound = "true";
@@ -4166,6 +4241,10 @@ function bindEvents() {
   q("#lineLoginBtn")?.addEventListener("click", beginLineLogin);
   q("#memberLineLoginBtn")?.addEventListener("click", beginLineLogin);
   q("#logoutBtn")?.addEventListener("click", () => logoutMember(false));
+  q('#retryMemberAccessBtn').addEventListener('click',async()=>{
+    if(!authState.authenticated){beginLineLogin();return;}
+    if(await refreshMemberAccess()){clearPremium();refreshReports();showToast('會員權限已更新，請選擇要開啟的頁面。');}
+  });
   q("#refreshDashboardBtn")?.addEventListener("click", () => refreshLineSummary());
   document.querySelectorAll("[data-upgrade-back]").forEach((button) => button.addEventListener("click", returnFromUpgrade));
   document.querySelectorAll(".tab").forEach((tab) => {
@@ -4292,8 +4371,9 @@ function bindEvents() {
     showToast("已重新讀取保存資料，資料日期依各欄標示");
   });
   q("#printBtn").addEventListener("click", async () => {
-    await refreshMemberAccess();
+    if(!await refreshMemberAccess())return;
     if (!state.paidUnlocked) return goTo("upgradeView");
+    if(!premiumData)return showToast('請等完整報告載入後再匯出。');
     window.print();
   });
   q("#loadAdminBtn").addEventListener("click", loadAdminDashboard);
@@ -4427,6 +4507,12 @@ function demandStockExposure(holdings) {
 }
 
 async function init() {
+  const header=q('.app-header');
+  new ResizeObserver(()=>document.documentElement.style.setProperty('--member-header-height',`${header.getBoundingClientRect().height}px`)).observe(header);
+  window.addEventListener('popstate',()=>{
+    const params=new URLSearchParams(location.search), section=params.get('section')||'';
+    void goTo(params.get('view')||'landingView',/^[\w-]+$/.test(section)?section:'','',{historyMode:'replace'});
+  });
   window.addEventListener('focus',()=>{clearPremium();void refreshMemberAccess();});
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){clearPremium();void refreshMemberAccess();}});
   setInterval(()=>{if(authState.authenticated&&!document.hidden)void refreshMemberAccess();},30000);
@@ -4466,7 +4552,8 @@ async function init() {
   await initializeMemberAuth();
   await refreshMemberAccess();
   await loadPaymentReadiness();
-  if (q(`#${activeView}`)) goTo(activeView, "", activeMemberNav);
+  const initialSection=new URLSearchParams(location.search).get('section')||'';
+  if (q(`#${activeView}`)) await goTo(activeView, /^[\w-]+$/.test(initialSection)?initialSection:'', activeMemberNav,{historyMode:'replace'});
   document.body.dataset.appReady = "true";
   configureConsultationLinks();
   refreshReports();

@@ -38,7 +38,9 @@ jobs:
       - name: Verify ledger, persistence, image guards and both browser sizes
         run: node webapp/scripts/run-ledger-regressions.js --browser
       - name: Verify membership API and browser roles
-        run: node webapp/scripts/test-member-access.js --browser
+        run: |
+          node --test webapp/scripts/test-member-navigation.js
+          node webapp/scripts/test-member-access.js --browser
       - name: Verify updater preservation and candidate rejection
         run: node --test webapp/scripts/test-updater-guards.js webapp/scripts/test-data-batch.js webapp/scripts/test-market-snapshot.js webapp/scripts/test-market-reader.js webapp/scripts/test-payout-reconciliation.js
       - name: Verify selected holdings and empty-cache first use

@@ -25,7 +25,7 @@
 body {
   position: relative;
   margin: 0;
-  min-width: 320px;
+  min-width: min(320px, 100%);
   background:
     linear-gradient(135deg, rgba(255, 246, 232, 0.94) 0%, rgba(255, 255, 255, 0.86) 42%, rgba(238, 248, 245, 0.92) 100%),
     linear-gradient(180deg, #fffaf3 0%, #f7f6f1 48%, #eef7f4 100%),
@@ -1883,12 +1883,39 @@ a:hover {
 }
 
 .app-tabs {
-  position: fixed;
-  left: -10000px;
-  top: auto;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
+  position: sticky;
+  top: var(--member-header-height, 64px);
+  z-index: 40;
+  width: 100%;
+  height: auto;
+  flex-wrap: wrap;
+  justify-content: center;
+  overflow: visible;
+  background: var(--bg);
+}
+
+.app-tabs .tab {
+  min-height: 44px;
+  opacity: 1;
+  color: var(--brand-dark);
+}
+
+.app-tabs .tab.is-active {
+  background: var(--brand-dark);
+  color: #fff;
+}
+
+.member-access-notice {
+  padding: 12px 20px;
+  background: var(--surface);
+  text-align: center;
+}
+
+.app-header #logoutBtn { white-space: nowrap; }
+
+@media (max-width: 640px) {
+  .app-tabs { gap: 6px; padding: 8px 12px; }
+  .app-tabs .tab { flex: 1 1 calc(50% - 6px); padding: 8px; font-size: 14px; }
 }
 
 .site-main {
