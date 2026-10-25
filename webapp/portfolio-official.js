@@ -276,6 +276,7 @@ async function loadOfficialOnce(ticker, {source, signal, asOf, etf}) {
     otherGroups:(a.groups||[]).filter(g=>g.type!=='stock').map(g=>({kind:g.type,rows:g.items.length,items:g.items.map(r=>({code:r.code,name:r.name,weight:r.weight,quantity:r.quantity}))})),
     issues:[...(!holdingsDate?['官方未明示可獨立核對的持股日期；公告日或淨值日不當成持股日']:[]),...failures,'股票以外資產未穿透至底層股票；已知股票資料不代表完整金融曝險']};
 }
+const capitalRead=require('./portfolio-public-read').createPublicReadQueue();
 let taishinTail=Promise.resolve(),taishinPending=0,taishinLastRead=0;
 async function withTaishinTurn(signal,task){
   if(signal.aborted)throw Error('官方資料核對已逾時');
@@ -288,6 +289,8 @@ async function withTaishinTurn(signal,task){
   }finally{signal.removeEventListener('abort',onAbort);taishinPending--;release();}
 }
 async function loadOfficial(ticker,options){
+  if(/群益/.test(scope.entries[ticker]?.issuer||''))return loadOfficialOnce(ticker,{...options,
+    source:(url,signal,request)=>capitalRead(()=>options.source(url,signal,request),signal)});
   if(!/台新/.test(scope.entries[ticker]?.issuer||''))return loadOfficialOnce(ticker,options);
   return withTaishinTurn(options.signal,async()=>{
   let blocked=false;

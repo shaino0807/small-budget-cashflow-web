@@ -3,6 +3,7 @@ const {scopeFor,loadOfficial,validStocks,parseCtbcPage,parseJpmProduct,kgiHoldin
 const {createPortfolioMarket}=require('../portfolio-market');
 const {calculate}=require('../portfolio-overlap');
 const scope=require('../portfolio-scope.json');
+require('./test-public-read-queue');
 const temporary=[];
 function cache(){const d=fs.mkdtempSync(path.join(os.tmpdir(),'portfolio-domestic-'));temporary.push(d);return d;}
 test.after(()=>temporary.forEach(d=>fs.rmSync(d,{recursive:true,force:true})));
