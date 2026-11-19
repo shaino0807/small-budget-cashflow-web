@@ -40,6 +40,7 @@ jobs:
       - name: Verify membership API and browser roles
         run: |
           node --test webapp/scripts/test-member-navigation.js
+          node webapp/scripts/test-auth-boundaries.js
           node webapp/scripts/test-member-access.js --browser
       - name: Verify updater preservation and candidate rejection
         run: node --test webapp/scripts/test-updater-guards.js webapp/scripts/test-data-batch.js webapp/scripts/test-market-snapshot.js webapp/scripts/test-market-reader.js webapp/scripts/test-payout-reconciliation.js
@@ -69,6 +70,7 @@ jobs:
         run: |
           docker run --rm portfolio-candidate node scripts/test-member-access.js
           docker run --rm portfolio-candidate node scripts/test-line-auth.js
+          docker run --rm portfolio-candidate node scripts/test-auth-boundaries.js
           docker run --rm portfolio-candidate node scripts/test-customer-api.js
       - name: Verify real official sources and empty-cache API on Node 24 Alpine
         if: ${{ github.event_name == 'workflow_dispatch' && !inputs.source_diagnostics && !inputs.jpm_diagnostics }}

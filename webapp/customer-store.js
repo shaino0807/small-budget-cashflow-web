@@ -1025,7 +1025,8 @@ function createStore() {
     return publicUser(db.prepare("SELECT * FROM users WHERE id = ?").get(row.id));
   }
 
-  function createAuthChallenge({ state, nonce, codeVerifier, returnTo = "inputView" }) {
+  function createAuthChallenge({ state, nonce, codeVerifier, browserBinding, returnTo = "inputView" }) {
+    if (!/^[A-Za-z0-9_-]{43}$/.test(browserBinding || "")) throw new Error("Missing OAuth browser binding");
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 10 * 60000).toISOString();
     db.prepare(`
@@ -1033,23 +1034,30 @@ function createStore() {
       VALUES (?, ?, ?, ?)
     `).run(
       accessHash(`oauth-state:${state}`),
-      encrypt({ nonce, codeVerifier, returnTo: String(returnTo || "inputView").slice(0, 80) }),
+      encrypt({ nonce, codeVerifier, browserBindingHash: accessHash(`oauth-browser:${browserBinding}`), returnTo: String(returnTo || "inputView").slice(0, 80) }),
       now.toISOString(),
       expiresAt
     );
     return { expiresAt };
   }
 
-  function consumeAuthChallenge(state) {
-    const stateHash = accessHash(`oauth-state:${state}`);
-    const row = db.prepare("SELECT * FROM auth_challenges WHERE state_hash = ?").get(stateHash);
-    db.prepare("DELETE FROM auth_challenges WHERE state_hash = ?").run(stateHash);
-    if (!row || new Date(row.expires_at) <= new Date()) {
+  function consumeAuthChallenge(state, browserBinding) {
+    const reject = () => {
       const error = new Error("LINE Login 驗證已過期，請重新登入");
       error.statusCode = 401;
       throw error;
-    }
-    return decrypt(row.payload_cipher);
+    };
+    if (!/^[A-Za-z0-9_-]{32}$/.test(state || "") || !/^[A-Za-z0-9_-]{43}$/.test(browserBinding || "")) reject();
+    return immediateTransaction(() => {
+      const stateHash = accessHash(`oauth-state:${state}`);
+      const row = db.prepare("SELECT * FROM auth_challenges WHERE state_hash = ?").get(stateHash);
+      if (!row || new Date(row.expires_at) <= new Date()) reject();
+      const { browserBindingHash, ...challenge } = decrypt(row.payload_cipher);
+      if (!browserBindingHash || !safeEqual(browserBindingHash, accessHash(`oauth-browser:${browserBinding}`))) reject();
+      // Only the initiating browser may consume this one-time transaction.
+      db.prepare("DELETE FROM auth_challenges WHERE state_hash = ?").run(stateHash);
+      return challenge;
+    });
   }
 
   function createUserSession(userId, userAgent = "") {
