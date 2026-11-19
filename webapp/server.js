@@ -288,8 +288,22 @@ function memberSession(req, { required = false, touch = true } = {}) {
   return session;
 }
 
+function appendCookie(res, value) {
+  const existing = res.getHeader("Set-Cookie") || [];
+  res.setHeader("Set-Cookie", [...(Array.isArray(existing) ? existing : [existing]), value]);
+}
+
+function oauthCookieName(state) {
+  if (!/^[A-Za-z0-9_-]{32}$/.test(state)) throw new Error("Invalid OAuth state");
+  return `__Host-cashflow_oauth_${state}`;
+}
+
+function setOAuthCookie(res, state, binding, maxAge = 600) {
+  appendCookie(res, `${oauthCookieName(state)}=${binding}; Path=/; Max-Age=${maxAge}; HttpOnly; Secure; SameSite=Lax`);
+}
+
 function setAuthCookie(res, session) {
-  res.setHeader("Set-Cookie", `${authCookieName}=${encodeURIComponent(session.token)}; Path=/; Max-Age=${session.maxAgeSeconds}; HttpOnly; Secure; SameSite=Lax`);
+  appendCookie(res, `${authCookieName}=${encodeURIComponent(session.token)}; Path=/; Max-Age=${session.maxAgeSeconds}; HttpOnly; Secure; SameSite=Lax`);
 }
 
 function refreshAuthCookie(res, req) {
@@ -510,7 +524,7 @@ async function reconcileStoredLinePayOrder(order) {
 }
 
 let catalogCache = {};
-const server = http.createServer(async (req, res) => {
+async function handleRequest(req, res) {
   setSecurityHeaders(req, res);
   const requestOrigin = String(req.headers.origin || "");
   if (requestOrigin && !allowedOrigins.includes(requestOrigin)) {
@@ -522,8 +536,14 @@ const server = http.createServer(async (req, res) => {
     res.end();
     return;
   }
-  const url = new URL(req.url, `http://localhost:${port}`);
-  const urlPath = decodeURIComponent(url.pathname);
+  let url, urlPath;
+  try {
+    url = new URL(req.url, `http://localhost:${port}`);
+    urlPath = decodeURIComponent(url.pathname);
+  } catch {
+    sendJson(res, 400, { ok: false, error: "無效的請求網址" });
+    return;
+  }
   if(urlPath==='/api/report-example' && req.method==='GET') {
     const profile={monthlyIncome:50000,fixedExpense:25000,insuranceExpense:2000,loanExpense:3000,monthlyInvestment:5000,cashSavings:120000,age:35,retirementMonthlyNeed:30000};
     return sendJson(res,200,{ok:true,label:'虛構範例，非你的報告、非即時市場資料',report:require('./member-report').calculate({profile,holdings:[{ticker:'DEMO',amount:100000,dividendYield:4,type:'範例'}],monthlyCashflows:{1:profile},simulationYears:20},{})});
@@ -597,13 +617,16 @@ const server = http.createServer(async (req, res) => {
       if (!rateLimit(req, 20, 60000)) return sendJson(res, 429, { ok: false, error: "登入嘗試次數過多，請稍後再試" });
       const state = crypto.randomBytes(24).toString("base64url");
       const nonce = crypto.randomBytes(24).toString("base64url");
+      const browserBinding = crypto.randomBytes(32).toString("base64url");
       const pkce = createPkceValues();
       getCustomerStore().createAuthChallenge({
         state,
         nonce,
+        browserBinding,
         codeVerifier: pkce.verifier,
         returnTo: authReturnView(url.searchParams.get("returnTo"))
       });
+      setOAuthCookie(res, state, browserBinding);
       res.writeHead(302, {
         Location: authorizationUrl({ state, nonce, codeChallenge: pkce.challenge }),
         "Cache-Control": "no-store"
@@ -624,7 +647,9 @@ const server = http.createServer(async (req, res) => {
     }
     let challenge;
     try {
-      challenge = getCustomerStore().consumeAuthChallenge(state);
+      const browserBinding = cookies(req)[oauthCookieName(state)] || "";
+      challenge = getCustomerStore().consumeAuthChallenge(state, browserBinding);
+      setOAuthCookie(res, state, "", 0);
     } catch {
       res.writeHead(303, { Location: authRedirectUrl("landingView", { authError: "expired" }), "Cache-Control": "no-store" });
       res.end();
@@ -1388,6 +1413,14 @@ const server = http.createServer(async (req, res) => {
       "Cache-Control": [".json", ".html", ".css", ".js"].includes(path.extname(filePath)) ? "no-cache" : "public, max-age=300"
     });
     res.end(data);
+  });
+}
+
+const server = http.createServer((req, res) => {
+  handleRequest(req, res).catch(() => {
+    if (res.destroyed || res.writableEnded) return;
+    if (res.headersSent) return res.destroy();
+    sendJson(res, 500, { ok: false, error: "伺服器暫時無法處理請求" });
   });
 });
 

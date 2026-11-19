@@ -68,7 +68,7 @@ function wait(ms) {
 }
 
 function cookieFrom(response) {
-  return String(response.headers.get("set-cookie") || "").split(";")[0];
+  return String(response.headers.getSetCookie().find(value => value.startsWith("__Host-cashflow_session=")) || "").split(";")[0];
 }
 
 async function request(pathname, options = {}) {
@@ -108,7 +108,9 @@ async function oauthLogin(code) {
   if (!authorization.searchParams.get("code_challenge") || authorization.searchParams.get("code_challenge_method") !== "S256") {
     throw new Error("LINE Login did not use PKCE");
   }
-  const callback = await request(`/api/auth/line/callback?state=${encodeURIComponent(authorization.searchParams.get("state"))}&code=${encodeURIComponent(code)}`);
+  const binding = started.headers.getSetCookie().find(value => value.startsWith("__Host-cashflow_oauth_"));
+  if (!binding) throw new Error("LINE Login did not bind the browser transaction");
+  const callback = await request(`/api/auth/line/callback?state=${encodeURIComponent(authorization.searchParams.get("state"))}&code=${encodeURIComponent(code)}`, { headers: { Cookie: binding.split(";")[0] } });
   const setCookie = callback.headers.get("set-cookie") || "";
   if (callback.status !== 303 || !setCookie.includes("HttpOnly") || !setCookie.includes("Secure") || !setCookie.includes("SameSite=Lax")) {
     throw new Error("LINE callback did not issue the secure session cookie");
